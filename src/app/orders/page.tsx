@@ -1,0 +1,108 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
+import { AppShell } from "@/components/AppShell";
+import { TopBar } from "@/components/TopBar";
+import { FullPageSpinner } from "@/components/Spinner";
+import { StatusBadge } from "@/components/StatusBadge";
+import { useAuth } from "@/lib/auth-context";
+import { useRequireAuth } from "@/lib/use-require-auth";
+import { api, Order } from "@/lib/api";
+
+const FILTERS = ["All", "Requested", "Assigned", "On The Way", "In Progress", "Done", "Cancelled"];
+
+function formatDate(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-AE", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function formatTime(iso: string | null) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleTimeString("en-AE", { hour: "2-digit", minute: "2-digit" });
+}
+
+export default function OrdersPage() {
+  const { ready } = useRequireAuth();
+  const { token } = useAuth();
+
+  const [orders, setOrders] = useState<Order[] | null>(null);
+  const [filter, setFilter] = useState("All");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!ready || !token) return;
+    Promise.resolve().then(async () => {
+      setOrders(null);
+      try {
+        const res = await api.orders(token, { pageSize: 50, status: filter === "All" ? undefined : filter });
+        setOrders(res.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load orders");
+      }
+    });
+  }, [ready, token, filter]);
+
+  if (!ready) return <FullPageSpinner />;
+
+  return (
+    <AppShell>
+      <TopBar
+        title="My Orders"
+        right={
+          <Link href="/orders/new" aria-label="Book a service" className="rounded-full p-1.5 text-accent-2">
+            <Plus size={20} />
+          </Link>
+        }
+      />
+
+      <div className="osta-scrollbar-none flex gap-2 overflow-x-auto px-5 py-3">
+        {FILTERS.map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs ${
+              filter === f
+                ? "border-accent bg-accent/15 text-accent-2"
+                : "border-card-border text-text-muted"
+            }`}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <p className="mx-5 rounded-xl border border-rose-400/30 bg-rose-400/10 p-3 text-xs text-rose-300">
+          {error}
+        </p>
+      )}
+
+      <div className="flex flex-1 flex-col gap-3 px-5 pb-6">
+        {orders === null ? (
+          <FullPageSpinner />
+        ) : orders.length === 0 ? (
+          <p className="osta-card p-6 text-center text-sm text-text-muted">No orders found.</p>
+        ) : (
+          orders.map((order) => (
+            <Link key={order.id} href={`/orders/${order.id}`} className="osta-card flex flex-col gap-1.5 p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-text">{order.number}</span>
+                <StatusBadge status={order.status} />
+              </div>
+              <p className="text-xs text-text-muted">{order.orderType}</p>
+              <p className="text-xs text-text-faint">
+                {formatDate(order.scheduledAt ?? order.date)}
+                {formatTime(order.scheduledAt) ? ` · ${formatTime(order.scheduledAt)}` : ""}
+              </p>
+              {order.priceAgreed && (
+                <p className="text-xs font-semibold text-accent-2">AED {order.priceAgreed}</p>
+              )}
+            </Link>
+          ))
+        )}
+      </div>
+    </AppShell>
+  );
+}

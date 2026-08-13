@@ -1,26 +1,89 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #050b1a;
+  --bg-elevated: #0a1428;
+  --card: #0c1a33;
+  --card-border: #1b2e52;
+  --accent: #2f7dfa;
+  --accent-2: #5ec8ff;
+  --text: #f3f6fc;
+  --text-muted: #8fa0c2;
+  --text-faint: #5c6d90;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-card: var(--card);
+  --color-card-border: var(--card-border);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: radial-gradient(120% 140% at 50% -10%, #0e2350 0%, var(--bg) 55%) fixed;
+  color: var(--text);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+.osta-card {
+  background: linear-gradient(180deg, var(--card) 0%, var(--bg-elevated) 100%);
+  border: 1px solid var(--card-border);
+  border-radius: 1rem;
+}
+
+.osta-glow-border {
+  border: 1px solid rgba(47, 125, 250, 0.45);
+  box-shadow: 0 0 0 1px rgba(47, 125, 250, 0.08), 0 0 24px rgba(47, 125, 250, 0.12);
+}
+
+.osta-btn-primary {
+  background: linear-gradient(180deg, #3a86ff 0%, #2563eb 100%);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.osta-btn-primary:active {
+  transform: translateY(1px);
+}
+
+.osta-input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--card-border);
+  color: var(--text);
+}
+
+.osta-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(47, 125, 250, 0.2);
+}
+
+.osta-scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .osta-card {
+    background: #fff !important;
+    border-color: #ddd !important;
+    color: #111 !important;
+  }
 }
