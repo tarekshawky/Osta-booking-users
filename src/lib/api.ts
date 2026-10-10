@@ -98,6 +98,7 @@ export type Invoice = {
   payment: string;
   amount: number;
   status: string;
+  paymentLink: string | null;
   refundedAmount: number;
   warrantyUntil: string | null;
   createdAt: string;

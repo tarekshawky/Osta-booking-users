@@ -132,13 +132,26 @@ export default function InvoiceDetailPage() {
           <div className="flex flex-col gap-2 pt-2 print:hidden">
             {invoice.status !== "Paid" && invoice.status !== "Refunded" && (
               <>
-                <button
-                  onClick={() => setPayNote(true)}
-                  className="osta-btn-primary rounded-xl py-3 text-sm font-semibold text-white"
-                >
-                  {t("invoiceDetail.payInvoice")}
-                </button>
-                {payNote && <p className="text-center text-xs text-text-muted">{t("invoiceDetail.payNote")}</p>}
+                {invoice.paymentLink ? (
+                  <a
+                    href={invoice.paymentLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="osta-btn-primary rounded-xl py-3 text-center text-sm font-semibold text-white"
+                  >
+                    {t("invoiceDetail.payInvoice")}
+                  </a>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setPayNote(true)}
+                      className="osta-btn-primary rounded-xl py-3 text-sm font-semibold text-white"
+                    >
+                      {t("invoiceDetail.payInvoice")}
+                    </button>
+                    {payNote && <p className="text-center text-xs text-text-muted">{t("invoiceDetail.payNote")}</p>}
+                  </>
+                )}
               </>
             )}
             <button
