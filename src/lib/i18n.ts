@@ -297,6 +297,11 @@ const dict = {
     noPosts: { en: "No articles yet — check back soon.", ar: "لا توجد مقالات بعد — تابعنا قريباً." },
     backToBlog: { en: "All Articles", ar: "كل المقالات" },
     readMore: { en: "Read more", ar: "اقرأ المزيد" },
+    searchPlaceholder: { en: "Search articles…", ar: "ابحث في المقالات…" },
+    noSearchResults: {
+      en: "No articles match your search.",
+      ar: "لا توجد مقالات مطابقة لبحثك.",
+    },
   },
 
   about: {

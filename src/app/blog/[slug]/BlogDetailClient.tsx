@@ -38,6 +38,15 @@ export function BlogDetailClient({ post }: { post: BlogDetail }) {
           {formatDate(post.publishedAt)}
         </p>
 
+        {post.coverImageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.coverImageUrl}
+            alt={title}
+            className="osta-card mt-6 h-56 w-full object-cover sm:h-72"
+          />
+        )}
+
         <div className="osta-card mt-8 p-6">
           <p className="whitespace-pre-line text-sm leading-relaxed text-text-muted">{content}</p>
         </div>
