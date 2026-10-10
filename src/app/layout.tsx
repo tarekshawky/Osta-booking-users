@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Cairo } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
+import type { Lang } from "@/lib/i18n";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,14 +35,19 @@ export const viewport: Viewport = {
   themeColor: "#050b1a",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const cookieStore = await cookies();
+  const stored = cookieStore.get("osta_lang")?.value;
+  const initialLang: Lang = stored === "ar" ? "ar" : "en";
+
   return (
     <html
-      lang="en"
+      lang={initialLang}
+      dir={initialLang === "ar" ? "rtl" : "ltr"}
       className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-bg">
-        <LanguageProvider>
+        <LanguageProvider initialLang={initialLang}>
           <AuthProvider>{children}</AuthProvider>
         </LanguageProvider>
       </body>

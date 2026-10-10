@@ -85,6 +85,43 @@ html[dir="rtl"] body {
   display: none;
 }
 
+/* Infinite auto-scrolling logo strip (e.g. "Brands We Service"). The track
+   renders its children twice back-to-back and scrolls exactly one copy's width,
+   so the loop point is seamless. `direction: ltr` keeps that math correct even
+   on an RTL page -- without it, [dir="rtl"] would flip the flex order of the two
+   duplicated halves and break the seam. */
+.osta-marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+.osta-marquee-track {
+  display: flex;
+  width: max-content;
+  direction: ltr;
+  animation: osta-marquee-scroll 28s linear infinite;
+}
+
+.osta-marquee:hover .osta-marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes osta-marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .osta-marquee-track {
+    animation: none;
+  }
+}
+
 @media print {
   body {
     background: #fff !important;

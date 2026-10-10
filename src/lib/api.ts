@@ -148,6 +148,29 @@ export type BlogDetail = BlogSummary & {
   seoDescriptionAr: string | null;
 };
 
+export type HomeSectionItem = {
+  titleEn: string;
+  titleAr: string;
+  descriptionEn: string | null;
+  descriptionAr: string | null;
+  iconName: string | null;
+  imageUrl: string | null;
+  linkUrl: string | null;
+};
+
+export type HomeSection = {
+  key: string;
+  headingEn: string;
+  headingAr: string;
+  descriptionEn: string | null;
+  descriptionAr: string | null;
+  imageUrl: string | null;
+  ctaLabelEn: string | null;
+  ctaLabelAr: string | null;
+  ctaUrl: string | null;
+  items: HomeSectionItem[];
+};
+
 type Page<T> = { data: T[]; page: number; pageSize: number; total: number };
 
 async function apiFetchPage<T>(
@@ -223,4 +246,5 @@ export const api = {
     return apiFetchPage<BlogSummary>(`/blog${suffix}`);
   },
   blogPost: (slug: string) => apiFetch<BlogDetail>(`/blog/${slug}`),
+  homeSections: () => apiFetch<HomeSection[]>("/home-sections"),
 };

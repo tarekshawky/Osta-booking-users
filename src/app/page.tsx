@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { HomeClient } from "./HomeClient";
-import { api, ServiceSummary, BlogSummary } from "@/lib/api";
+import { api, ServiceSummary, BlogSummary, HomeSection } from "@/lib/api";
 
 export const revalidate = 300;
 
@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   let services: ServiceSummary[] = [];
   let posts: BlogSummary[] = [];
+  let sections: HomeSection[] = [];
   try {
     services = await api.services();
   } catch {
@@ -29,6 +30,11 @@ export default async function HomePage() {
     posts = res.data;
   } catch {
     // Same as above -- blog preview is optional, never blocks the page.
+  }
+  try {
+    sections = await api.homeSections();
+  } catch {
+    // Same as above -- the extra content blocks are optional, never block the page.
   }
 
   const jsonLd = {
@@ -54,7 +60,7 @@ export default async function HomePage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <HomeClient services={services} posts={posts} />
+      <HomeClient services={services} posts={posts} sections={sections} />
     </>
   );
 }

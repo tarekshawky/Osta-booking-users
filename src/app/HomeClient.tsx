@@ -4,9 +4,10 @@ import Link from "next/link";
 import { ShieldCheck, Clock, BadgeCheck, Wrench, Star, Users, ThumbsUp, MapPin, ChevronRight } from "lucide-react";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingFooter } from "@/components/MarketingFooter";
+import { HomeSections } from "./HomeSections";
 import { useLanguage } from "@/lib/language-context";
 import type { TranslationKey } from "@/lib/i18n";
-import type { ServiceSummary, BlogSummary } from "@/lib/api";
+import type { ServiceSummary, BlogSummary, HomeSection } from "@/lib/api";
 
 const TRUST_FEATURES: { icon: typeof ShieldCheck; key: TranslationKey }[] = [
   { icon: ShieldCheck, key: "home.trustTrusted" },
@@ -22,7 +23,15 @@ const STATS = [
   { icon: MapPin, value: "7", key: "home.statEmirates" as TranslationKey },
 ];
 
-export function HomeClient({ services, posts }: { services: ServiceSummary[]; posts: BlogSummary[] }) {
+export function HomeClient({
+  services,
+  posts,
+  sections,
+}: {
+  services: ServiceSummary[];
+  posts: BlogSummary[];
+  sections: HomeSection[];
+}) {
   const { t, lang } = useLanguage();
 
   return (
@@ -109,6 +118,8 @@ export function HomeClient({ services, posts }: { services: ServiceSummary[]; po
           </Link>
         </div>
       </section>
+
+      <HomeSections sections={sections} />
 
       {/* Stats */}
       <section className="border-y border-card-border bg-bg-elevated">

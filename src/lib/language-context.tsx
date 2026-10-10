@@ -4,6 +4,12 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { Lang, TranslationKey, translate } from "./i18n";
 
 const STORAGE_KEY = "osta_lang";
+const COOKIE_KEY = "osta_lang";
+
+function persistLang(next: Lang) {
+  window.localStorage.setItem(STORAGE_KEY, next);
+  document.cookie = `${COOKIE_KEY}=${next}; path=/; max-age=31536000; samesite=lax`;
+}
 
 type LanguageState = {
   lang: Lang;
@@ -15,14 +21,25 @@ type LanguageState = {
 
 const LanguageContext = createContext<LanguageState | null>(null);
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("en");
+export function LanguageProvider({
+  children,
+  initialLang = "en",
+}: {
+  children: React.ReactNode;
+  initialLang?: Lang;
+}) {
+  const [lang, setLangState] = useState<Lang>(initialLang);
 
   useEffect(() => {
     Promise.resolve().then(() => {
-      const stored = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
-      if (stored === "ar" || stored === "en") setLangState(stored);
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if ((stored === "ar" || stored === "en") && stored !== lang) {
+        setLangState(stored);
+      }
+      // Keep the cookie in sync even if it was missing (e.g. an older localStorage-only visit).
+      persistLang(stored === "ar" || stored === "en" ? stored : lang);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -32,13 +49,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const setLang = useCallback((next: Lang) => {
     setLangState(next);
-    window.localStorage.setItem(STORAGE_KEY, next);
+    persistLang(next);
   }, []);
 
   const toggleLang = useCallback(() => {
     setLangState((prev) => {
       const next = prev === "en" ? "ar" : "en";
-      window.localStorage.setItem(STORAGE_KEY, next);
+      persistLang(next);
       return next;
     });
   }, []);
