@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { ReactNode } from "react";
+import { LanguageToggle } from "./LanguageToggle";
 
 export function TopBar({
   title,
@@ -23,12 +24,15 @@ export function TopBar({
             aria-label="Back"
             className="rounded-full p-1 text-text-muted hover:text-text"
           >
-            <ChevronLeft size={22} />
+            <ChevronLeft size={22} className="osta-flip-rtl" />
           </button>
         )}
         <h1 className="text-[15px] font-semibold text-text">{title}</h1>
       </div>
-      <div className="flex items-center gap-2">{right}</div>
+      <div className="flex items-center gap-2">
+        {right}
+        <LanguageToggle />
+      </div>
     </header>
   );
 }

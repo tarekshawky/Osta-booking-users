@@ -1,4 +1,4 @@
-const API_BASE = "https://osta-invoices.vercel.app/api/v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "https://osta-invoices.vercel.app/api/v1";
 
 export class ApiError extends Error {
   code?: string;
@@ -107,6 +107,47 @@ export type InvoiceDetail = Invoice & {
   items: { serviceName: string; description: string | null; qty: number; unitPrice: number }[];
 };
 
+export type ServiceSummary = {
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  shortDescriptionEn: string;
+  shortDescriptionAr: string;
+  iconName: string | null;
+  coverImageUrl: string | null;
+  priceFrom: number | null;
+  priceNote: string | null;
+};
+
+export type ServiceDetail = ServiceSummary & {
+  contentEn: string;
+  contentAr: string;
+  seoTitleEn: string | null;
+  seoTitleAr: string | null;
+  seoDescriptionEn: string | null;
+  seoDescriptionAr: string | null;
+};
+
+export type BlogSummary = {
+  slug: string;
+  titleEn: string;
+  titleAr: string;
+  excerptEn: string;
+  excerptAr: string;
+  coverImageUrl: string | null;
+  authorName: string | null;
+  publishedAt: string | null;
+};
+
+export type BlogDetail = BlogSummary & {
+  contentEn: string;
+  contentAr: string;
+  seoTitleEn: string | null;
+  seoTitleAr: string | null;
+  seoDescriptionEn: string | null;
+  seoDescriptionAr: string | null;
+};
+
 type Page<T> = { data: T[]; page: number; pageSize: number; total: number };
 
 async function apiFetchPage<T>(
@@ -125,16 +166,16 @@ async function apiFetchPage<T>(
 }
 
 export const api = {
-  requestOtp: (phone: string) =>
-    apiFetch<{ sent: boolean; devCode?: string }>("/auth/otp/request", {
+  login: (email: string, password: string) =>
+    apiFetch<{ accessToken: string; customer: CustomerSummary }>("/auth/login", {
       method: "POST",
-      body: { phone },
+      body: { email, password },
     }),
 
-  verifyOtp: (phone: string, code: string) =>
-    apiFetch<{ accessToken: string; customer: CustomerSummary }>("/auth/otp/verify", {
+  signup: (body: { name: string; phone: string; email: string; password: string; emirate?: string }) =>
+    apiFetch<{ accessToken: string; customer: CustomerSummary }>("/auth/signup", {
       method: "POST",
-      body: { phone, code },
+      body,
     }),
 
   me: (token: string) => apiFetch<Customer>("/me", { token }),
@@ -170,4 +211,16 @@ export const api = {
   },
 
   invoice: (token: string, id: string) => apiFetch<InvoiceDetail>(`/invoices/${id}`, { token }),
+
+  // Public marketing-site content -- no bearer token required.
+  services: () => apiFetch<ServiceSummary[]>("/services"),
+  service: (slug: string) => apiFetch<ServiceDetail>(`/services/${slug}`),
+  blogPosts: (params: { page?: number; pageSize?: number } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.page) qs.set("page", String(params.page));
+    if (params.pageSize) qs.set("pageSize", String(params.pageSize));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return apiFetchPage<BlogSummary>(`/blog${suffix}`);
+  },
+  blogPost: (slug: string) => apiFetch<BlogDetail>(`/blog/${slug}`),
 };

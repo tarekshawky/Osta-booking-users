@@ -8,6 +8,8 @@ import { TopBar } from "@/components/TopBar";
 import { FullPageSpinner } from "@/components/Spinner";
 import { useAuth } from "@/lib/auth-context";
 import { useRequireAuth } from "@/lib/use-require-auth";
+import { useLanguage } from "@/lib/language-context";
+import type { TranslationKey } from "@/lib/i18n";
 import { api, ApiError } from "@/lib/api";
 
 const SERVICES = [
@@ -22,21 +24,22 @@ const SERVICES = [
 const LANGUAGES = ["English", "Arabic"];
 const WHATSAPP_NUMBER = "971568676036";
 
-function formatDateTime(value: string) {
-  if (!value) return "Not specified";
-  return new Date(value).toLocaleString("en-AE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export default function NewOrderPage() {
   const { ready } = useRequireAuth();
   const { token, customer } = useAuth();
   const router = useRouter();
+  const { t, lang } = useLanguage();
+
+  function formatDateTime(value: string) {
+    if (!value) return t("newOrder.notSpecified");
+    return new Date(value).toLocaleString(lang === "ar" ? "ar-AE" : "en-AE", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
 
   const [service, setService] = useState(SERVICES[0]);
   const [scheduledAt, setScheduledAt] = useState("");
@@ -52,7 +55,7 @@ export default function NewOrderPage() {
 
   function shareLocation() {
     if (!navigator.geolocation) {
-      setError("Location sharing isn't supported on this device.");
+      setError(t("newOrder.locationUnsupported"));
       return;
     }
     setLocating(true);
@@ -64,7 +67,7 @@ export default function NewOrderPage() {
         setLocating(false);
       },
       () => {
-        setError("Couldn't get your location. Please allow location access or type an address.");
+        setError(t("newOrder.locationFailed"));
         setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -107,7 +110,7 @@ export default function NewOrderPage() {
       setTimeout(() => router.replace(`/orders/${order.id}`), 900);
     } catch (err) {
       whatsappTab?.close();
-      setError(err instanceof ApiError ? err.message : "Could not book this order. Please try again.");
+      setError(err instanceof ApiError ? err.message : t("newOrder.genericError"));
     } finally {
       setBusy(false);
     }
@@ -115,20 +118,18 @@ export default function NewOrderPage() {
 
   return (
     <AppShell>
-      <TopBar title="Book a Service" back />
+      <TopBar title={t("newOrder.title")} back />
 
       {success ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
           <CheckCircle2 size={48} className="text-emerald-400" />
-          <p className="text-base font-semibold text-text">Booking requested!</p>
-          <p className="text-sm text-text-muted">
-            We&apos;ll assign a team shortly. We also opened WhatsApp with your details ready to send.
-          </p>
+          <p className="text-base font-semibold text-text">{t("newOrder.successTitle")}</p>
+          <p className="text-sm text-text-muted">{t("newOrder.successSubtitle")}</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-4 px-5 py-5">
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-text-muted">Service</span>
+            <span className="text-xs font-medium text-text-muted">{t("newOrder.service")}</span>
             <select
               value={service}
               onChange={(e) => setService(e.target.value)}
@@ -136,14 +137,14 @@ export default function NewOrderPage() {
             >
               {SERVICES.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {t(`newOrder.services.${s}` as TranslationKey)}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-text-muted">Preferred date &amp; time</span>
+            <span className="text-xs font-medium text-text-muted">{t("newOrder.dateTime")}</span>
             <input
               type="datetime-local"
               value={scheduledAt}
@@ -153,30 +154,30 @@ export default function NewOrderPage() {
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-text-muted">Location</span>
+            <span className="text-xs font-medium text-text-muted">{t("newOrder.location")}</span>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={locationUrl}
                 onChange={(e) => setLocationUrl(e.target.value)}
-                placeholder="Type an address, or share your location"
+                placeholder={t("newOrder.locationPlaceholder")}
                 className="osta-input flex-1 rounded-xl px-3 py-3 text-sm placeholder:text-text-faint"
               />
               <button
                 type="button"
                 onClick={shareLocation}
                 disabled={locating}
-                aria-label="Share my current location"
+                aria-label={t("newOrder.shareLocation")}
                 className="flex shrink-0 items-center justify-center rounded-xl border border-card-border px-3 text-accent-2 disabled:opacity-60"
               >
                 <MapPin size={18} />
               </button>
             </div>
-            {locating && <span className="text-[11px] text-text-faint">Getting your location…</span>}
+            {locating && <span className="text-[11px] text-text-faint">{t("newOrder.gettingLocation")}</span>}
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-text-muted">Preferred language</span>
+            <span className="text-xs font-medium text-text-muted">{t("newOrder.language")}</span>
             <select
               value={customerLanguage}
               onChange={(e) => setCustomerLanguage(e.target.value)}
@@ -184,36 +185,33 @@ export default function NewOrderPage() {
             >
               {LANGUAGES.map((l) => (
                 <option key={l} value={l}>
-                  {l}
+                  {t(`newOrder.languages.${l}` as TranslationKey)}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-text-muted">Notes (optional)</span>
+            <span className="text-xs font-medium text-text-muted">{t("newOrder.notes")}</span>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              placeholder="Tell us more about what you need…"
+              placeholder={t("newOrder.notesPlaceholder")}
               className="osta-input rounded-xl px-3 py-3 text-sm placeholder:text-text-faint"
             />
           </label>
 
           {error && <p className="text-xs text-rose-400">{error}</p>}
 
-          <p className="text-[11px] text-text-faint">
-            After booking, we&apos;ll open WhatsApp with your details pre-filled to send to OSTA support — you
-            confirm and send it yourself.
-          </p>
+          <p className="text-[11px] text-text-faint">{t("newOrder.whatsappNote")}</p>
 
           <button
             type="submit"
             disabled={busy}
             className="osta-btn-primary mt-2 rounded-xl py-3 text-sm font-semibold text-white disabled:opacity-60"
           >
-            {busy ? "Booking…" : "Confirm Booking"}
+            {busy ? t("newOrder.submitting") : t("newOrder.submit")}
           </button>
         </form>
       )}

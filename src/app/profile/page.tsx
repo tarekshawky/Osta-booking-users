@@ -8,6 +8,8 @@ import { TopBar } from "@/components/TopBar";
 import { FullPageSpinner } from "@/components/Spinner";
 import { useAuth } from "@/lib/auth-context";
 import { useRequireAuth } from "@/lib/use-require-auth";
+import { useLanguage } from "@/lib/language-context";
+import type { TranslationKey } from "@/lib/i18n";
 import { Customer } from "@/lib/api";
 
 function Row({ icon: Icon, label, value }: { icon: typeof User; label: string; value: string | null }) {
@@ -27,6 +29,7 @@ export default function ProfilePage() {
   const { ready } = useRequireAuth();
   const { customer, logout, refreshMe } = useAuth();
   const router = useRouter();
+  const { t } = useLanguage();
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -41,10 +44,14 @@ export default function ProfilePage() {
   const address = [full?.buildingName, full?.flatNo, full?.area, full?.city, full?.emirate]
     .filter(Boolean)
     .join(", ");
+  const languageLabel =
+    full?.language === "English" || full?.language === "Arabic"
+      ? t(`newOrder.languages.${full.language}` as TranslationKey)
+      : (full?.language ?? null);
 
   return (
     <AppShell>
-      <TopBar title="My Profile" />
+      <TopBar title={t("profile.title")} />
 
       <div className="flex flex-col items-center gap-2 px-5 pt-6">
         <div className="flex h-20 w-20 items-center justify-center rounded-full osta-glow-border bg-card">
@@ -52,21 +59,21 @@ export default function ProfilePage() {
         </div>
         <p className="text-base font-semibold text-text">{full?.name}</p>
         {full?.companyName && <p className="text-xs text-text-muted">{full.companyName}</p>}
-        <p className="text-xs text-text-faint">Customer ID: {full?.code}</p>
+        <p className="text-xs text-text-faint">
+          {t("profile.customerId")} {full?.code}
+        </p>
       </div>
 
       <div className="osta-card mx-5 mt-6 divide-y divide-card-border px-4">
-        <Row icon={Phone} label="Mobile Number" value={full?.phone ?? null} />
-        <Row icon={MessageCircle} label="WhatsApp Number" value={full?.whatsapp ?? null} />
-        <Row icon={Mail} label="Email" value={full?.email ?? null} />
-        <Row icon={Building2} label="Address" value={address || null} />
-        <Row icon={MapPin} label="Emirate" value={full?.emirate ?? null} />
-        <Row icon={Globe} label="Language" value={full?.language ?? null} />
+        <Row icon={Phone} label={t("profile.mobileNumber")} value={full?.phone ?? null} />
+        <Row icon={MessageCircle} label={t("profile.whatsappNumber")} value={full?.whatsapp ?? null} />
+        <Row icon={Mail} label={t("profile.email")} value={full?.email ?? null} />
+        <Row icon={Building2} label={t("profile.address")} value={address || null} />
+        <Row icon={MapPin} label={t("profile.emirate")} value={full?.emirate ?? null} />
+        <Row icon={Globe} label={t("profile.language")} value={languageLabel} />
       </div>
 
-      <p className="mx-5 mt-4 text-center text-[11px] text-text-faint">
-        To update your profile details, please contact OSTA Services support.
-      </p>
+      <p className="mx-5 mt-4 text-center text-[11px] text-text-faint">{t("profile.contactSupport")}</p>
 
       <div className="mt-auto px-5 pb-6 pt-8">
         <button
@@ -76,7 +83,7 @@ export default function ProfilePage() {
           }}
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-400/30 py-3 text-sm font-medium text-rose-300"
         >
-          <LogOut size={16} /> Log Out
+          <LogOut size={16} /> {t("common.logOut")}
         </button>
       </div>
     </AppShell>

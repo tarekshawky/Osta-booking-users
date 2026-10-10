@@ -40,6 +40,15 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
+html[dir="rtl"] body {
+  font-family: var(--font-cairo), var(--font-geist-sans), Tahoma, Arial, sans-serif;
+}
+
+/* Directional icons (back chevrons, forward arrows) that should mirror in RTL. */
+[dir="rtl"] .osta-flip-rtl {
+  transform: scaleX(-1);
+}
+
 .osta-card {
   background: linear-gradient(180deg, var(--card) 0%, var(--bg-elevated) 100%);
   border: 1px solid var(--card-border);

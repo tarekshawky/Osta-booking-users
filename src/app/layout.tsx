@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Cairo } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { LanguageProvider } from "@/lib/language-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,9 +14,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const cairo = Cairo({
+  variable: "--font-cairo",
+  subsets: ["arabic", "latin"],
+});
+
 export const metadata: Metadata = {
-  title: "OSTA Services",
+  metadataBase: new URL("https://www.ostaservices.com"),
+  title: {
+    default: "OSTA Services",
+    template: "%s | OSTA Services",
+  },
   description: "Your comfort. Our priority. Manage your OSTA orders and invoices.",
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
@@ -26,10 +37,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-bg">
-        <AuthProvider>{children}</AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

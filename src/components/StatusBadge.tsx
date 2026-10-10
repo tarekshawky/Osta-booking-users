@@ -1,3 +1,8 @@
+"use client";
+
+import { useLanguage } from "@/lib/language-context";
+import type { TranslationKey } from "@/lib/i18n";
+
 const STYLES: Record<string, string> = {
   // orders
   Requested: "bg-amber-400/15 text-amber-300 border-amber-400/30",
@@ -18,10 +23,12 @@ const STYLES: Record<string, string> = {
 const DEFAULT_STYLE = "bg-slate-400/15 text-slate-300 border-slate-400/30";
 
 export function StatusBadge({ status }: { status: string }) {
+  const { t } = useLanguage();
   const style = STYLES[status] || DEFAULT_STYLE;
+  const label = status in STYLES ? t(`status.${status}` as TranslationKey) : status;
   return (
     <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${style}`}>
-      {status}
+      {label}
     </span>
   );
 }
