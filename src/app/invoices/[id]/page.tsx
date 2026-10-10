@@ -149,7 +149,7 @@ export default function InvoiceDetailPage() {
             </button>
           </div>
 
-          <div className="hidden print:block">
+          <div className="osta-invoice-print-logo hidden print:block">
             <Logo size="lg" />
           </div>
         </div>

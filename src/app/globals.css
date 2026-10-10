@@ -122,14 +122,52 @@ html[dir="rtl"] body {
   }
 }
 
+/* Printed invoices (window.print() on /invoices/[id]) must render as a proper
+   white document, not the dark, phone-width app screen. Re-pointing the design
+   tokens to light values makes every `bg-bg`/`text-text`/etc. utility already
+   used throughout the UI resolve to print-safe colors automatically, instead of
+   having to override each component individually. */
 @media print {
+  :root {
+    --bg: #ffffff;
+    --bg-elevated: #ffffff;
+    --card: #ffffff;
+    --card-border: #e2e8f0;
+    --accent: #2563eb;
+    --accent-2: #2563eb;
+    --text: #0f172a;
+    --text-muted: #475569;
+    --text-faint: #64748b;
+  }
+
+  html {
+    color-scheme: light;
+  }
+
   body {
     background: #fff !important;
-    color: #111 !important;
+    color: #0f172a !important;
   }
+
   .osta-card {
     background: #fff !important;
-    border-color: #ddd !important;
-    color: #111 !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: none !important;
+  }
+
+  .osta-glow-border {
+    box-shadow: none !important;
+  }
+
+  #invoice-print {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  /* The "OS" half of the logo is hardcoded white for the dark app theme;
+     without this it would vanish on the white printed page. */
+  .osta-invoice-print-logo .text-white {
+    color: #0f172a !important;
   }
 }
