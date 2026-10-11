@@ -12,22 +12,12 @@ import type { TranslationKey } from "@/lib/i18n";
 import { api, ApiError, type PricingConfig } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { priceQuote, QuoteError, type Quote } from "@/lib/priceQuote";
+import { bookingFee, PriceLines } from "@/components/booking/shared";
+import { loadDraft, clearDraft } from "@/lib/bookingDraft";
 
 const STEPS = ["emirate", "service", "type", "details", "when", "contact", "review"] as const;
 
 type Service = PricingConfig["services"][number];
-type BookingType = PricingConfig["bookingTypes"][number];
-
-function bookingFee(type: BookingType, serviceId: string, regionId: string): number {
-  const o = type.overrides;
-  return (
-    o.find((x) => x.serviceId === serviceId && x.regionId === regionId)?.feeFils ??
-    o.find((x) => x.serviceId === serviceId && x.regionId === null)?.feeFils ??
-    o.find((x) => x.serviceId === null && x.regionId === regionId)?.feeFils ??
-    type.defaultFeeFils
-  );
-}
-
 export function PricedBookingFlow({ config }: { config: PricingConfig }) {
   const { token, customer } = useAuth();
   const router = useRouter();
@@ -36,17 +26,26 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
   const ar = lang === "ar";
   const idempotencyKey = useRef(crypto.randomUUID());
 
-  const [step, setStep] = useState(0);
-  const [regionId, setRegionId] = useState("");
-  const [serviceId, setServiceId] = useState("");
-  const [typeId, setTypeId] = useState("");
-  const [qty, setQty] = useState(1);
-  const [addOnIds, setAddOnIds] = useState<string[]>([]);
+  // A choice made on the public price page arrives as a draft; a stale or invalid one is ignored.
+  const [draft] = useState(() => {
+    const d = loadDraft();
+    const svc = d && config.services.find((s) => s.id === d.serviceId);
+    const ok =
+      !!d && !!svc && svc.prices.some((p) => p.regionId === d.regionId) &&
+      config.bookingTypes.some((b) => b.id === d.typeId) && d.qty >= svc.minQuantity;
+    return ok ? d : null;
+  });
+  const [step, setStep] = useState(draft ? STEPS.indexOf("when") : 0);
+  const [regionId, setRegionId] = useState(draft?.regionId ?? "");
+  const [serviceId, setServiceId] = useState(draft?.serviceId ?? "");
+  const [typeId, setTypeId] = useState(draft?.typeId ?? "");
+  const [qty, setQty] = useState(draft?.qty ?? 1);
+  const [addOnIds, setAddOnIds] = useState<string[]>(draft?.addOnIds ?? []);
   const [scheduledAt, setScheduledAt] = useState("");
   const [locationUrl, setLocationUrl] = useState("");
   const [customerLanguage, setCustomerLanguage] = useState(ar ? "Arabic" : "English");
   const [notes, setNotes] = useState("");
-  const [consent, setConsent] = useState(false);
+  const [consent, setConsent] = useState(draft?.consent ?? false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);
@@ -187,6 +186,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
       ].filter(Boolean);
       if (whatsappTab) whatsappTab.location.href = `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(lines.join("\n"))}`;
       track("booking_completed", { value: order.totalFils / 100, currency: "AED" });
+      clearDraft();
       setSuccess(true);
       setTimeout(() => router.replace(`/orders/${order.id}`), 1200);
     } catch (err) {
@@ -468,26 +468,5 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
         </div>
       </div>
     </AppShell>
-  );
-}
-
-function PriceLines({ quote, aed, t, compact }: { quote: Quote; aed: (f: number) => string; t: (k: TranslationKey) => string; compact?: boolean }) {
-  const row = (label: string, value: string, strong = false) => (
-    <div key={label} className={`flex justify-between py-0.5 ${strong ? "font-bold text-text" : "text-text-muted"}`}>
-      <span>{label}</span>
-      <span>{value}</span>
-    </div>
-  );
-  return (
-    <div className={compact ? "text-xs" : "osta-card p-4 text-sm"}>
-      {row(`${t("booking.unitPrice")} × ${quote.quantity}`, `${aed(quote.unitPriceFils)} × ${quote.quantity}`)}
-      {row(t("booking.subtotal"), aed(quote.subtotalFils))}
-      {quote.discountFils > 0 && row(`${t("booking.discount")} (${quote.discountPercent}%)`, `− ${aed(quote.discountFils)}`)}
-      {quote.discountFils > 0 && row(t("booking.afterDiscount"), aed(quote.serviceNetFils))}
-      {quote.bookingFeeFils > 0 && row(t("booking.bookingFee"), aed(quote.bookingFeeFils))}
-      {quote.addOnsFils > 0 && row(t("booking.addOnsTotal"), aed(quote.addOnsFils))}
-      {row(quote.pricesIncludeVat ? `${t("booking.vatIncluded")} (${quote.vatRatePercent}%)` : `${t("booking.vatAdded")} (${quote.vatRatePercent}%)`, aed(quote.vatFils))}
-      <div className="mt-1 border-t border-card-border pt-1">{row(t("booking.total"), aed(quote.totalFils), true)}</div>
-    </div>
   );
 }

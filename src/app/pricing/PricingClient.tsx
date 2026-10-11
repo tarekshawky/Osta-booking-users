@@ -4,9 +4,10 @@ import Link from "next/link";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingFooter } from "@/components/MarketingFooter";
 import { useLanguage } from "@/lib/language-context";
-import type { ServiceSummary } from "@/lib/api";
+import type { PricingConfig, ServiceSummary } from "@/lib/api";
+import { BookingCalculator } from "@/components/booking/BookingCalculator";
 
-export function PricingClient({ services }: { services: ServiceSummary[] }) {
+export function PricingClient({ services, config }: { services: ServiceSummary[]; config: PricingConfig | null }) {
   const { t, lang } = useLanguage();
 
   return (
@@ -19,6 +20,9 @@ export function PricingClient({ services }: { services: ServiceSummary[] }) {
         <p className="mx-auto mt-3 max-w-xl text-sm text-text-muted">{t("pricing.pageSubtitle")}</p>
       </section>
 
+      {config ? (
+        <BookingCalculator config={config} />
+      ) : (
       <section className="mx-auto w-full max-w-4xl px-5 pb-20">
         <div className="osta-card overflow-hidden">
           {services.map((service, i) => (
@@ -49,6 +53,7 @@ export function PricingClient({ services }: { services: ServiceSummary[] }) {
           ))}
         </div>
       </section>
+      )}
 
       </main>
 

@@ -53,7 +53,7 @@ export function BlogDetailClient({ post }: { post: BlogDetail }) {
         </div>
 
         <Link
-          href="/orders/new"
+          href="/pricing"
           className="osta-btn-primary mt-8 block rounded-xl px-6 py-3.5 text-center text-sm font-semibold text-white"
         >
           {t("home.bookService")}

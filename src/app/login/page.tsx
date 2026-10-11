@@ -8,6 +8,7 @@ import { Logo, LogoMark } from "@/components/Logo";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { hasDraft } from "@/lib/bookingDraft";
 import { useLanguage } from "@/lib/language-context";
 import type { TranslationKey } from "@/lib/i18n";
 
@@ -30,7 +31,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && token) router.replace("/dashboard");
+    if (!loading && token) router.replace(hasDraft() ? "/orders/new" : "/dashboard");
   }, [loading, token, router]);
 
   async function handleSubmit(e: FormEvent) {
@@ -46,7 +47,7 @@ export default function LoginPage() {
     try {
       const res = await api.login(email.trim(), password);
       login(res.accessToken, res.customer);
-      router.replace("/dashboard");
+      router.replace(hasDraft() ? "/orders/new" : "/dashboard");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("login.genericError"));
     } finally {

@@ -30,7 +30,8 @@ export function MarketingNav() {
   const label = (m: SiteMenuItem) => (lang === "ar" ? m.labelAr || m.labelEn : m.labelEn || m.labelAr);
   const desktop = menus.header.filter((m) => m.showDesktop);
   const mobile = menus.header.filter((m) => m.showMobile);
-  const cta = { label: lang === "ar" ? settings.headerCtaLabelAr : settings.headerCtaLabelEn, url: settings.headerCtaUrl };
+  // "Book" always starts at the price calculator; only signed-in screens link straight to the booking form.
+  const cta = { label: lang === "ar" ? settings.headerCtaLabelAr : settings.headerCtaLabelEn, url: settings.headerCtaUrl === "/orders/new" ? "/pricing" : settings.headerCtaUrl };
 
   return (
     <header className="sticky top-0 z-30 border-b border-card-border bg-bg-elevated/95 backdrop-blur">

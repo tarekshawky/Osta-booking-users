@@ -23,7 +23,7 @@ export function AboutClient() {
         <p className="mt-6 text-sm leading-relaxed text-text-muted">{t("about.bodyText")}</p>
 
         <Link
-          href="/orders/new"
+          href="/pricing"
           className="osta-btn-primary mt-8 block rounded-xl px-6 py-3.5 text-center text-sm font-semibold text-white"
         >
           {t("home.bookService")}

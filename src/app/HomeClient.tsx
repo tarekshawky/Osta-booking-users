@@ -63,7 +63,7 @@ export function HomeClient({
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              href="/orders/new"
+              href="/pricing"
               className="osta-btn-primary w-full rounded-xl px-6 py-3.5 text-center text-sm font-semibold text-white sm:w-auto"
             >
               {t("home.bookService")}
@@ -175,7 +175,7 @@ export function HomeClient({
           <h2 className="text-2xl font-bold text-text sm:text-3xl">{t("home.ctaTitle")}</h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-text-muted">{t("home.ctaSubtitle")}</p>
           <Link
-            href="/orders/new"
+            href="/pricing"
             className="osta-btn-primary mt-6 inline-block rounded-xl px-8 py-3.5 text-sm font-semibold text-white"
           >
             {t("home.ctaButton")}
