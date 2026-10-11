@@ -46,7 +46,7 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const cookieStore = await cookies();
-  const stored = cookieStore.get("osta_lang")?.value;
+  const stored = cookieStore.get("osta_lang_choice")?.value;
   const site = await fetchSite();
   // A visitor's own choice (cookie) wins; otherwise use the language the admin picked as default.
   const initialLang: Lang = stored === "ar" || stored === "en" ? stored : site.settings.defaultLocale;

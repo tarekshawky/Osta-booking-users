@@ -3,8 +3,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Lang, TranslationKey, translate } from "./i18n";
 
-const STORAGE_KEY = "osta_lang";
-const COOKIE_KEY = "osta_lang";
+// Only a language the visitor picked themselves is remembered. (Earlier versions saved the default on first visit, which
+// made the admin's "default language" setting ineffective for anyone who had already visited; the new name starts clean.)
+const STORAGE_KEY = "osta_lang_choice";
+const COOKIE_KEY = "osta_lang_choice";
 
 function persistLang(next: Lang) {
   window.localStorage.setItem(STORAGE_KEY, next);
@@ -36,8 +38,8 @@ export function LanguageProvider({
       if ((stored === "ar" || stored === "en") && stored !== lang) {
         setLangState(stored);
       }
-      // Keep the cookie in sync even if it was missing (e.g. an older localStorage-only visit).
-      persistLang(stored === "ar" || stored === "en" ? stored : lang);
+      // Keep the cookie in sync with an explicit choice made earlier; never save the default as if it were a choice.
+      if (stored === "ar" || stored === "en") persistLang(stored);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
