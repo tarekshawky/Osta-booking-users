@@ -10,6 +10,7 @@ import { useLanguage } from "@/lib/language-context";
 import { useSite } from "@/lib/site-context";
 import type { TranslationKey } from "@/lib/i18n";
 import { api, ApiError, type PricingConfig } from "@/lib/api";
+import { track } from "@/lib/analytics";
 import { priceQuote, QuoteError, type Quote } from "@/lib/priceQuote";
 
 const STEPS = ["emirate", "service", "type", "details", "when", "contact", "review"] as const;
@@ -121,6 +122,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
     const problem = stepProblem();
     setError(problem);
     if (!problem) {
+      if (step === 0) track("booking_started");
       setSummaryOpen(false);
       setStep((s) => Math.min(s + 1, STEPS.length - 1));
     }
@@ -184,6 +186,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
         customer ? `Customer: ${customer.name} (${customer.phone})` : null,
       ].filter(Boolean);
       if (whatsappTab) whatsappTab.location.href = `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(lines.join("\n"))}`;
+      track("booking_completed", { value: order.totalFils / 100, currency: "AED" });
       setSuccess(true);
       setTimeout(() => router.replace(`/orders/${order.id}`), 1200);
     } catch (err) {

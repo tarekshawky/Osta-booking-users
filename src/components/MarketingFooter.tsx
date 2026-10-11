@@ -5,12 +5,14 @@ import { SiteLogo } from "./SiteLogo";
 import { useLanguage } from "@/lib/language-context";
 import { useSite } from "@/lib/site-context";
 import { telHref, whatsappHref } from "@/lib/site";
+import { OPEN_CONSENT_EVENT } from "@/components/ConsentManager";
 
 const SOCIAL_BADGE: Record<string, string> = { facebook: "f", instagram: "ig", linkedin: "in", tiktok: "tt", youtube: "yt", x: "X", whatsapp: "wa" };
 
 export function MarketingFooter() {
   const { t, lang } = useLanguage();
-  const { settings, menus, social } = useSite();
+  const { settings, menus, social, integrations } = useSite();
+  const hasTracking = !!(integrations?.requireConsent && (integrations.gtmId || integrations.ga4Id || integrations.metaPixelId));
   const year = new Date().getFullYear();
   const ar = lang === "ar";
   const pick = (en: string, arText: string) => (ar ? arText || en : en || arText);
@@ -80,6 +82,11 @@ export function MarketingFooter() {
 
       <div className="border-t border-card-border px-5 py-5 text-center text-xs text-text-faint">
         © {year} {pick(settings.siteNameEn, settings.siteNameAr)}. {pick(settings.copyrightEn, settings.copyrightAr)}
+        {hasTracking && (
+          <button type="button" onClick={() => window.dispatchEvent(new Event(OPEN_CONSENT_EVENT))} className="ms-3 underline hover:text-text">
+            {ar ? "إعدادات ملفات تعريف الارتباط" : "Cookie settings"}
+          </button>
+        )}
       </div>
     </footer>
   );

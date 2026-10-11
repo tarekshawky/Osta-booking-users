@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/lib/language-context";
+import { track } from "@/lib/analytics";
 import { API_BASE, type Bi, type CmsBlock, type Cta } from "@/lib/cms";
 import type { ServiceSummary } from "@/lib/api";
 
@@ -244,8 +245,8 @@ function FormBlock({ p }: { p: P }) {
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
         setDone(true);
-        // Lets analytics (when connected) count the conversion; harmless when nothing is listening.
-        (window as unknown as { dataLayer?: unknown[] }).dataLayer?.push({ event: "form_submit", form: def.slug });
+        // Counted by analytics only if the visitor has allowed it.
+        track("form_submit", { form: def.slug });
       } else if (res.status === 422 && json?.error?.fields) setErrors(json.error.fields);
       else setFormError(res.status === 429 ? (lang === "ar" ? "محاولات كثيرة. يرجى المحاولة بعد قليل." : "Too many attempts. Please try again in a few minutes.") : lang === "ar" ? "تعذر الإرسال. يرجى المحاولة مرة أخرى." : "Could not send. Please try again.");
     } catch {

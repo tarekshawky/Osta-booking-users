@@ -18,7 +18,13 @@ export type SiteSettings = {
   headerCtaLabelEn: string; headerCtaLabelAr: string; headerCtaUrl: string; footerAreas: { en: string; ar: string }[];
 };
 
+export type SiteIntegrations = {
+  ga4Id: string; gtmId: string; metaPixelId: string; searchConsoleToken: string; bingToken: string;
+  requireConsent: boolean; consentTextEn: string; consentTextAr: string; privacyUrl: string;
+};
+
 export type SiteData = {
+  integrations: SiteIntegrations | null;
   settings: SiteSettings;
   menus: { header: SiteMenuItem[]; footer: SiteMenuItem[] };
   social: { platform: string; label: string; url: string }[];
@@ -47,6 +53,7 @@ export const DEFAULT_SITE: SiteData = {
     footer: [item("/services", "Services", "الخدمات"), item("/pricing", "Pricing", "الأسعار"), item("/blog", "Blog", "المدونة"), item("/about", "About Us", "من نحن")],
   },
   social: [],
+  integrations: null,
 };
 
 // Cached ~60s; the admin also pings /api/revalidate. Always resolves: falls back to DEFAULT_SITE.
@@ -63,6 +70,7 @@ export async function fetchSite(): Promise<SiteData> {
         footer: data.menus?.footer?.length ? data.menus.footer : DEFAULT_SITE.menus.footer,
       },
       social: data.social ?? [],
+      integrations: data.integrations ?? null,
     };
   } catch {
     return DEFAULT_SITE;

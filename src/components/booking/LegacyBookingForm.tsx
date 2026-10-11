@@ -12,6 +12,7 @@ import { useLanguage } from "@/lib/language-context";
 import { useSite } from "@/lib/site-context";
 import type { TranslationKey } from "@/lib/i18n";
 import { api, ApiError } from "@/lib/api";
+import { track } from "@/lib/analytics";
 
 const SERVICES = [
   "AC Services",
@@ -107,6 +108,7 @@ export function LegacyBookingForm() {
       const waUrl = `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(lines.join("\n"))}`;
       if (whatsappTab) whatsappTab.location.href = waUrl;
 
+      track("booking_completed");
       setSuccess(true);
       setTimeout(() => router.replace(`/orders/${order.id}`), 900);
     } catch (err) {

@@ -5,6 +5,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
 import { SiteProvider } from "@/lib/site-context";
+import { ConsentManager } from "@/components/ConsentManager";
 import { fetchSite } from "@/lib/site";
 import type { Lang } from "@/lib/i18n";
 
@@ -24,13 +25,17 @@ const cairo = Cairo({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { settings } = await fetchSite();
+  const { settings, integrations } = await fetchSite();
   return {
     metadataBase: new URL("https://www.ostaservices.com"),
     title: { default: settings.siteNameEn, template: `%s | ${settings.siteNameEn}` },
     description: settings.descriptionEn || undefined,
     robots: settings.allowIndexing ? { index: true, follow: true } : { index: false, follow: false },
     ...(settings.faviconUrl ? { icons: { icon: settings.faviconUrl } } : {}),
+    // Ownership checks for Google Search Console and Bing: plain meta tags, no cookies, no consent needed.
+    ...(integrations?.searchConsoleToken || integrations?.bingToken
+      ? { verification: { ...(integrations.searchConsoleToken ? { google: integrations.searchConsoleToken } : {}), ...(integrations.bingToken ? { other: { "msvalidate.01": integrations.bingToken } } : {}) } }
+      : {}),
   };
 }
 
@@ -55,6 +60,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <SiteProvider site={site}>
           <LanguageProvider initialLang={initialLang}>
             <AuthProvider>{children}</AuthProvider>
+            <ConsentManager />
           </LanguageProvider>
         </SiteProvider>
       </body>
