@@ -59,10 +59,10 @@ export const DEFAULT_SITE: SiteData = {
   integrations: null,
 };
 
-// Cached ~60s; the admin also pings /api/revalidate. Always resolves: falls back to DEFAULT_SITE.
+// Cached ~10s (so admin edits show up almost at once even without the revalidate ping); the admin also pings /api/revalidate. Always resolves: falls back to DEFAULT_SITE.
 export async function fetchSite(): Promise<SiteData> {
   try {
-    const res = await fetch(`${API_BASE}/cms/site`, { next: { revalidate: 60, tags: ["site"] } });
+    const res = await fetch(`${API_BASE}/cms/site`, { next: { revalidate: 10, tags: ["site"] } });
     if (!res.ok) return DEFAULT_SITE;
     const data = (await res.json())?.data as SiteData | null;
     if (!data?.settings) return DEFAULT_SITE;
