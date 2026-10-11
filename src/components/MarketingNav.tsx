@@ -11,6 +11,8 @@ import { useSite } from "@/lib/site-context";
 import type { SiteMenuItem } from "@/lib/site";
 
 function NavLink({ item, className, onClick, label }: { item: SiteMenuItem; className: string; onClick?: () => void; label: string }) {
+  // No URL: a label only (a dropdown heading, or an area that has no page yet).
+  if (!item.url) return <span className={className}>{label}</span>;
   const external = !item.url.startsWith("/");
   if (!external && !item.newTab) {
     return <Link href={item.url} className={className} onClick={onClick}>{label}</Link>;
