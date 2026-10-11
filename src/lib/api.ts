@@ -81,6 +81,10 @@ export type Order = {
 };
 
 export type OrderDetail = Order & {
+  totalFils: number | null;
+  quantity: number | null;
+  bookableService: { nameEn: string; nameAr: string } | null;
+  events: { type: string; createdAt: string }[];
   invoice: { number: string; amount: number; status: string } | null;
   acceptedAt: string | null;
   departedAt: string | null;

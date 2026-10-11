@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { useAuth } from "@/lib/auth-context";
 import { useRequireAuth } from "@/lib/use-require-auth";
 import { useLanguage } from "@/lib/language-context";
+import type { TranslationKey } from "@/lib/i18n";
 import { api, OrderDetail } from "@/lib/api";
 
 function Row({ icon: Icon, label, value }: { icon: typeof Calendar; label: string; value: string }) {
@@ -85,7 +86,15 @@ export default function OrderDetailPage() {
           </div>
 
           <div className="osta-card divide-y divide-card-border px-4">
-            <Row icon={FileText} label={t("orderDetail.service")} value={order.orderType} />
+            <Row
+              icon={FileText}
+              label={t("orderDetail.service")}
+              value={
+                order.bookableService
+                  ? `${lang === "ar" ? order.bookableService.nameAr : order.bookableService.nameEn} × ${order.quantity}`
+                  : order.orderType
+              }
+            />
             <Row icon={Calendar} label={t("orderDetail.date")} value={formatDate(order.scheduledAt ?? order.date)} />
             {formatTime(order.scheduledAt) && (
               <Row icon={Clock} label={t("orderDetail.time")} value={formatTime(order.scheduledAt)!} />
@@ -102,6 +111,23 @@ export default function OrderDetailPage() {
             )}
             {order.notes && <Row icon={StickyNote} label={t("orderDetail.notes")} value={order.notes} />}
           </div>
+
+          {order.events.length > 0 && (
+            <div className="osta-card p-4">
+              <p className="mb-2 text-xs font-semibold text-text-muted">{t("orderDetail.timeline")}</p>
+              <ol className="flex flex-col gap-2">
+                {order.events.map((e, i) => (
+                  <li key={i} className="flex items-center justify-between text-sm">
+                    <span className="text-text">{t(`orderDetail.events.${e.type}` as TranslationKey)}</span>
+                    <span className="text-xs text-text-faint">{formatDate(e.createdAt)}</span>
+                  </li>
+                ))}
+              </ol>
+              {order.totalFils !== null && !order.events.some((e) => e.type === "CONFIRMED") && (
+                <p className="mt-3 text-[11px] text-text-faint">{t("orderDetail.slotRequested")}</p>
+              )}
+            </div>
+          )}
 
           {order.invoice && (
             <div className="osta-card flex items-center justify-between p-4">
