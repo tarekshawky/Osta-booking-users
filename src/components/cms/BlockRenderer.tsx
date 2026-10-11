@@ -8,6 +8,14 @@ import type { ServiceSummary } from "@/lib/api";
 
 type P = Record<string, unknown>;
 
+// Images from the admin media library come in several WebP widths; let the browser pick the smallest that fits.
+function imgProps(url: string, sizes: string) {
+  if (/\/api\/media\/[^/?]+$/.test(url)) {
+    return { src: url, srcSet: `${url}?w=480 480w, ${url}?w=960 960w, ${url}?w=1600 1600w`, sizes, loading: "lazy" as const, decoding: "async" as const };
+  }
+  return { src: url, loading: "lazy" as const, decoding: "async" as const };
+}
+
 function SmartLink({ href, className, children }: { href: string; className?: string; children: React.ReactNode }) {
   if (href.startsWith("/")) return <Link href={href} className={className}>{children}</Link>;
   return (
@@ -54,7 +62,7 @@ function Hero({ p }: { p: P }) {
   const bg = p.imagePosition === "background" && img;
   const center = p.align === "center";
   return (
-    <section className="relative overflow-hidden px-5 py-16 sm:py-24" style={bg ? { backgroundImage: `linear-gradient(rgba(5,11,26,.78),rgba(5,11,26,.9)), url(${img})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>
+    <section className="relative overflow-hidden px-5 py-16 sm:py-24" style={bg ? { backgroundImage: `linear-gradient(rgba(5,11,26,.78),rgba(5,11,26,.9)), url(${/\/api\/media\/[^/?]+$/.test(img) ? `${img}?w=1600` : img})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>
       <div className={`mx-auto grid max-w-6xl items-center gap-10 ${img && !bg ? "md:grid-cols-2" : ""}`}>
         <div className={`${center || bg ? "mx-auto max-w-3xl text-center" : ""} ${img && !bg && p.imagePosition === "start" ? "md:order-2" : ""}`}>
           {bi(p.eyebrow as Bi) && <span className="inline-block rounded-full border border-card-border px-4 py-1.5 text-xs text-accent-2">{bi(p.eyebrow as Bi)}</span>}
@@ -64,7 +72,7 @@ function Hero({ p }: { p: P }) {
         </div>
         {img && !bg && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={img} alt="" className="w-full rounded-2xl object-cover" />
+          <img {...imgProps(img, "(min-width: 768px) 50vw, 100vw")} alt="" className="w-full rounded-2xl object-cover" />
         )}
       </div>
     </section>
@@ -118,7 +126,7 @@ function ImageText({ p }: { p: P }) {
         </div>
         {img && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={img} alt={bi(p.imageAlt as Bi)} className={`w-full rounded-xl object-cover ${p.imagePosition === "start" ? "md:order-1" : ""}`} />
+          <img {...imgProps(img, "(min-width: 768px) 50vw, 100vw")} alt={bi(p.imageAlt as Bi)} className={`w-full rounded-xl object-cover ${p.imagePosition === "start" ? "md:order-1" : ""}`} />
         )}
       </div>
     </section>
