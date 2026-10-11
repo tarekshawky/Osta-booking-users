@@ -26,7 +26,7 @@ export function ContactClient() {
 
         <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
           {settings.whatsapp && (
-            <a href={wa} className="osta-card flex flex-col items-center gap-2 p-6">
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="osta-card osta-pick flex flex-col items-center gap-2 p-6">
               <MessageCircle size={22} className="text-accent-2" />
               <span className="text-sm font-semibold text-text">{t("contact.whatsapp")}</span>
               <span className="text-xs text-text-muted" dir="ltr">{settings.phone || `+${settings.whatsapp}`}</span>
@@ -60,7 +60,7 @@ export function ContactClient() {
         )}
 
         {settings.whatsapp && (
-          <a href={wa} className="osta-btn-primary mt-10 inline-block rounded-xl px-8 py-3.5 text-sm font-semibold text-white">
+          <a href={wa} target="_blank" rel="noopener noreferrer" className="osta-btn-primary mt-10 inline-block rounded-xl px-8 py-3.5 text-sm font-semibold text-white">
             {t("contact.chatOnWhatsapp")}
           </a>
         )}

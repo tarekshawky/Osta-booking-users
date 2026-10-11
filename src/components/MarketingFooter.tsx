@@ -65,7 +65,7 @@ export function MarketingFooter() {
           <ul className="flex flex-col gap-2 text-sm text-text-muted">
             {settings.whatsapp && (
               <li>
-                <a href={whatsappHref(settings, lang)} className={FOOT_LINK}>
+                <a href={whatsappHref(settings, lang)} target="_blank" rel="noopener noreferrer" className={FOOT_LINK}>
                   WhatsApp: <span dir="ltr">{settings.phone || `+${settings.whatsapp}`}</span>
                 </a>
               </li>
