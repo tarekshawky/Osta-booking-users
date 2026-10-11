@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
 import { api } from "@/lib/api";
 import { fetchPublishedList } from "@/lib/cms";
+import { SITE_URL } from "@/lib/siteUrl";
 
-const BASE_URL = "https://www.ostaservices.com";
+const BASE_URL = SITE_URL;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [

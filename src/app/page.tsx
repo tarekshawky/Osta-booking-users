@@ -5,6 +5,7 @@ import { fetchSite } from "@/lib/site";
 import { fetchHomepage } from "@/lib/cms";
 import { loadBlockData, slimPosts } from "@/lib/cms-data";
 import { CmsPageView } from "@/components/cms/CmsPageView";
+import { SITE_URL } from "@/lib/siteUrl";
 
 export const revalidate = 60;
 
@@ -54,7 +55,7 @@ export default async function HomePage() {
     "@type": "HomeAndConstructionBusiness",
     name: site.settings.siteNameEn,
     description: "AC repair, cleaning, installation, and home maintenance services across the UAE.",
-    url: "https://www.ostaservices.com",
+    url: SITE_URL,
     telephone: site.settings.phone.replace(/[^\d+]/g, ""),
     ...(site.settings.email ? { email: site.settings.email } : {}),
     ...(site.social.length ? { sameAs: site.social.map((x) => x.url) } : {}),

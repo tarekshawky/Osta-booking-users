@@ -8,6 +8,7 @@ import { SiteProvider } from "@/lib/site-context";
 import { ConsentManager } from "@/components/ConsentManager";
 import { fetchSite } from "@/lib/site";
 import type { Lang } from "@/lib/i18n";
+import { SITE_URL } from "@/lib/siteUrl";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +28,7 @@ const cairo = Cairo({
 export async function generateMetadata(): Promise<Metadata> {
   const { settings, integrations } = await fetchSite();
   return {
-    metadataBase: new URL("https://www.ostaservices.com"),
+    metadataBase: new URL(SITE_URL),
     title: { default: settings.siteNameEn, template: `%s | ${settings.siteNameEn}` },
     description: settings.descriptionEn || undefined,
     robots: settings.allowIndexing ? { index: true, follow: true } : { index: false, follow: false },

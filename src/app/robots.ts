@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { fetchSite } from "@/lib/site";
+import { SITE_URL } from "@/lib/siteUrl";
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const { settings } = await fetchSite();
@@ -15,6 +16,6 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
         disallow: ["/dashboard", "/orders", "/invoices", "/profile", "/more", "/preview"],
       },
     ],
-    sitemap: "https://www.ostaservices.com/sitemap.xml",
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
