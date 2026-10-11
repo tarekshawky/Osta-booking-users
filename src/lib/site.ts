@@ -59,7 +59,7 @@ export const DEFAULT_SITE: SiteData = {
 // Cached ~60s; the admin also pings /api/revalidate. Always resolves: falls back to DEFAULT_SITE.
 export async function fetchSite(): Promise<SiteData> {
   try {
-    const res = await fetch(`${API_BASE}/cms/site`, { next: { revalidate: 60 } });
+    const res = await fetch(`${API_BASE}/cms/site`, { next: { revalidate: 60, tags: ["site"] } });
     if (!res.ok) return DEFAULT_SITE;
     const data = (await res.json())?.data as SiteData | null;
     if (!data?.settings) return DEFAULT_SITE;
