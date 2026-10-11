@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { HomeClient } from "./HomeClient";
 import { api, ServiceSummary, BlogSummary, HomeSection } from "@/lib/api";
+import { fetchSite } from "@/lib/site";
 
 export const revalidate = 300;
 
@@ -37,13 +38,16 @@ export default async function HomePage() {
     // Same as above -- the extra content blocks are optional, never block the page.
   }
 
+  const site = await fetchSite();
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "HomeAndConstructionBusiness",
-    name: "OSTA Services",
+    name: site.settings.siteNameEn,
     description: "AC repair, cleaning, installation, and home maintenance services across the UAE.",
     url: "https://www.ostaservices.com",
-    telephone: "+971568676036",
+    telephone: site.settings.phone.replace(/[^\d+]/g, ""),
+    ...(site.settings.email ? { email: site.settings.email } : {}),
+    ...(site.social.length ? { sameAs: site.social.map((x) => x.url) } : {}),
     areaServed: [
       "Dubai",
       "Abu Dhabi",

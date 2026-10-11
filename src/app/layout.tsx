@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
+import { SiteProvider } from "@/lib/site-context";
+import { fetchSite } from "@/lib/site";
 import type { Lang } from "@/lib/i18n";
 
 const geistSans = Geist({
@@ -21,15 +23,16 @@ const cairo = Cairo({
   subsets: ["arabic", "latin"],
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://www.ostaservices.com"),
-  title: {
-    default: "OSTA Services",
-    template: "%s | OSTA Services",
-  },
-  description: "Your comfort. Our priority. Manage your OSTA orders and invoices.",
-  robots: { index: true, follow: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { settings } = await fetchSite();
+  return {
+    metadataBase: new URL("https://www.ostaservices.com"),
+    title: { default: settings.siteNameEn, template: `%s | ${settings.siteNameEn}` },
+    description: settings.descriptionEn || undefined,
+    robots: settings.allowIndexing ? { index: true, follow: true } : { index: false, follow: false },
+    ...(settings.faviconUrl ? { icons: { icon: settings.faviconUrl } } : {}),
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#050b1a",
@@ -38,7 +41,9 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const cookieStore = await cookies();
   const stored = cookieStore.get("osta_lang")?.value;
-  const initialLang: Lang = stored === "ar" ? "ar" : "en";
+  const site = await fetchSite();
+  // A visitor's own choice (cookie) wins; otherwise use the language the admin picked as default.
+  const initialLang: Lang = stored === "ar" || stored === "en" ? stored : site.settings.defaultLocale;
 
   return (
     <html
@@ -47,9 +52,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-bg">
-        <LanguageProvider initialLang={initialLang}>
-          <AuthProvider>{children}</AuthProvider>
-        </LanguageProvider>
+        <SiteProvider site={site}>
+          <LanguageProvider initialLang={initialLang}>
+            <AuthProvider>{children}</AuthProvider>
+          </LanguageProvider>
+        </SiteProvider>
       </body>
     </html>
   );

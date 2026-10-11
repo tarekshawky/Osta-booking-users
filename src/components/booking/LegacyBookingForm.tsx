@@ -9,6 +9,7 @@ import { FullPageSpinner } from "@/components/Spinner";
 import { useAuth } from "@/lib/auth-context";
 import { useRequireAuth } from "@/lib/use-require-auth";
 import { useLanguage } from "@/lib/language-context";
+import { useSite } from "@/lib/site-context";
 import type { TranslationKey } from "@/lib/i18n";
 import { api, ApiError } from "@/lib/api";
 
@@ -22,13 +23,13 @@ const SERVICES = [
   "Emergency 24/7",
 ];
 const LANGUAGES = ["English", "Arabic"];
-const WHATSAPP_NUMBER = "971568676036";
 
 export function LegacyBookingForm() {
   const { ready } = useRequireAuth();
   const { token, customer } = useAuth();
   const router = useRouter();
   const { t, lang } = useLanguage();
+  const { settings: site } = useSite();
 
   function formatDateTime(value: string) {
     if (!value) return t("newOrder.notSpecified");
@@ -103,7 +104,7 @@ export function LegacyBookingForm() {
         notes ? `Notes: ${notes}` : null,
         customer ? `Customer: ${customer.name} (${customer.phone})` : null,
       ].filter(Boolean);
-      const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
+      const waUrl = `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(lines.join("\n"))}`;
       if (whatsappTab) whatsappTab.location.href = waUrl;
 
       setSuccess(true);

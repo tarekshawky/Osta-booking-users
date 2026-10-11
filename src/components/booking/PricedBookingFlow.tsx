@@ -7,12 +7,12 @@ import { AppShell } from "@/components/AppShell";
 import { TopBar } from "@/components/TopBar";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
+import { useSite } from "@/lib/site-context";
 import type { TranslationKey } from "@/lib/i18n";
 import { api, ApiError, type PricingConfig } from "@/lib/api";
 import { priceQuote, QuoteError, type Quote } from "@/lib/priceQuote";
 
 const STEPS = ["emirate", "service", "type", "details", "when", "contact", "review"] as const;
-const WHATSAPP_NUMBER = "971568676036";
 
 type Service = PricingConfig["services"][number];
 type BookingType = PricingConfig["bookingTypes"][number];
@@ -31,6 +31,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
   const { token, customer } = useAuth();
   const router = useRouter();
   const { t, lang } = useLanguage();
+  const { settings: site } = useSite();
   const ar = lang === "ar";
   const idempotencyKey = useRef(crypto.randomUUID());
 
@@ -182,7 +183,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
         notes ? `Notes: ${notes}` : null,
         customer ? `Customer: ${customer.name} (${customer.phone})` : null,
       ].filter(Boolean);
-      if (whatsappTab) whatsappTab.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
+      if (whatsappTab) whatsappTab.location.href = `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(lines.join("\n"))}`;
       setSuccess(true);
       setTimeout(() => router.replace(`/orders/${order.id}`), 1200);
     } catch (err) {

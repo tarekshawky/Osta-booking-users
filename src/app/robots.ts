@@ -1,6 +1,10 @@
 import type { MetadataRoute } from "next";
+import { fetchSite } from "@/lib/site";
 
-export default function robots(): MetadataRoute.Robots {
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const { settings } = await fetchSite();
+  // Admin switch: while the site is being rebuilt, tell every crawler to stay out.
+  if (!settings.allowIndexing) return { rules: [{ userAgent: "*", disallow: "/" }] };
   return {
     rules: [
       {
@@ -8,7 +12,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
         // The customer portal is behind login anyway, but keep crawlers out of
         // it and the raw API routes rather than relying on auth alone.
-        disallow: ["/dashboard", "/orders", "/invoices", "/profile", "/more"],
+        disallow: ["/dashboard", "/orders", "/invoices", "/profile", "/more", "/preview"],
       },
     ],
     sitemap: "https://www.ostaservices.com/sitemap.xml",
