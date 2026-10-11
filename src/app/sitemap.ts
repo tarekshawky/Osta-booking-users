@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { api } from "@/lib/api";
+import { fetchPublishedList } from "@/lib/cms";
 
 const BASE_URL = "https://www.ostaservices.com";
 
@@ -41,5 +42,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Same as above.
   }
 
-  return [...staticRoutes, ...serviceRoutes, ...blogRoutes];
+  // Published CMS pages that opted in to the sitemap.
+  const cmsRoutes: MetadataRoute.Sitemap = (await fetchPublishedList())
+    .filter((p) => p.showInSitemap)
+    .map((p) => ({ url: `${BASE_URL}/${p.slug}`, lastModified: p.updatedAt, changeFrequency: "monthly" as const, priority: 0.6 }));
+
+  return [...staticRoutes, ...serviceRoutes, ...blogRoutes, ...cmsRoutes];
 }
