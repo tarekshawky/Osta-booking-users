@@ -24,6 +24,7 @@ export type CmsPage = {
   titleAr: string;
   blocks: CmsBlock[];
   seo: CmsSeo;
+  jsonLd?: Record<string, unknown>[];
   updatedAt: string;
 };
 

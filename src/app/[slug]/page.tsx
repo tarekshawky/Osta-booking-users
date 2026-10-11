@@ -40,5 +40,13 @@ export default async function CmsRoute({ params }: { params: Promise<{ slug: str
       // The grid just hides itself if services are briefly unavailable.
     }
   }
-  return <CmsPageView page={page} services={services} />;
+  return (
+    <>
+      {/* The API only sends structured data that passed validation. "<" is escaped so content can't close the script tag. */}
+      {page.jsonLd?.map((item, i) => (
+        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(item).replace(/</g, "\\u003c") }} />
+      ))}
+      <CmsPageView page={page} services={services} />
+    </>
+  );
 }
