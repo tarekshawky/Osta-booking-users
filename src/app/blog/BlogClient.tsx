@@ -69,6 +69,8 @@ export function BlogClient({ posts }: { posts: BlogSummary[] }) {
                   <img
                     src={post.coverImageUrl}
                     alt={lang === "ar" ? post.titleAr : post.titleEn}
+                    width={640}
+                    height={160}
                     className="h-40 w-full object-cover"
                   />
                 ) : (

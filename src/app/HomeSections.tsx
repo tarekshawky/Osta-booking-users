@@ -34,7 +34,9 @@ export function HomeSections({ sections }: { sections: HomeSection[] }) {
               <img
                 src={sustainability.imageUrl}
                 alt={lang === "ar" ? sustainability.headingAr : sustainability.headingEn}
-                className="rounded-xl object-cover"
+                width={1200}
+                height={800}
+                className="aspect-[3/2] h-auto w-full rounded-xl object-cover"
               />
             )}
             <div>
@@ -123,7 +125,9 @@ export function HomeSections({ sections }: { sections: HomeSection[] }) {
               <img
                 src={whyChoose.imageUrl}
                 alt={lang === "ar" ? whyChoose.headingAr : whyChoose.headingEn}
-                className="rounded-xl object-cover sm:order-1"
+                width={1200}
+                height={800}
+                className="aspect-[3/2] h-auto w-full rounded-xl object-cover sm:order-1"
               />
             )}
           </div>
@@ -181,6 +185,8 @@ export function HomeSections({ sections }: { sections: HomeSection[] }) {
                     <img
                       src={item.imageUrl}
                       alt={lang === "ar" ? item.titleAr : item.titleEn}
+                      width={40}
+                      height={40}
                       className="h-10 w-10 rounded-full object-cover"
                     />
                   ) : (

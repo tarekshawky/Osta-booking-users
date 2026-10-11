@@ -15,9 +15,9 @@ type P = Record<string, unknown>;
 // Images from the admin media library come in several WebP widths; let the browser pick the smallest that fits.
 function imgProps(url: string, sizes: string) {
   if (/\/api\/media\/[^/?]+$/.test(url)) {
-    return { src: url, srcSet: `${url}?w=480 480w, ${url}?w=960 960w, ${url}?w=1600 1600w`, sizes, loading: "lazy" as const, decoding: "async" as const };
+    return { src: url, srcSet: `${url}?w=480 480w, ${url}?w=960 960w, ${url}?w=1600 1600w`, sizes, width: 1200, height: 800, loading: "lazy" as const, decoding: "async" as const };
   }
-  return { src: url, loading: "lazy" as const, decoding: "async" as const };
+  return { src: url, width: 1200, height: 800, loading: "lazy" as const, decoding: "async" as const };
 }
 
 function SmartLink({ href, className, children }: { href: string; className?: string; children: React.ReactNode }) {
@@ -122,7 +122,7 @@ function Hero({ p }: { p: P }) {
         </div>
         {img && !bg && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img {...imgProps(img, "(min-width: 768px) 50vw, 100vw")} alt="" className="w-full rounded-2xl object-cover" />
+          <img {...imgProps(img, "(min-width: 768px) 50vw, 100vw")} alt="" className="aspect-[3/2] h-auto w-full rounded-2xl object-cover" />
         )}
       </div>
     </section>
@@ -186,7 +186,7 @@ function ImageText({ p }: { p: P }) {
         </div>
         {img && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img {...imgProps(img, "(min-width: 768px) 50vw, 100vw")} alt={bi(p.imageAlt as Bi)} className={`w-full rounded-xl object-cover ${p.imagePosition === "start" ? "md:order-1" : ""}`} />
+          <img {...imgProps(img, "(min-width: 768px) 50vw, 100vw")} alt={bi(p.imageAlt as Bi)} className={`aspect-[3/2] h-auto w-full rounded-xl object-cover ${p.imagePosition === "start" ? "md:order-1" : ""}`} />
         )}
       </div>
     </section>
@@ -272,7 +272,7 @@ function BlogPreview({ p, posts }: { p: P; posts: BlockData["posts"] }) {
           <Link key={post.slug} href={`/blog/${post.slug}`} className="osta-card flex flex-col overflow-hidden">
             {post.coverImageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={post.coverImageUrl} alt={lang === "ar" ? post.titleAr : post.titleEn} loading="lazy" className="h-40 w-full object-cover" />
+              <img src={post.coverImageUrl} alt={lang === "ar" ? post.titleAr : post.titleEn} loading="lazy" width={640} height={160} className="h-40 w-full object-cover" />
             )}
             <div className="p-5">
               <h3 className="text-base font-semibold text-text">{lang === "ar" ? post.titleAr : post.titleEn}</h3>

@@ -44,6 +44,8 @@ export function BlogDetailClient({ post }: { post: BlogDetail }) {
           <img
             src={post.coverImageUrl}
             alt={title}
+            width={1024}
+            height={288}
             className="osta-card mt-6 h-56 w-full object-cover sm:h-72"
           />
         )}

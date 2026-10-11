@@ -150,7 +150,7 @@ export function HomeClient({
               <Link key={post.slug} href={`/blog/${post.slug}`} className="osta-card flex flex-col overflow-hidden">
                 {post.coverImageUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={post.coverImageUrl} alt={lang === "ar" ? post.titleAr : post.titleEn} loading="lazy" className="h-40 w-full object-cover" />
+                  <img src={post.coverImageUrl} alt={lang === "ar" ? post.titleAr : post.titleEn} loading="lazy" width={640} height={160} className="h-40 w-full object-cover" />
                 )}
                 <div className="p-5">
                   <h3 className="text-base font-semibold text-text">
