@@ -269,12 +269,18 @@ function BlogPreview({ p, posts }: { p: P; posts: BlockData["posts"] }) {
       </div>
       <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {items.map((post) => (
-          <Link key={post.slug} href={`/blog/${post.slug}`} className="osta-card p-5">
-            <h3 className="text-base font-semibold text-text">{lang === "ar" ? post.titleAr : post.titleEn}</h3>
-            <p className="mt-1.5 line-clamp-3 text-sm text-text-muted">{lang === "ar" ? post.excerptAr : post.excerptEn}</p>
-            <span className="mt-3 flex items-center gap-0.5 text-xs font-medium text-accent-2">
-              {t("blog.readMore")} <ChevronRight size={14} className="osta-flip-rtl" />
-            </span>
+          <Link key={post.slug} href={`/blog/${post.slug}`} className="osta-card flex flex-col overflow-hidden">
+            {post.coverImageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={post.coverImageUrl} alt={lang === "ar" ? post.titleAr : post.titleEn} loading="lazy" className="h-40 w-full object-cover" />
+            )}
+            <div className="p-5">
+              <h3 className="text-base font-semibold text-text">{lang === "ar" ? post.titleAr : post.titleEn}</h3>
+              <p className="mt-1.5 line-clamp-3 text-sm text-text-muted">{lang === "ar" ? post.excerptAr : post.excerptEn}</p>
+              <span className="mt-3 flex items-center gap-0.5 text-xs font-medium text-accent-2">
+                {t("blog.readMore")} <ChevronRight size={14} className="osta-flip-rtl" />
+              </span>
+            </div>
           </Link>
         ))}
       </div>

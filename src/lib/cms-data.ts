@@ -1,9 +1,10 @@
 import { api, type BlogSummary, type HomeSection, type ServiceSummary } from "@/lib/api";
 import type { CmsBlock } from "@/lib/cms";
 
-// The homepage cards only show text. Dropping the cover image keeps (possibly very large, inline) image data out of the
-// page's serialized data, which every visitor would otherwise download.
-export const slimPosts = (posts: BlogSummary[]): BlogSummary[] => posts.map((p) => ({ ...p, coverImageUrl: null }));
+// The admin API serves cover images as normal URLs. Inline (data:) images would bloat every page's data, so they are
+// dropped here as a safeguard in case an older API still sends them.
+export const slimPosts = (posts: BlogSummary[]): BlogSummary[] =>
+  posts.map((p) => ({ ...p, coverImageUrl: p.coverImageUrl?.startsWith("data:") ? null : p.coverImageUrl }));
 
 export type BlockData = { services: ServiceSummary[]; posts: BlogSummary[]; sections: HomeSection[] };
 
