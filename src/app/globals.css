@@ -65,6 +65,50 @@ html[dir="rtl"] body {
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
+.osta-btn-primary {
+  transition: filter 0.15s, transform 0.1s;
+}
+
+.osta-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.osta-btn-primary:disabled {
+  filter: grayscale(0.3);
+}
+
+/* Selectable cards (emirate, service, booking type...): a clear hover, and a pointer on anything clickable. */
+.osta-pick {
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.osta-pick:hover:not(:disabled) {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.osta-pick:disabled {
+  cursor: not-allowed;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary,
+  select:not(:disabled),
+  label:has(input[type="checkbox"]:not(:disabled)),
+  label:has(input[type="radio"]:not(:disabled)),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
 .osta-btn-primary:active {
   transform: translateY(1px);
 }

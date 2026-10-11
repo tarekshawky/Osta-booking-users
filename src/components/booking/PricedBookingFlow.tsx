@@ -211,7 +211,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
   }
 
   const pickCard = (selected: boolean, disabled = false) =>
-    `osta-card w-full p-4 text-start transition ${selected ? "osta-glow-border" : ""} ${disabled ? "opacity-45" : ""}`;
+    `osta-card osta-pick w-full p-4 text-start ${selected ? "osta-glow-border" : ""} ${disabled ? "opacity-45" : ""}`;
   const stepKey = STEPS[step];
 
   return (

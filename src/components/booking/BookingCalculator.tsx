@@ -61,7 +61,7 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
 
   const qtyLabel = service?.pricingUnit === "AC_UNIT" ? t("booking.qtyAc") : service?.pricingUnit === "ROOM" ? t("booking.qtyRoom") : t("booking.qtyUnit");
   const card = (selected: boolean, disabled = false) =>
-    `osta-card w-full p-4 text-start transition ${selected ? "osta-glow-border" : ""} ${disabled ? "opacity-45" : ""}`;
+    `osta-card osta-pick w-full p-4 text-start ${selected ? "osta-glow-border" : ""} ${disabled ? "opacity-45" : ""}`;
   const heading = (n: number, text: string) => (
     <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-text">
       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs font-bold text-white">{n}</span>
@@ -133,11 +133,11 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
               {service.minQuantity > 1 && <p className="text-[11px] text-text-faint">{t("booking.minQty")}: {service.minQuantity}</p>}
             </div>
             <div className="flex items-center gap-4">
-              <button type="button" aria-label="-" onClick={() => { setQty((q) => Math.max(service.minQuantity, q - 1)); setConsent(false); }} className="rounded-full border border-card-border p-2 text-text">
+              <button type="button" aria-label="-" onClick={() => { setQty((q) => Math.max(service.minQuantity, q - 1)); setConsent(false); }} className="rounded-full border border-card-border p-2 text-text transition-colors hover:border-accent hover:bg-card">
                 <Minus size={16} />
               </button>
               <span className="w-8 text-center text-lg font-bold text-text" aria-live="polite">{qty}</span>
-              <button type="button" aria-label="+" onClick={() => { setQty((q) => Math.min(500, q + 1)); setConsent(false); }} className="rounded-full border border-card-border p-2 text-text">
+              <button type="button" aria-label="+" onClick={() => { setQty((q) => Math.min(500, q + 1)); setConsent(false); }} className="rounded-full border border-card-border p-2 text-text transition-colors hover:border-accent hover:bg-card">
                 <Plus size={16} />
               </button>
             </div>

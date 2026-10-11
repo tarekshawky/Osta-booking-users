@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { isActivePath } from "@/lib/nav";
 import { ChevronDown, Menu, X } from "lucide-react";
 import { SiteLogo } from "./SiteLogo";
 import { LanguageToggle } from "./LanguageToggle";
@@ -10,23 +12,37 @@ import { useLanguage } from "@/lib/language-context";
 import { useSite } from "@/lib/site-context";
 import type { SiteMenuItem } from "@/lib/site";
 
-function NavLink({ item, className, onClick, label }: { item: SiteMenuItem; className: string; onClick?: () => void; label: string }) {
+function NavLink({ item, className, activeClass = "", onClick, label }: { item: SiteMenuItem; className: string; activeClass?: string; onClick?: () => void; label: string }) {
+  const pathname = usePathname();
+  const active = isActivePath(pathname, item.url);
+  className = active ? `${className} ${activeClass}` : className;
+  const current = active ? ({ "aria-current": "page" } as const) : {};
   // No URL: a label only (a dropdown heading, or an area that has no page yet).
   if (!item.url) return <span className={className}>{label}</span>;
   const external = !item.url.startsWith("/");
   if (!external && !item.newTab) {
-    return <Link href={item.url} className={className} onClick={onClick}>{label}</Link>;
+    return <Link href={item.url} className={className} onClick={onClick} {...current}>{label}</Link>;
   }
   return (
-    <a href={item.url} className={className} onClick={onClick} {...(item.newTab || item.url.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+    <a href={item.url} className={className} onClick={onClick} {...current} {...(item.newTab || item.url.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
       {label}
     </a>
   );
 }
 
+// Top-bar links: colour change plus an underline that grows on hover and stays on the page you are on.
+const BAR_LINK = "relative py-1 text-sm text-text-muted transition-colors hover:text-accent-2 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-center after:scale-x-0 after:rounded after:bg-accent-2 after:transition-transform hover:after:scale-x-100";
+const BAR_ACTIVE = "!text-text font-semibold after:!scale-x-100";
+const DROP_LINK = "block rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-card hover:text-accent-2";
+const DROP_ACTIVE = "bg-card !text-accent-2 font-medium";
+const MOBILE_LINK = "block rounded-lg px-2 py-2.5 text-sm text-text-muted transition-colors hover:bg-card hover:text-accent-2";
+const MOBILE_SUB = "block rounded-lg px-2 py-2 ps-6 text-sm text-text-faint transition-colors hover:bg-card hover:text-accent-2";
+const MOBILE_ACTIVE = "bg-card !text-accent-2 font-semibold";
+
 export function MarketingNav() {
   const { t, lang } = useLanguage();
   const { token } = useAuth();
+  const pathname = usePathname();
   const { settings, menus } = useSite();
   const [open, setOpen] = useState(false);
   const label = (m: SiteMenuItem) => (lang === "ar" ? m.labelAr || m.labelEn : m.labelEn || m.labelAr);
@@ -46,17 +62,17 @@ export function MarketingNav() {
           {desktop.map((item) =>
             item.children.length ? (
               <div key={item.url + item.labelEn} className="group relative">
-                <button type="button" className="flex items-center gap-1 text-sm text-text-muted hover:text-text">
+                <button type="button" className={`flex items-center gap-1 ${BAR_LINK} ${item.children.some((c) => isActivePath(pathname, c.url)) ? BAR_ACTIVE : ""}`}>
                   {label(item)} <ChevronDown size={14} />
                 </button>
                 <div className="invisible absolute start-0 top-full z-40 min-w-44 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
                   {item.children.filter((c) => c.showDesktop).map((c) => (
-                    <NavLink key={c.url + c.labelEn} item={c} label={label(c)} className="block rounded-lg px-3 py-2 text-sm text-text-muted hover:bg-card hover:text-text" />
+                    <NavLink key={c.url + c.labelEn} item={c} label={label(c)} className={DROP_LINK} activeClass={DROP_ACTIVE} />
                   ))}
                 </div>
               </div>
             ) : (
-              <NavLink key={item.url + item.labelEn} item={item} label={label(item)} className="text-sm text-text-muted hover:text-text" />
+              <NavLink key={item.url + item.labelEn} item={item} label={label(item)} className={BAR_LINK} activeClass={BAR_ACTIVE} />
             )
           )}
         </nav>
@@ -80,9 +96,9 @@ export function MarketingNav() {
         <div className="flex flex-col gap-1 border-t border-card-border px-5 py-4 lg:hidden">
           {mobile.map((item) => (
             <div key={item.url + item.labelEn}>
-              <NavLink item={item} label={label(item)} onClick={() => setOpen(false)} className="block rounded-lg px-2 py-2.5 text-sm text-text-muted hover:bg-card hover:text-text" />
+              <NavLink item={item} label={label(item)} onClick={() => setOpen(false)} className={MOBILE_LINK} activeClass={MOBILE_ACTIVE} />
               {item.children.filter((c) => c.showMobile).map((c) => (
-                <NavLink key={c.url + c.labelEn} item={c} label={label(c)} onClick={() => setOpen(false)} className="block rounded-lg px-2 py-2 ps-6 text-sm text-text-faint hover:bg-card hover:text-text" />
+                <NavLink key={c.url + c.labelEn} item={c} label={label(c)} onClick={() => setOpen(false)} className={MOBILE_SUB} activeClass={MOBILE_ACTIVE} />
               ))}
             </div>
           ))}

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { isActivePath } from "@/lib/nav";
 import { SiteLogo } from "./SiteLogo";
 import { useLanguage } from "@/lib/language-context";
 import { useSite } from "@/lib/site-context";
@@ -9,8 +11,12 @@ import { OPEN_CONSENT_EVENT } from "@/components/ConsentManager";
 
 const SOCIAL_BADGE: Record<string, string> = { facebook: "f", instagram: "ig", linkedin: "in", tiktok: "tt", youtube: "yt", x: "X", whatsapp: "wa" };
 
+const FOOT_LINK = "transition-colors hover:text-accent-2 hover:underline underline-offset-4";
+const FOOT_ACTIVE = "!text-accent-2 font-medium";
+
 export function MarketingFooter() {
   const { t, lang } = useLanguage();
+  const pathname = usePathname();
   const { settings, menus, social, integrations, serviceAreas } = useSite();
   const hasTracking = !!(integrations?.requireConsent && (integrations.gtmId || integrations.ga4Id || integrations.metaPixelId));
   const year = new Date().getFullYear();
@@ -29,7 +35,7 @@ export function MarketingFooter() {
                 const name = s.label || s.platform;
                 return (
                   <li key={s.url}>
-                    <a href={s.url} target="_blank" rel="noopener noreferrer" aria-label={name} title={name} className="flex h-9 min-w-9 items-center justify-center rounded-full border border-card-border px-2 text-xs font-bold uppercase text-text-muted hover:text-text">
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" aria-label={name} title={name} className="flex h-9 min-w-9 items-center justify-center rounded-full border border-card-border px-2 text-xs font-bold uppercase text-text-muted transition-colors hover:border-accent hover:text-accent-2">
                       {SOCIAL_BADGE[s.platform] ?? name.slice(0, 2)}
                     </a>
                   </li>
@@ -45,9 +51,9 @@ export function MarketingFooter() {
             {menus.footer.filter((m) => m.showDesktop || m.showMobile).map((m) => (
               <li key={m.url + m.labelEn}>
                 {m.url.startsWith("/") && !m.newTab ? (
-                  <Link href={m.url} className="hover:text-text">{pick(m.labelEn, m.labelAr)}</Link>
+                  <Link href={m.url} className={`${FOOT_LINK} ${isActivePath(pathname, m.url) ? FOOT_ACTIVE : ""}`} {...(isActivePath(pathname, m.url) ? { "aria-current": "page" as const } : {})}>{pick(m.labelEn, m.labelAr)}</Link>
                 ) : (
-                  <a href={m.url} className="hover:text-text" {...(m.newTab || m.url.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>{pick(m.labelEn, m.labelAr)}</a>
+                  <a href={m.url} className={FOOT_LINK} {...(m.newTab || m.url.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>{pick(m.labelEn, m.labelAr)}</a>
                 )}
               </li>
             ))}
@@ -59,18 +65,18 @@ export function MarketingFooter() {
           <ul className="flex flex-col gap-2 text-sm text-text-muted">
             {settings.whatsapp && (
               <li>
-                <a href={whatsappHref(settings, lang)} className="hover:text-text">
+                <a href={whatsappHref(settings, lang)} className={FOOT_LINK}>
                   WhatsApp: <span dir="ltr">{settings.phone || `+${settings.whatsapp}`}</span>
                 </a>
               </li>
             )}
             {settings.phone && !settings.whatsapp && (
-              <li><a href={telHref(settings.phone)} className="hover:text-text" dir="ltr">{settings.phone}</a></li>
+              <li><a href={telHref(settings.phone)} className={FOOT_LINK} dir="ltr">{settings.phone}</a></li>
             )}
-            {settings.email && <li><a href={`mailto:${settings.email}`} className="hover:text-text">{settings.email}</a></li>}
+            {settings.email && <li><a href={`mailto:${settings.email}`} className={FOOT_LINK}>{settings.email}</a></li>}
             {pick(settings.addressEn, settings.addressAr) && <li className="whitespace-pre-line">{pick(settings.addressEn, settings.addressAr)}</li>}
             {pick(settings.hoursEn, settings.hoursAr) && <li>{pick(settings.hoursEn, settings.hoursAr)}</li>}
-            <li><Link href="/contact" className="hover:text-text">{t("nav.contact")}</Link></li>
+            <li><Link href="/contact" className={`${FOOT_LINK} ${isActivePath(pathname, "/contact") ? FOOT_ACTIVE : ""}`}>{t("nav.contact")}</Link></li>
           </ul>
         </div>
 
