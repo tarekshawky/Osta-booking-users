@@ -1,11 +1,11 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "https://osta-invoices.vercel.app/api/v1";
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "https://osta-invoices.vercel.app/api/v1";
 
 export type Bi = { en: string; ar: string };
 export type Cta = { label: Bi; url: string };
 
 export type CmsBlock = {
   id: string;
-  type: "hero" | "servicesGrid" | "richText" | "imageText" | "faq" | "stats" | "cta";
+  type: "hero" | "servicesGrid" | "richText" | "imageText" | "faq" | "stats" | "cta" | "form";
   props: Record<string, unknown>;
   hidden: boolean;
   visibility: { desktop: boolean; mobile: boolean };
