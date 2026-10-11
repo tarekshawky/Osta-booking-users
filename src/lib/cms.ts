@@ -25,6 +25,7 @@ export type CmsPage = {
   blocks: CmsBlock[];
   seo: CmsSeo;
   jsonLd?: Record<string, unknown>[];
+  showLastUpdated?: boolean;
   updatedAt: string;
 };
 
@@ -53,7 +54,7 @@ export async function fetchPreviewPage(id: string, token: string): Promise<CmsPa
   }
 }
 
-export async function fetchPublishedList(): Promise<{ slug: string; showInSitemap: boolean; updatedAt: string }[]> {
+export async function fetchPublishedList(): Promise<{ slug: string; showInSitemap: boolean; noindex?: boolean; updatedAt: string }[]> {
   try {
     const res = await fetch(`${API_BASE}/cms/pages`, { next: { revalidate: 300 } });
     if (!res.ok) return [];

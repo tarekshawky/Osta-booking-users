@@ -44,7 +44,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Published CMS pages that opted in to the sitemap.
   const cmsRoutes: MetadataRoute.Sitemap = (await fetchPublishedList())
-    .filter((p) => p.showInSitemap)
+    // A page hidden from search engines must not be advertised in the sitemap.
+    .filter((p) => p.showInSitemap && !p.noindex)
     .map((p) => ({ url: `${BASE_URL}/${p.slug}`, lastModified: p.updatedAt, changeFrequency: "monthly" as const, priority: 0.6 }));
 
   return [...staticRoutes, ...serviceRoutes, ...blogRoutes, ...cmsRoutes];
