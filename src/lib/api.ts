@@ -108,6 +108,64 @@ export type InvoiceDetail = Invoice & {
   items: { serviceName: string; description: string | null; qty: number; unitPrice: number }[];
 };
 
+
+export type PricingTier = { minQty: number; maxQty: number | null; percent: number; startsAt: string | null; endsAt: string | null };
+export type PricingConfig = {
+  regions: { id: string; slug: string; nameEn: string; nameAr: string }[];
+  services: {
+    id: string;
+    slug: string;
+    nameEn: string;
+    nameAr: string;
+    descriptionEn: string | null;
+    descriptionAr: string | null;
+    imageUrl: string | null;
+    pricingUnit: string;
+    minQuantity: number;
+    pricesIncludeVat: boolean | null;
+    prices: { regionId: string; unitPriceFils: number }[];
+    tiers: PricingTier[];
+    addOns: { id: string; nameEn: string; nameAr: string; prices: { regionId: string; priceFils: number }[] }[];
+  }[];
+  bookingTypes: {
+    id: string;
+    code: string;
+    nameEn: string;
+    nameAr: string;
+    descriptionEn: string | null;
+    descriptionAr: string | null;
+    defaultFeeFils: number;
+    sameDayAllowed: boolean;
+    hoursStart: string | null;
+    hoursEnd: string | null;
+    overrides: { serviceId: string | null; regionId: string | null; feeFils: number }[];
+  }[];
+  tax: { vatRatePercent: number; pricesIncludeVat: boolean };
+  visitFeePolicy: {
+    id: string;
+    version: number;
+    amountFils: number;
+    textAr: string;
+    textEn: string;
+    consentLabelAr: string;
+    consentLabelEn: string;
+  } | null;
+};
+
+export type PricedOrderBody = {
+  serviceId: string;
+  regionId: string;
+  bookingTypeId: string;
+  quantity: number;
+  addOnIds?: string[];
+  scheduledAt?: string;
+  locationUrl?: string;
+  customerLanguage?: string;
+  notes?: string;
+  consent: true;
+  idempotencyKey: string;
+};
+
 export type ServiceSummary = {
   slug: string;
   nameEn: string;
@@ -214,6 +272,11 @@ export const api = {
   },
 
   order: (token: string, id: string) => apiFetch<OrderDetail>(`/orders/${id}`, { token }),
+
+  pricingConfig: () => apiFetch<PricingConfig>("/pricing/config"),
+
+  createPricedOrder: (token: string, body: PricedOrderBody) =>
+    apiFetch<Order & { totalFils: number }>("/orders", { method: "POST", body, token }),
 
   createOrder: (
     token: string,
