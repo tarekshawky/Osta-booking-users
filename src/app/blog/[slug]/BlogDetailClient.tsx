@@ -25,6 +25,7 @@ export function BlogDetailClient({ post }: { post: BlogDetail }) {
   return (
     <div className="flex min-h-screen flex-col">
       <MarketingNav />
+      <main>
 
       <article className="mx-auto w-full max-w-2xl px-5 py-14">
         <Link href="/blog" className="flex items-center gap-1 text-sm text-text-muted hover:text-text">
@@ -58,6 +59,8 @@ export function BlogDetailClient({ post }: { post: BlogDetail }) {
           {t("home.bookService")}
         </Link>
       </article>
+
+      </main>
 
       <MarketingFooter />
     </div>

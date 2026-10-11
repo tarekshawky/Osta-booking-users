@@ -37,6 +37,7 @@ export function HomeClient({
   return (
     <div className="flex min-h-screen flex-col">
       <MarketingNav />
+      <main>
 
       {/* Hero */}
       <section className="relative overflow-hidden px-5 py-16 sm:py-24">
@@ -181,6 +182,8 @@ export function HomeClient({
           </Link>
         </div>
       </section>
+
+      </main>
 
       <MarketingFooter />
     </div>

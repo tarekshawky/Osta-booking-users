@@ -15,6 +15,7 @@ export function ServiceDetailClient({ service }: { service: ServiceDetail }) {
   return (
     <div className="flex min-h-screen flex-col">
       <MarketingNav />
+      <main>
 
       <section className="mx-auto w-full max-w-3xl px-5 py-14">
         <Link href="/services" className="flex items-center gap-1 text-sm text-text-muted hover:text-text">
@@ -41,6 +42,8 @@ export function ServiceDetailClient({ service }: { service: ServiceDetail }) {
           {t("services.bookThisService")}
         </Link>
       </section>
+
+      </main>
 
       <MarketingFooter />
     </div>

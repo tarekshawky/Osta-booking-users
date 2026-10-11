@@ -3,7 +3,7 @@ import { HomeClient } from "./HomeClient";
 import { api, ServiceSummary, BlogSummary, HomeSection } from "@/lib/api";
 import { fetchSite } from "@/lib/site";
 import { fetchHomepage } from "@/lib/cms";
-import { loadBlockData } from "@/lib/cms-data";
+import { loadBlockData, slimPosts } from "@/lib/cms-data";
 import { CmsPageView } from "@/components/cms/CmsPageView";
 
 export const revalidate = 60;
@@ -38,7 +38,7 @@ export default async function HomePage() {
   }
   try {
     const res = await api.blogPosts({ pageSize: 3 });
-    posts = res.data;
+    posts = slimPosts(res.data);
   } catch {
     // Same as above -- blog preview is optional, never blocks the page.
   }

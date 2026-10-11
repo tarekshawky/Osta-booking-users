@@ -34,6 +34,7 @@ export function BlogClient({ posts }: { posts: BlogSummary[] }) {
   return (
     <div className="flex min-h-screen flex-col">
       <MarketingNav />
+      <main>
 
       <section className="mx-auto w-full max-w-6xl px-5 py-14 text-center">
         <h1 className="text-3xl font-extrabold text-text sm:text-4xl">{t("blog.pageTitle")}</h1>
@@ -47,6 +48,7 @@ export function BlogClient({ posts }: { posts: BlogSummary[] }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("blog.searchPlaceholder")}
+              aria-label={t("blog.searchPlaceholder")}
               className="w-full bg-transparent text-sm text-text placeholder:text-text-faint focus:outline-none"
             />
           </div>
@@ -91,6 +93,8 @@ export function BlogClient({ posts }: { posts: BlogSummary[] }) {
           </div>
         )}
       </section>
+
+      </main>
 
       <MarketingFooter />
     </div>

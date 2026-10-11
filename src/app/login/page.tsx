@@ -69,13 +69,13 @@ export default function LoginPage() {
 
         <div className="relative z-10 flex max-w-md flex-col items-center text-center">
           <LogoMark diameter={120} />
-          <h1 className="mt-8 text-4xl font-extrabold leading-tight text-text">
+          <p className="mt-8 text-4xl font-extrabold leading-tight text-text">
             {t("login.heroTitleLine1")}
             <br />
             <span className="bg-gradient-to-b from-accent-2 to-accent bg-clip-text text-transparent">
               {t("login.heroTitleLine2")}
             </span>
-          </h1>
+          </p>
           <p className="mt-4 text-sm leading-relaxed text-text-muted">{t("login.heroSubtitle")}</p>
 
           <div className="mt-10 grid w-full grid-cols-2 gap-4">

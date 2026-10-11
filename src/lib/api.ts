@@ -22,6 +22,9 @@ async function apiFetch<T>(
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
+    // Public lists (services, blog, homepage sections) are identical for everyone: reuse them for 60 s instead of
+    // hitting the admin API and database on every page view. Anything with a login token is never cached.
+    ...(method === "GET" && !token ? { next: { revalidate: 60 } } : {}),
   });
 
   const json = await res.json().catch(() => ({}));
@@ -243,7 +246,7 @@ async function apiFetchPage<T>(
   const { token } = options;
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${path}`, { headers });
+  const res = await fetch(`${API_BASE}${path}`, { headers, ...(token ? {} : { next: { revalidate: 60 } }) });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new ApiError(json?.error?.message || `Request failed (${res.status})`, res.status, json?.error?.code);

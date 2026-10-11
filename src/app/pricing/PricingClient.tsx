@@ -12,6 +12,7 @@ export function PricingClient({ services }: { services: ServiceSummary[] }) {
   return (
     <div className="flex min-h-screen flex-col">
       <MarketingNav />
+      <main>
 
       <section className="mx-auto w-full max-w-4xl px-5 py-14 text-center">
         <h1 className="text-3xl font-extrabold text-text sm:text-4xl">{t("pricing.pageTitle")}</h1>
@@ -48,6 +49,8 @@ export function PricingClient({ services }: { services: ServiceSummary[] }) {
           ))}
         </div>
       </section>
+
+      </main>
 
       <MarketingFooter />
     </div>

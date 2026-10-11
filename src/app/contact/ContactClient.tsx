@@ -18,6 +18,7 @@ export function ContactClient() {
   return (
     <div className="flex min-h-screen flex-col">
       <MarketingNav />
+      <main>
 
       <section className="mx-auto w-full max-w-2xl px-5 py-16 text-center">
         <h1 className="text-3xl font-extrabold text-text sm:text-4xl">{t("contact.pageTitle")}</h1>
@@ -64,6 +65,8 @@ export function ContactClient() {
           </a>
         )}
       </section>
+
+      </main>
 
       <MarketingFooter />
     </div>
