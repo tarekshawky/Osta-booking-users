@@ -27,7 +27,7 @@ export function MarketingFooter() {
     <footer className="border-t border-card-border bg-bg-elevated">
       <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <SiteLogo size="md" />
+          <SiteLogo size="xl" />
           <p className="mt-3 text-sm text-text-muted">{pick(settings.taglineEn, settings.taglineAr)}</p>
           {social.length > 0 && (
             <ul className="mt-4 flex flex-wrap gap-2">

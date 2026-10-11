@@ -53,9 +53,9 @@ export function MarketingNav() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-card-border bg-bg-elevated/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
         <Link href="/">
-          <SiteLogo size="md" />
+          <SiteLogo size="xl" />
         </Link>
 
         <nav className="hidden items-center gap-6 lg:flex">
