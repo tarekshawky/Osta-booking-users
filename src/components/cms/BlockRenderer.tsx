@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { DynamicIcon } from "@/components/DynamicIcon";
+import { HomeSections } from "@/app/HomeSections";
+import type { BlockData } from "@/lib/cms-data";
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/lib/language-context";
 import { track } from "@/lib/analytics";
 import { API_BASE, type Bi, type CmsBlock, type Cta } from "@/lib/cms";
-import type { ServiceSummary } from "@/lib/api";
 
 type P = Record<string, unknown>;
 
@@ -61,6 +63,52 @@ function Buttons({ ctas }: { ctas: Cta[] }) {
 function Hero({ p }: { p: P }) {
   const bi = useBi();
   const img = p.imageUrl as string;
+  const ctas = (p.ctas as Cta[]) ?? [];
+
+  // "Landing" style: the centered homepage hero with colour glow, accent line and trust badges.
+  if (p.variant === "landing") {
+    const badges = (p.badges as { icon: string; label: Bi }[]) ?? [];
+    const shown = ctas.filter((c) => c.url && bi(c.label));
+    return (
+      <section className="relative overflow-hidden px-5 py-16 sm:py-24">
+        <div className="pointer-events-none absolute -left-40 -top-40 h-96 w-96 rounded-full opacity-30 blur-3xl" style={{ background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)" }} />
+        <div className="pointer-events-none absolute -bottom-40 -right-24 h-96 w-96 rounded-full opacity-20 blur-3xl" style={{ background: "radial-gradient(circle, var(--accent-2) 0%, transparent 70%)" }} />
+        <div className="relative z-10 mx-auto max-w-3xl text-center">
+          {bi(p.eyebrow as Bi) && <span className="inline-block rounded-full border border-card-border px-4 py-1.5 text-xs text-accent-2">{bi(p.eyebrow as Bi)}</span>}
+          <h1 className="mt-6 text-4xl font-extrabold leading-tight text-text sm:text-6xl">
+            {bi(p.heading as Bi)}
+            {bi(p.headingAccent as Bi | undefined) && (
+              <>
+                {" "}
+                <span className="bg-gradient-to-b from-accent-2 to-accent bg-clip-text text-transparent">{bi(p.headingAccent as Bi | undefined)}</span>
+              </>
+            )}
+          </h1>
+          {bi(p.subtitle as Bi) && <p className="mx-auto mt-5 max-w-xl text-base text-text-muted">{bi(p.subtitle as Bi)}</p>}
+          {shown.length > 0 && (
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              {shown.map((c, i) => (
+                <SmartLink key={i} href={c.url} className={i === 0 ? "osta-btn-primary w-full rounded-xl px-6 py-3.5 text-center text-sm font-semibold text-white sm:w-auto" : "w-full rounded-xl border border-card-border px-6 py-3.5 text-center text-sm font-semibold text-text sm:w-auto"}>
+                  {bi(c.label)}
+                </SmartLink>
+              ))}
+            </div>
+          )}
+          {badges.length > 0 && (
+            <div className="mx-auto mt-12 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
+              {badges.map((b, i) => (
+                <div key={i} className="osta-card flex flex-col items-center gap-2 px-3 py-4">
+                  {b.icon && <DynamicIcon name={b.icon} size={20} className="text-accent-2" />}
+                  <span className="text-xs text-text-muted">{bi(b.label)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
+
   const bg = p.imagePosition === "background" && img;
   const center = p.align === "center";
   return (
@@ -70,7 +118,7 @@ function Hero({ p }: { p: P }) {
           {bi(p.eyebrow as Bi) && <span className="inline-block rounded-full border border-card-border px-4 py-1.5 text-xs text-accent-2">{bi(p.eyebrow as Bi)}</span>}
           <h1 className="mt-5 text-4xl font-extrabold leading-tight text-text sm:text-5xl">{bi(p.heading as Bi)}</h1>
           <Paragraphs text={bi(p.subtitle as Bi)} className="mt-4 text-base text-text-muted" />
-          <div className={center || bg ? "flex justify-center" : ""}><Buttons ctas={(p.ctas as Cta[]) ?? []} /></div>
+          <div className={center || bg ? "flex justify-center" : ""}><Buttons ctas={ctas} /></div>
         </div>
         {img && !bg && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -81,25 +129,35 @@ function Hero({ p }: { p: P }) {
   );
 }
 
-function ServicesGrid({ p, services }: { p: P; services: ServiceSummary[] }) {
+function ServicesGrid({ p, services }: { p: P; services: BlockData["services"] }) {
   const bi = useBi();
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const items = services.slice(0, Number(p.limit) || 8);
   if (!items.length) return null;
+  const viewAll = p.viewAllUrl as string | undefined;
   return (
-    <section className="mx-auto w-full max-w-6xl px-5 py-14">
+    <section className="mx-auto w-full max-w-6xl px-5 py-16">
       <div className="text-center">
-        {bi(p.heading as Bi) && <h2 className="text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>}
+        {bi(p.eyebrow as Bi | undefined) && <span className="text-xs font-semibold uppercase tracking-wide text-accent-2">{bi(p.eyebrow as Bi | undefined)}</span>}
+        {bi(p.heading as Bi) && <h2 className="mt-2 text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>}
         {bi(p.subtitle as Bi) && <p className="mx-auto mt-2 max-w-xl text-sm text-text-muted">{bi(p.subtitle as Bi)}</p>}
       </div>
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((s) => (
-          <Link key={s.slug} href={`/services/${s.slug}`} className="osta-card p-5">
+          <Link key={s.slug} href={`/services/${s.slug}`} className="osta-card group p-5">
             <h3 className="text-base font-semibold text-text">{lang === "ar" ? s.nameAr : s.nameEn}</h3>
             <p className="mt-1.5 text-sm text-text-muted">{lang === "ar" ? s.shortDescriptionAr : s.shortDescriptionEn}</p>
+            <span className="mt-3 flex items-center gap-0.5 text-xs font-medium text-accent-2">
+              {t("home.moreLink")} <ChevronRight size={14} className="osta-flip-rtl" />
+            </span>
           </Link>
         ))}
       </div>
+      {viewAll && bi(p.viewAllLabel as Bi | undefined) && (
+        <div className="mt-8 text-center">
+          <SmartLink href={viewAll} className="text-sm font-semibold text-accent-2">{bi(p.viewAllLabel as Bi | undefined)}</SmartLink>
+        </div>
+      )}
     </section>
   );
 }
@@ -159,7 +217,7 @@ function Faq({ p }: { p: P }) {
 
 function Stats({ p }: { p: P }) {
   const bi = useBi();
-  const items = (p.items as { value: string; label: Bi }[]) ?? [];
+  const items = (p.items as { value: string; label: Bi; icon?: string }[]) ?? [];
   if (!items.length) return null;
   return (
     <section className="border-y border-card-border bg-bg-elevated">
@@ -167,9 +225,10 @@ function Stats({ p }: { p: P }) {
         {bi(p.heading as Bi) && <h2 className="mb-6 text-center text-xl font-bold text-text">{bi(p.heading as Bi)}</h2>}
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
           {items.map((it, i) => (
-            <div key={i} className="text-center">
-              <p className="text-2xl font-bold text-text">{it.value}</p>
-              <p className="mt-1 text-xs text-text-muted">{bi(it.label)}</p>
+            <div key={i} className="flex flex-col items-center gap-2 text-center">
+              {it.icon && <DynamicIcon name={it.icon} size={20} className="text-accent-2" />}
+              <span className="text-xl font-bold text-text">{it.value}</span>
+              <span className="text-xs text-text-muted">{bi(it.label)}</span>
             </div>
           ))}
         </div>
@@ -182,12 +241,48 @@ function CtaBlock({ p }: { p: P }) {
   const bi = useBi();
   const button = p.button as Cta;
   return (
-    <section className="mx-auto w-full max-w-4xl px-5 py-14 text-center">
+    <section className="mx-auto w-full max-w-4xl px-5 py-16 text-center">
       <div className="osta-card osta-glow-border px-6 py-12">
         <h2 className="text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>
         {bi(p.subtitle as Bi) && <p className="mx-auto mt-3 max-w-md text-sm text-text-muted">{bi(p.subtitle as Bi)}</p>}
-        <div className="flex justify-center">{button?.url && bi(button.label) && <Buttons ctas={[button]} />}</div>
+        {button?.url && bi(button.label) && (
+          <SmartLink href={button.url} className="osta-btn-primary mt-6 inline-block rounded-xl px-8 py-3.5 text-sm font-semibold text-white">
+            {bi(button.label)}
+          </SmartLink>
+        )}
       </div>
+    </section>
+  );
+}
+
+function BlogPreview({ p, posts }: { p: P; posts: BlockData["posts"] }) {
+  const bi = useBi();
+  const { lang, t } = useLanguage();
+  const items = posts.slice(0, Number(p.limit) || 3);
+  if (!items.length) return null;
+  const viewAll = p.viewAllUrl as string | undefined;
+  return (
+    <section className="mx-auto w-full max-w-6xl px-5 py-16">
+      <div className="text-center">
+        {bi(p.eyebrow as Bi) && <span className="text-xs font-semibold uppercase tracking-wide text-accent-2">{bi(p.eyebrow as Bi)}</span>}
+        {bi(p.heading as Bi) && <h2 className="mt-2 text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>}
+      </div>
+      <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {items.map((post) => (
+          <Link key={post.slug} href={`/blog/${post.slug}`} className="osta-card p-5">
+            <h3 className="text-base font-semibold text-text">{lang === "ar" ? post.titleAr : post.titleEn}</h3>
+            <p className="mt-1.5 line-clamp-3 text-sm text-text-muted">{lang === "ar" ? post.excerptAr : post.excerptEn}</p>
+            <span className="mt-3 flex items-center gap-0.5 text-xs font-medium text-accent-2">
+              {t("blog.readMore")} <ChevronRight size={14} className="osta-flip-rtl" />
+            </span>
+          </Link>
+        ))}
+      </div>
+      {viewAll && bi(p.viewAllLabel as Bi) && (
+        <div className="mt-8 text-center">
+          <SmartLink href={viewAll} className="text-sm font-semibold text-accent-2">{bi(p.viewAllLabel as Bi)}</SmartLink>
+        </div>
+      )}
     </section>
   );
 }
@@ -310,23 +405,25 @@ function FormBlock({ p }: { p: P }) {
   );
 }
 
-function Block({ block, services }: { block: CmsBlock; services: ServiceSummary[] }) {
+function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
   const p = block.props;
   switch (block.type) {
     case "hero": return <Hero p={p} />;
-    case "servicesGrid": return <ServicesGrid p={p} services={services} />;
+    case "servicesGrid": return <ServicesGrid p={p} services={data.services} />;
     case "richText": return <RichText p={p} />;
     case "imageText": return <ImageText p={p} />;
     case "faq": return <Faq p={p} />;
     case "stats": return <Stats p={p} />;
     case "cta": return <CtaBlock p={p} />;
     case "form": return <FormBlock p={p} />;
+    case "blogPreview": return <BlogPreview p={p} posts={data.posts} />;
+    case "homeSections": return <HomeSections sections={data.sections} />;
     default: return null;
   }
 }
 
 // Per-device visibility is CSS-only (md breakpoint), so it works with static/ISR rendering.
-export function BlockRenderer({ blocks, services }: { blocks: CmsBlock[]; services: ServiceSummary[] }) {
+export function BlockRenderer({ blocks, data }: { blocks: CmsBlock[]; data: BlockData }) {
   return (
     <>
       {blocks
@@ -335,7 +432,7 @@ export function BlockRenderer({ blocks, services }: { blocks: CmsBlock[]; servic
           const cls = b.visibility.desktop && b.visibility.mobile ? "" : b.visibility.mobile ? "md:hidden" : "hidden md:block";
           return (
             <div key={b.id} className={cls}>
-              <Block block={b} services={services} />
+              <Block block={b} data={data} />
             </div>
           );
         })}

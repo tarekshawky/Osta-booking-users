@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as { secret?: string; paths?: string[] } | null;
   if (!secret || !body || body.secret !== secret) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const paths = (body.paths ?? []).filter((p) => /^\/[a-z0-9-]+$/.test(p)).slice(0, 20);
+  const paths = (body.paths ?? []).filter((p) => p === "/" || /^\/[a-z0-9-]+$/.test(p)).slice(0, 20);
   for (const path of paths) revalidatePath(path);
   return NextResponse.json({ revalidated: paths });
 }

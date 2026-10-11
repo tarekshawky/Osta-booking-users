@@ -5,7 +5,7 @@ export type Cta = { label: Bi; url: string };
 
 export type CmsBlock = {
   id: string;
-  type: "hero" | "servicesGrid" | "richText" | "imageText" | "faq" | "stats" | "cta" | "form";
+  type: "hero" | "servicesGrid" | "richText" | "imageText" | "faq" | "stats" | "cta" | "form" | "blogPreview" | "homeSections";
   props: Record<string, unknown>;
   hidden: boolean;
   visibility: { desktop: boolean; mobile: boolean };
@@ -37,8 +37,21 @@ export async function fetchPublishedPage(slug: string): Promise<CmsLookup> {
     const res = await fetch(`${API_BASE}/cms/pages/${encodeURIComponent(slug)}`, { next: { revalidate: 60 } });
     if (!res.ok) return null;
     const json = await res.json();
+    if (json?.data?.notFound) return null;
     if (json?.data?.redirect) return { redirect: json.data.redirect as string };
     return json?.data ? { page: json.data as CmsPage } : null;
+  } catch {
+    return null;
+  }
+}
+
+// The editable homepage, once the owner has published it. null (404) means "keep using the built-in homepage".
+export async function fetchHomepage(): Promise<CmsPage | null> {
+  try {
+    const res = await fetch(`${API_BASE}/cms/home`, { next: { revalidate: 60 } });
+    if (!res.ok) return null;
+    const data = (await res.json())?.data;
+    return data && !data.notFound ? (data as CmsPage) : null;
   } catch {
     return null;
   }

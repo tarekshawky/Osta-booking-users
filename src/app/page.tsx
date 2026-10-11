@@ -2,22 +2,32 @@ import type { Metadata } from "next";
 import { HomeClient } from "./HomeClient";
 import { api, ServiceSummary, BlogSummary, HomeSection } from "@/lib/api";
 import { fetchSite } from "@/lib/site";
+import { fetchHomepage } from "@/lib/cms";
+import { loadBlockData } from "@/lib/cms-data";
+import { CmsPageView } from "@/components/cms/CmsPageView";
 
-export const revalidate = 300;
+export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: "OSTA Services — AC Repair & Home Maintenance in the UAE",
-  description:
-    "Trusted AC repair, cleaning, installation, and home maintenance services across the UAE. Transparent pricing, certified technicians, same-day service, and a 14-day warranty.",
-  alternates: { canonical: "/" },
-  openGraph: {
-    title: "OSTA Services — AC Repair & Home Maintenance in the UAE",
-    description: "Trusted AC repair, cleaning, installation, and home maintenance services across the UAE.",
-    type: "website",
-  },
-};
+const DEFAULT_TITLE = "OSTA Services — AC Repair & Home Maintenance in the UAE";
+const DEFAULT_DESCRIPTION =
+  "Trusted AC repair, cleaning, installation, and home maintenance services across the UAE. Transparent pricing, certified technicians, same-day service, and a 14-day warranty.";
+
+export async function generateMetadata(): Promise<Metadata> {
+  // If the editable homepage is published, its SEO fields win; otherwise the built-in values are used.
+  const cms = await fetchHomepage();
+  const title = cms?.seo.titleEn || DEFAULT_TITLE;
+  const description = cms?.seo.descriptionEn || DEFAULT_DESCRIPTION;
+  return {
+    title,
+    description,
+    alternates: { canonical: "/" },
+    robots: cms?.seo.noindex ? { index: false, follow: false } : undefined,
+    openGraph: { title, description, type: "website", ...(cms?.seo.ogImage && /^https?:/.test(cms.seo.ogImage) ? { images: [cms.seo.ogImage] } : {}) },
+  };
+}
 
 export default async function HomePage() {
+  const cms = await fetchHomepage();
   let services: ServiceSummary[] = [];
   let posts: BlogSummary[] = [];
   let sections: HomeSection[] = [];
@@ -64,7 +74,7 @@ export default async function HomePage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <HomeClient services={services} posts={posts} sections={sections} />
+      {cms ? <CmsPageView page={cms} data={await loadBlockData(cms.blocks)} /> : <HomeClient services={services} posts={posts} sections={sections} />}
     </>
   );
 }

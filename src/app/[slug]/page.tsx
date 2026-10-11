@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { CmsPageView } from "@/components/cms/CmsPageView";
 import { fetchPublishedPage, type CmsPage } from "@/lib/cms";
-import { api, type ServiceSummary } from "@/lib/api";
+import { loadBlockData } from "@/lib/cms-data";
 
 export const revalidate = 60;
 
@@ -32,21 +32,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function CmsRoute({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const page = await load(slug);
-  let services: ServiceSummary[] = [];
-  if (page.blocks.some((b) => b.type === "servicesGrid")) {
-    try {
-      services = await api.services();
-    } catch {
-      // The grid just hides itself if services are briefly unavailable.
-    }
-  }
+  const data = await loadBlockData(page.blocks);
   return (
     <>
       {/* The API only sends structured data that passed validation. "<" is escaped so content can't close the script tag. */}
       {page.jsonLd?.map((item, i) => (
         <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(item).replace(/</g, "\\u003c") }} />
       ))}
-      <CmsPageView page={page} services={services} />
+      <CmsPageView page={page} data={data} />
     </>
   );
 }
