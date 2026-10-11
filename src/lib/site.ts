@@ -28,6 +28,8 @@ export type SiteData = {
   settings: SiteSettings;
   menus: { header: SiteMenuItem[]; footer: SiteMenuItem[] };
   social: { platform: string; label: string; url: string }[];
+  // Active entries of the admin's Service Areas screen; drives "Areas We Cover" when it has any.
+  serviceAreas: { slug: string; nameEn: string; nameAr: string; pageSlug: string | null }[];
 };
 
 const item = (url: string, labelEn: string, labelAr: string): SiteMenuItem => ({ url, labelEn, labelAr, newTab: false, showDesktop: true, showMobile: true, children: [] });
@@ -53,6 +55,7 @@ export const DEFAULT_SITE: SiteData = {
     footer: [item("/services", "Services", "الخدمات"), item("/pricing", "Pricing", "الأسعار"), item("/blog", "Blog", "المدونة"), item("/about", "About Us", "من نحن")],
   },
   social: [],
+  serviceAreas: [],
   integrations: null,
 };
 
@@ -70,6 +73,7 @@ export async function fetchSite(): Promise<SiteData> {
         footer: data.menus?.footer?.length ? data.menus.footer : DEFAULT_SITE.menus.footer,
       },
       social: data.social ?? [],
+      serviceAreas: data.serviceAreas ?? [],
       integrations: data.integrations ?? null,
     };
   } catch {

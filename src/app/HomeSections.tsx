@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
 import { DynamicIcon } from "@/components/DynamicIcon";
+import { useSite } from "@/lib/site-context";
 import type { HomeSection } from "@/lib/api";
 
 function find(sections: HomeSection[], key: string) {
@@ -11,6 +12,7 @@ function find(sections: HomeSection[], key: string) {
 
 export function HomeSections({ sections }: { sections: HomeSection[] }) {
   const { lang } = useLanguage();
+  const { serviceAreas } = useSite();
 
   const sustainability = find(sections, "sustainability");
   const booking = find(sections, "booking");
@@ -129,7 +131,7 @@ export function HomeSections({ sections }: { sections: HomeSection[] }) {
       )}
 
       {/* Areas We Cover */}
-      {areas && areas.items.length > 0 && (
+      {areas && (serviceAreas.length > 0 || areas.items.length > 0) && (
         <section className="mx-auto w-full max-w-4xl px-5 py-16 text-center">
           <h2 className="text-2xl font-bold text-text sm:text-3xl">
             {lang === "ar" ? areas.headingAr : areas.headingEn}
@@ -140,11 +142,21 @@ export function HomeSections({ sections }: { sections: HomeSection[] }) {
             </p>
           )}
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            {areas.items.map((item, i) => (
-              <span key={i} className="rounded-full border border-card-border px-4 py-2 text-sm text-text">
-                {lang === "ar" ? item.titleAr : item.titleEn}
-              </span>
-            ))}
+            {serviceAreas.length > 0
+              ? serviceAreas.map((a) => {
+                  const label = lang === "ar" ? a.nameAr : a.nameEn;
+                  const chip = "rounded-full border border-card-border px-4 py-2 text-sm text-text";
+                  return a.pageSlug ? (
+                    <Link key={a.slug} href={`/${a.pageSlug}`} className={`${chip} hover:border-accent`}>{label}</Link>
+                  ) : (
+                    <span key={a.slug} className={chip}>{label}</span>
+                  );
+                })
+              : areas.items.map((item, i) => (
+                  <span key={i} className="rounded-full border border-card-border px-4 py-2 text-sm text-text">
+                    {lang === "ar" ? item.titleAr : item.titleEn}
+                  </span>
+                ))}
           </div>
         </section>
       )}

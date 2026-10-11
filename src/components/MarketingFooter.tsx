@@ -11,7 +11,7 @@ const SOCIAL_BADGE: Record<string, string> = { facebook: "f", instagram: "ig", l
 
 export function MarketingFooter() {
   const { t, lang } = useLanguage();
-  const { settings, menus, social, integrations } = useSite();
+  const { settings, menus, social, integrations, serviceAreas } = useSite();
   const hasTracking = !!(integrations?.requireConsent && (integrations.gtmId || integrations.ga4Id || integrations.metaPixelId));
   const year = new Date().getFullYear();
   const ar = lang === "ar";
@@ -76,7 +76,7 @@ export function MarketingFooter() {
 
         <div>
           <h3 className="mb-3 text-sm font-semibold text-text">{t("footer.areasWeCover")}</h3>
-          <p className="text-sm text-text-muted">{settings.footerAreas.map((a) => pick(a.en, a.ar)).join(" · ")}</p>
+          <p className="text-sm text-text-muted">{(serviceAreas.length ? serviceAreas.map((a) => pick(a.nameEn, a.nameAr)) : settings.footerAreas.map((a) => pick(a.en, a.ar))).join(" · ")}</p>
         </div>
       </div>
 
