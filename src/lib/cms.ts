@@ -31,11 +31,11 @@ export type CmsPage = {
 
 export type CmsLookup = { page: CmsPage } | { redirect: string } | null;
 
-// Server-side fetch of a published page. Cached ~10s, the same window as the header/footer data, so a menu link and the
+// Server-side fetch of a published page. Cached ~3s, the same window as the header/footer data, so a menu link and the
 // page it points to appear and disappear together (the admin also pings /api/revalidate on publish).
 export async function fetchPublishedPage(slug: string): Promise<CmsLookup> {
   try {
-    const res = await fetch(`${API_BASE}/cms/pages/${encodeURIComponent(slug)}`, { next: { revalidate: 10 } });
+    const res = await fetch(`${API_BASE}/cms/pages/${encodeURIComponent(slug)}`, { next: { revalidate: 3 } });
     if (!res.ok) return null;
     const json = await res.json();
     if (json?.data?.notFound) return null;
@@ -49,7 +49,7 @@ export async function fetchPublishedPage(slug: string): Promise<CmsLookup> {
 // The editable homepage, once the owner has published it. null (404) means "keep using the built-in homepage".
 export async function fetchHomepage(): Promise<CmsPage | null> {
   try {
-    const res = await fetch(`${API_BASE}/cms/home`, { next: { revalidate: 10 } });
+    const res = await fetch(`${API_BASE}/cms/home`, { next: { revalidate: 3 } });
     if (!res.ok) return null;
     const data = (await res.json())?.data;
     return data && !data.notFound ? (data as CmsPage) : null;
