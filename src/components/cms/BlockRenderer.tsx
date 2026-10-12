@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { useSite } from "@/lib/site-context";
+import { RichInline } from "@/components/cms/RichInline";
 import { telHref, whatsappHref } from "@/lib/site";
 import { BookingCalculator } from "@/components/booking/BookingCalculator";
 import { DynamicIcon } from "@/components/DynamicIcon";
@@ -42,7 +43,7 @@ function Paragraphs({ text, className }: { text: string; className?: string }) {
   return (
     <>
       {text.split(/\n\s*\n/).filter(Boolean).map((para, i) => (
-        <p key={i} className={className}>{para}</p>
+        <p key={i} className={className}><RichInline text={para} /></p>
       ))}
     </>
   );
@@ -100,7 +101,7 @@ function Hero({ p }: { p: P }) {
               </>
             )}
           </h1>
-          {bi(p.subtitle as Bi) && <p className="mx-auto mt-5 max-w-xl text-base text-text-muted">{bi(p.subtitle as Bi)}</p>}
+          {bi(p.subtitle as Bi) && <p className="mx-auto mt-5 max-w-xl text-base text-text-muted"><RichInline text={bi(p.subtitle as Bi)} /></p>}
           {shown.length > 0 && (
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               {shown.map((c, i) => (
@@ -157,7 +158,7 @@ function ServicesGrid({ p, services }: { p: P; services: BlockData["services"] }
       <div className="text-center">
         {bi(p.eyebrow as Bi | undefined) && <span className="text-xs font-semibold uppercase tracking-wide text-accent-2">{bi(p.eyebrow as Bi | undefined)}</span>}
         {bi(p.heading as Bi) && <h2 className="mt-2 text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>}
-        {bi(p.subtitle as Bi) && <p className="mx-auto mt-2 max-w-xl text-sm text-text-muted">{bi(p.subtitle as Bi)}</p>}
+        {bi(p.subtitle as Bi) && <p className="mx-auto mt-2 max-w-xl text-sm text-text-muted"><RichInline text={bi(p.subtitle as Bi)} /></p>}
       </div>
       <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((s) => (
@@ -224,7 +225,7 @@ function Faq({ p }: { p: P }) {
               {bi(it.question)}
               <ChevronDown size={16} className="shrink-0 text-text-muted transition group-open:rotate-180" />
             </summary>
-            <p className="mt-3 whitespace-pre-line text-sm text-text-muted">{bi(it.answer)}</p>
+            <p className="mt-3 whitespace-pre-line text-sm text-text-muted"><RichInline text={bi(it.answer)} /></p>
           </details>
         ))}
       </div>
@@ -261,7 +262,7 @@ function CtaBlock({ p }: { p: P }) {
     <section className="mx-auto w-full max-w-4xl px-5 py-16 text-center">
       <div className="osta-card osta-glow-border px-6 py-12">
         <h2 className="text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>
-        {bi(p.subtitle as Bi) && <p className="mx-auto mt-3 max-w-md text-sm text-text-muted">{bi(p.subtitle as Bi)}</p>}
+        {bi(p.subtitle as Bi) && <p className="mx-auto mt-3 max-w-md text-sm text-text-muted"><RichInline text={bi(p.subtitle as Bi)} /></p>}
         {button?.url && bi(button.label) && (
           <SmartLink href={button.url} className="osta-btn-primary mt-6 inline-block rounded-xl px-8 py-3.5 text-sm font-semibold text-white">
             {bi(button.label)}
@@ -378,7 +379,7 @@ function FormBlock({ p }: { p: P }) {
   return (
     <section className="mx-auto w-full max-w-xl px-5 py-12">
       {bi(p.heading as Bi) && <h2 className="mb-2 text-center text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>}
-      {bi(p.intro as Bi) && <p className="mb-6 text-center text-sm text-text-muted">{bi(p.intro as Bi)}</p>}
+      {bi(p.intro as Bi) && <p className="mb-6 text-center text-sm text-text-muted"><RichInline text={bi(p.intro as Bi)} /></p>}
       {done ? (
         <div className="osta-card p-8 text-center" role="status">
           <p className="text-base font-semibold text-text">{lang === "ar" ? def.successAr : def.successEn}</p>
@@ -440,7 +441,7 @@ function ContactCards({ p }: { p: P }) {
   return (
     <section className="mx-auto w-full max-w-2xl px-5 py-12 text-center">
       {bi(p.heading as Bi) && <h2 className="text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>}
-      {bi(p.subtitle as Bi) && <p className="mx-auto mt-3 max-w-md text-sm text-text-muted">{bi(p.subtitle as Bi)}</p>}
+      {bi(p.subtitle as Bi) && <p className="mx-auto mt-3 max-w-md text-sm text-text-muted"><RichInline text={bi(p.subtitle as Bi)} /></p>}
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {settings.whatsapp && (
           <a href={wa} target="_blank" rel="noopener noreferrer" className="osta-card osta-pick flex flex-col items-center gap-2 p-6">
@@ -491,7 +492,7 @@ function BookingCalcBlock({ p, pricing }: { p: P; pricing: BlockData["pricing"] 
       {(bi(p.heading as Bi) || bi(p.subtitle as Bi)) && (
         <div className="mx-auto mb-8 max-w-2xl px-5 text-center">
           {bi(p.heading as Bi) && <h2 className="text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>}
-          {bi(p.subtitle as Bi) && <p className="mt-3 text-sm text-text-muted">{bi(p.subtitle as Bi)}</p>}
+          {bi(p.subtitle as Bi) && <p className="mt-3 text-sm text-text-muted"><RichInline text={bi(p.subtitle as Bi)} /></p>}
         </div>
       )}
       {ready ? <BookingCalculator config={pricing} /> : <p className="px-5 text-center text-sm text-text-muted">{t("booking.noServices")}</p>}
