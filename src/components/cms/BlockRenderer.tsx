@@ -77,6 +77,8 @@ function heroBackground(p: P, img: string) {
 function Hero({ p }: { p: P }) {
   const bi = useBi();
   const img = p.imageUrl as string;
+  // The full-width background: the dedicated field, or (older blocks) the side image set to "Background".
+  const bgImg = ((p.backgroundImage as string) || (p.imagePosition === "background" ? img : "")) as string;
   const ctas = (p.ctas as Cta[]) ?? [];
 
   // "Landing" style: the centered homepage hero with colour glow, accent line and trust badges.
@@ -84,7 +86,7 @@ function Hero({ p }: { p: P }) {
     const badges = (p.badges as { icon: string; label: Bi }[]) ?? [];
     const shown = ctas.filter((c) => c.url && bi(c.label));
     return (
-      <section className="relative overflow-hidden px-5 py-16 sm:py-24" style={p.imagePosition === "background" && img ? heroBackground(p, img) : undefined}>
+      <section className="relative overflow-hidden px-5 py-16 sm:py-24" style={bgImg ? heroBackground(p, bgImg) : undefined}>
         <div className="pointer-events-none absolute -left-40 -top-40 h-96 w-96 rounded-full opacity-30 blur-3xl" style={{ background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)" }} />
         <div className="pointer-events-none absolute -bottom-40 -right-24 h-96 w-96 rounded-full opacity-20 blur-3xl" style={{ background: "radial-gradient(circle, var(--accent-2) 0%, transparent 70%)" }} />
         <div className="relative z-10 mx-auto max-w-3xl text-center">
@@ -123,20 +125,21 @@ function Hero({ p }: { p: P }) {
     );
   }
 
-  const bg = p.imagePosition === "background" && img;
+  const bg = !!bgImg;
+  const sideImg = img && p.imagePosition !== "background" ? img : "";
   const center = p.align === "center";
   return (
     <section className="relative overflow-hidden px-5 py-16 sm:py-24" style={bg ? heroBackground(p, img) : undefined}>
-      <div className={`mx-auto grid max-w-6xl items-center gap-10 ${img && !bg ? "md:grid-cols-2" : ""}`}>
-        <div className={`${center || bg ? "mx-auto max-w-3xl text-center" : ""} ${img && !bg && p.imagePosition === "start" ? "md:order-2" : ""}`}>
+      <div className={`mx-auto grid max-w-6xl items-center gap-10 ${sideImg ? "md:grid-cols-2" : ""}`}>
+        <div className={`${center || (bg && !sideImg) ? "mx-auto max-w-3xl text-center" : ""} ${sideImg && p.imagePosition === "start" ? "md:order-2" : ""}`}>
           {bi(p.eyebrow as Bi) && <span className="inline-block rounded-full border border-card-border px-4 py-1.5 text-xs text-accent-2">{bi(p.eyebrow as Bi)}</span>}
           <h1 className="mt-5 text-4xl font-extrabold leading-tight text-text sm:text-5xl">{bi(p.heading as Bi)}</h1>
           <Paragraphs text={bi(p.subtitle as Bi)} className="mt-4 text-base text-text-muted" />
-          <div className={center || bg ? "flex justify-center" : ""}><Buttons ctas={ctas} /></div>
+          <div className={center || (bg && !sideImg) ? "flex justify-center" : ""}><Buttons ctas={ctas} /></div>
         </div>
-        {img && !bg && (
+        {sideImg && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img {...imgProps(img, "(min-width: 768px) 50vw, 100vw")} alt="" className="aspect-[3/2] h-auto w-full rounded-2xl object-cover" />
+          <img {...imgProps(sideImg, "(min-width: 768px) 50vw, 100vw")} alt="" className="aspect-[3/2] h-auto w-full rounded-2xl object-cover" />
         )}
       </div>
     </section>
