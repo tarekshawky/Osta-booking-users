@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { useSite } from "@/lib/site-context";
+import { telHref, whatsappHref } from "@/lib/site";
+import { BookingCalculator } from "@/components/booking/BookingCalculator";
 import { DynamicIcon } from "@/components/DynamicIcon";
 import { HomeSections } from "@/app/HomeSections";
 import type { BlockData } from "@/lib/cms-data";
@@ -422,6 +425,92 @@ function FormBlock({ p }: { p: P }) {
   );
 }
 
+// WhatsApp / phone / email cards, address and hours: all from Website → Site & Contact.
+function ContactCards({ p }: { p: P }) {
+  const bi = useBi();
+  const { t, lang } = useLanguage();
+  const { settings } = useSite();
+  const address = lang === "ar" ? settings.addressAr || settings.addressEn : settings.addressEn || settings.addressAr;
+  const hours = lang === "ar" ? settings.hoursAr || settings.hoursEn : settings.hoursEn || settings.hoursAr;
+  const wa = whatsappHref(settings, lang);
+  const waLabel = bi(p.whatsappButtonLabel as Bi);
+  return (
+    <section className="mx-auto w-full max-w-2xl px-5 py-12 text-center">
+      {bi(p.heading as Bi) && <h2 className="text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>}
+      {bi(p.subtitle as Bi) && <p className="mx-auto mt-3 max-w-md text-sm text-text-muted">{bi(p.subtitle as Bi)}</p>}
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {settings.whatsapp && (
+          <a href={wa} target="_blank" rel="noopener noreferrer" className="osta-card osta-pick flex flex-col items-center gap-2 p-6">
+            <MessageCircle size={22} className="text-accent-2" />
+            <span className="text-sm font-semibold text-text">{t("contact.whatsapp")}</span>
+            <span className="text-xs text-text-muted" dir="ltr">{settings.phone || `+${settings.whatsapp}`}</span>
+          </a>
+        )}
+        {settings.phone && (
+          <a href={telHref(settings.phone)} className="osta-card osta-pick flex flex-col items-center gap-2 p-6">
+            <Phone size={22} className="text-accent-2" />
+            <span className="text-sm font-semibold text-text">{t("contact.phone")}</span>
+            <span className="text-xs text-text-muted" dir="ltr">{settings.phone}</span>
+          </a>
+        )}
+        {settings.email && (
+          <a href={`mailto:${settings.email}`} className="osta-card osta-pick flex flex-col items-center gap-2 p-6">
+            <Mail size={22} className="text-accent-2" />
+            <span className="text-sm font-semibold text-text">{t("contact.email")}</span>
+            <span className="text-xs text-text-muted">{settings.email}</span>
+          </a>
+        )}
+      </div>
+      {(address || hours) && (
+        <div className="osta-card mx-auto mt-4 flex max-w-md flex-col gap-3 p-5 text-start text-sm text-text-muted">
+          {address && (
+            <p className="flex gap-2 whitespace-pre-line"><MapPin size={16} className="mt-0.5 shrink-0 text-accent-2" />
+              {settings.mapsUrl ? <a href={settings.mapsUrl} target="_blank" rel="noopener noreferrer" className="hover:text-text">{address}</a> : address}
+            </p>
+          )}
+          {hours && <p className="flex gap-2"><Clock size={16} className="mt-0.5 shrink-0 text-accent-2" />{hours}</p>}
+        </div>
+      )}
+      {settings.whatsapp && waLabel && (
+        <a href={wa} target="_blank" rel="noopener noreferrer" className="osta-btn-primary mt-8 inline-block rounded-xl px-8 py-3.5 text-sm font-semibold text-white">{waLabel}</a>
+      )}
+    </section>
+  );
+}
+
+// The live price calculator, as a block. Prices come from Dynamic Pricing.
+function BookingCalcBlock({ p, pricing }: { p: P; pricing: BlockData["pricing"] }) {
+  const bi = useBi();
+  const { t } = useLanguage();
+  const ready = pricing && pricing.services.some((s) => s.prices.length > 0) && pricing.bookingTypes.length > 0;
+  return (
+    <section className="py-10">
+      {(bi(p.heading as Bi) || bi(p.subtitle as Bi)) && (
+        <div className="mx-auto mb-8 max-w-2xl px-5 text-center">
+          {bi(p.heading as Bi) && <h2 className="text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>}
+          {bi(p.subtitle as Bi) && <p className="mt-3 text-sm text-text-muted">{bi(p.subtitle as Bi)}</p>}
+        </div>
+      )}
+      {ready ? <BookingCalculator config={pricing} /> : <p className="px-5 text-center text-sm text-text-muted">{t("booking.noServices")}</p>}
+    </section>
+  );
+}
+
+// Optional section background set in the admin: an image under a dark overlay, or a plain colour.
+function sectionBackground(style: unknown): React.CSSProperties | undefined {
+  const s = (style ?? {}) as { bgImage?: string; overlay?: number; overlayColor?: string; bgColor?: string };
+  const isHex = (v: unknown): v is string => typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v);
+  if (s.bgImage) {
+    const strength = typeof s.overlay === "number" ? Math.min(100, Math.max(0, s.overlay)) : 60;
+    const hex = isHex(s.overlayColor) ? s.overlayColor : "#050b1a";
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const layer = `rgba(${r},${g},${b},${strength / 100})`;
+    const url = /\/api\/media\/[^/?]+$/.test(s.bgImage) ? `${s.bgImage}?w=1600` : s.bgImage;
+    return { backgroundImage: `linear-gradient(${layer},${layer}), url(${url})`, backgroundSize: "cover", backgroundPosition: "center" };
+  }
+  return isHex(s.bgColor) ? { backgroundColor: s.bgColor } : undefined;
+}
+
 function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
   const p = block.props;
   switch (block.type) {
@@ -435,6 +524,8 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "form": return <FormBlock p={p} />;
     case "blogPreview": return <BlogPreview p={p} posts={data.posts} />;
     case "homeSections": return <HomeSections sections={data.sections} />;
+    case "contactCards": return <ContactCards p={p} />;
+    case "bookingCalculator": return <BookingCalcBlock p={p} pricing={data.pricing} />;
     default: return null;
   }
 }
@@ -448,7 +539,7 @@ export function BlockRenderer({ blocks, data }: { blocks: CmsBlock[]; data: Bloc
         .map((b) => {
           const cls = b.visibility.desktop && b.visibility.mobile ? "" : b.visibility.mobile ? "md:hidden" : "hidden md:block";
           return (
-            <div key={b.id} className={cls}>
+            <div key={b.id} className={cls} style={b.type === "hero" ? undefined : sectionBackground(b.props.style)}>
               <Block block={b} data={data} />
             </div>
           );

@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
 import { PricingClient } from "./PricingClient";
 import { api, ServiceSummary, type PricingConfig } from "@/lib/api";
+import { CmsRouteView } from "@/components/cms/CmsRouteView";
+import { overrideMetadata, publishedOverride } from "@/lib/builtInPage";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
+const BUILT_IN: Metadata = {
   title: "Pricing",
   description: "Transparent, upfront pricing for AC repair, cleaning, installation, and home maintenance in the UAE.",
   alternates: { canonical: "/pricing" },
 };
 
+export const generateMetadata = () => overrideMetadata("pricing", BUILT_IN);
+
 export default async function PricingPage() {
+  const cms = await publishedOverride("pricing");
+  if (cms) return <CmsRouteView page={cms} />;
   let services: ServiceSummary[] = [];
   try {
     services = await api.services();
