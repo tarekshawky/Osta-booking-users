@@ -60,6 +60,17 @@ function Buttons({ ctas }: { ctas: Cta[] }) {
   );
 }
 
+// Background image with an adjustable dark overlay (strength in %, colour as #rrggbb). Blocks saved before the controls
+// existed fall back to the original look.
+function heroBackground(p: P, img: string) {
+  const strength = typeof p.overlay === "number" ? Math.min(100, Math.max(0, p.overlay)) : 85;
+  const hex = typeof p.overlayColor === "string" && /^#[0-9a-fA-F]{6}$/.test(p.overlayColor) ? p.overlayColor : "#050b1a";
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const layer = `rgba(${r},${g},${b},${strength / 100})`;
+  const url = /\/api\/media\/[^/?]+$/.test(img) ? `${img}?w=1600` : img;
+  return { backgroundImage: `linear-gradient(${layer},${layer}), url(${url})`, backgroundSize: "cover", backgroundPosition: "center" };
+}
+
 function Hero({ p }: { p: P }) {
   const bi = useBi();
   const img = p.imageUrl as string;
@@ -70,7 +81,7 @@ function Hero({ p }: { p: P }) {
     const badges = (p.badges as { icon: string; label: Bi }[]) ?? [];
     const shown = ctas.filter((c) => c.url && bi(c.label));
     return (
-      <section className="relative overflow-hidden px-5 py-16 sm:py-24">
+      <section className="relative overflow-hidden px-5 py-16 sm:py-24" style={p.imagePosition === "background" && img ? heroBackground(p, img) : undefined}>
         <div className="pointer-events-none absolute -left-40 -top-40 h-96 w-96 rounded-full opacity-30 blur-3xl" style={{ background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)" }} />
         <div className="pointer-events-none absolute -bottom-40 -right-24 h-96 w-96 rounded-full opacity-20 blur-3xl" style={{ background: "radial-gradient(circle, var(--accent-2) 0%, transparent 70%)" }} />
         <div className="relative z-10 mx-auto max-w-3xl text-center">
@@ -112,7 +123,7 @@ function Hero({ p }: { p: P }) {
   const bg = p.imagePosition === "background" && img;
   const center = p.align === "center";
   return (
-    <section className="relative overflow-hidden px-5 py-16 sm:py-24" style={bg ? { backgroundImage: `linear-gradient(rgba(5,11,26,.78),rgba(5,11,26,.9)), url(${/\/api\/media\/[^/?]+$/.test(img) ? `${img}?w=1600` : img})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>
+    <section className="relative overflow-hidden px-5 py-16 sm:py-24" style={bg ? heroBackground(p, img) : undefined}>
       <div className={`mx-auto grid max-w-6xl items-center gap-10 ${img && !bg ? "md:grid-cols-2" : ""}`}>
         <div className={`${center || bg ? "mx-auto max-w-3xl text-center" : ""} ${img && !bg && p.imagePosition === "start" ? "md:order-2" : ""}`}>
           {bi(p.eyebrow as Bi) && <span className="inline-block rounded-full border border-card-border px-4 py-1.5 text-xs text-accent-2">{bi(p.eyebrow as Bi)}</span>}
