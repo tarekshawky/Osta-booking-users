@@ -43,11 +43,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Same as above.
   }
 
+  // Category pages with enough articles to stand on their own (thin ones stay out of the index and the sitemap).
+  let categoryRoutes: MetadataRoute.Sitemap = [];
+  try {
+    categoryRoutes = (await api.blogCategories())
+      .filter((c) => c.indexable)
+      .map((c) => ({ url: `${BASE_URL}/blog/category/${c.slug}`, changeFrequency: "weekly" as const, priority: 0.6 }));
+  } catch {
+    // Same as above.
+  }
+
   // Published CMS pages that opted in to the sitemap.
   const cmsRoutes: MetadataRoute.Sitemap = (await fetchPublishedList())
     // A page hidden from search engines must not be advertised in the sitemap.
     .filter((p) => p.showInSitemap && !p.noindex)
     .map((p) => ({ url: `${BASE_URL}/${p.slug}`, lastModified: p.updatedAt, changeFrequency: "monthly" as const, priority: 0.6 }));
 
-  return [...staticRoutes, ...serviceRoutes, ...blogRoutes, ...cmsRoutes];
+  return [...staticRoutes, ...serviceRoutes, ...blogRoutes, ...categoryRoutes, ...cmsRoutes];
 }

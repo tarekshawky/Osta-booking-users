@@ -25,7 +25,8 @@ async function apiFetch<T>(
     body: body !== undefined ? JSON.stringify(body) : undefined,
     // Public lists (services, blog, homepage sections) are identical for everyone: reuse them for 60 s instead of
     // hitting the admin API and database on every page view. Anything with a login token is never cached.
-    ...(method === "GET" && !token ? { next: { revalidate: 60 } } : {}),
+    // Blog requests carry a tag so the admin can refresh them the moment an article or category changes.
+    ...(method === "GET" && !token ? { next: { revalidate: 60, ...(path.startsWith("/blog") ? { tags: ["blog"] } : {}) } } : {}),
   });
 
   const json = await res.json().catch(() => ({}));
@@ -197,8 +198,25 @@ export type ServiceDetail = ServiceSummary & {
   seoDescriptionAr: string | null;
 };
 
+export type BlogCategoryBrief = { slug: string; nameEn: string; nameAr: string };
+
+export type BlogCategory = BlogCategoryBrief & {
+  descriptionEn: string;
+  descriptionAr: string;
+  seoTitleEn: string | null;
+  seoTitleAr: string | null;
+  seoDescriptionEn: string | null;
+  seoDescriptionAr: string | null;
+  coverImageUrl: string | null;
+  count: number;
+  // Enough articles for the category page to be offered to search engines.
+  indexable: boolean;
+};
+
 export type BlogSummary = {
   slug: string;
+  category?: BlogCategoryBrief | null;
+  featured?: boolean;
   titleEn: string;
   titleAr: string;
   excerptEn: string;
@@ -210,6 +228,8 @@ export type BlogSummary = {
 
 export type BlogDetail = BlogSummary & {
   blocks?: CmsBlock[];
+  secondaryCategories?: BlogCategoryBrief[];
+  related?: BlogSummary[];
   contentEn: string;
   contentAr: string;
   seoTitleEn: string | null;
@@ -250,7 +270,7 @@ async function apiFetchPage<T>(
   const { token } = options;
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${path}`, { headers, ...(token ? {} : { next: { revalidate: 60 } }) });
+  const res = await fetch(`${API_BASE}${path}`, { headers, ...(token ? {} : { next: { revalidate: 60, ...(path.startsWith("/blog") ? { tags: ["blog"] } : {}) } }) });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new ApiError(json?.error?.message || `Request failed (${res.status})`, res.status, json?.error?.code);
@@ -313,8 +333,13 @@ export const api = {
   // Public marketing-site content -- no bearer token required.
   services: () => apiFetch<ServiceSummary[]>("/services"),
   service: (slug: string) => apiFetch<ServiceDetail>(`/services/${slug}`),
-  blogPosts: (params: { page?: number; pageSize?: number } = {}) => {
+  blogCategories: () => apiFetch<BlogCategory[]>("/blog/categories"),
+  blogCategory: (slug: string) => apiFetch<BlogCategory>(`/blog/categories/${encodeURIComponent(slug)}`),
+  blogPosts: (params: { page?: number; pageSize?: number; category?: string; q?: string; featured?: boolean } = {}) => {
     const qs = new URLSearchParams();
+    if (params.category) qs.set("category", params.category);
+    if (params.q) qs.set("q", params.q);
+    if (params.featured) qs.set("featured", "1");
     if (params.page) qs.set("page", String(params.page));
     if (params.pageSize) qs.set("pageSize", String(params.pageSize));
     const suffix = qs.toString() ? `?${qs.toString()}` : "";

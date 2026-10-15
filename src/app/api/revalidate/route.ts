@@ -9,8 +9,8 @@ export async function POST(request: NextRequest) {
 
   const paths = (body.paths ?? []).filter((p) => p === "/" || /^\/[a-z0-9-]+$/.test(p)).slice(0, 20);
   for (const path of paths) revalidatePath(path);
-  // Only known tags: the shared header/footer/contact data.
-  const tags = (body.tags ?? []).filter((t) => t === "site");
+  // Only known tags: the shared header/footer/contact data, and the blog (articles and categories).
+  const tags = (body.tags ?? []).filter((t) => t === "site" || t === "blog");
   for (const tag of tags) revalidateTag(tag, { expire: 0 });
   return NextResponse.json({ revalidated: paths, tags });
 }
