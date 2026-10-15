@@ -39,3 +39,15 @@ export function RichHtml({ html, className = "" }: { html: string; className?: s
   if (UNEXPECTED.test(html)) return <div className={className}><p>{richToText(html)}</p></div>;
   return <div className={`rich-text ${className}`} dangerouslySetInnerHTML={{ __html: html }} />;
 }
+
+// One piece of block text: a paragraph of plain text (with [link](url) markup) or rich HTML from the visual editor.
+export function RichLine({ text, className = "", plainClassName = "" }: { text: string; className?: string; plainClassName?: string }) {
+  if (isRichHtml(text)) return <RichHtml html={text} className={className} />;
+  return <p className={`${className} ${plainClassName}`.trim()}><RichInline text={text} /></p>;
+}
+
+// A whole body of text: rich HTML from the visual editor, or plain text kept as written (line breaks preserved).
+export function RichBody({ text, className = "" }: { text: string; className?: string }) {
+  if (isRichHtml(text)) return <RichHtml html={text} className={className} />;
+  return <p className={`whitespace-pre-line ${className}`.trim()}>{text}</p>;
+}

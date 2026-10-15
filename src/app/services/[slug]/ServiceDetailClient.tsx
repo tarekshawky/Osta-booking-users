@@ -8,6 +8,7 @@ import { useLanguage } from "@/lib/language-context";
 import type { ServiceDetail } from "@/lib/api";
 import type { BlockData } from "@/lib/cms-data";
 import { BlockRenderer } from "@/components/cms/BlockRenderer";
+import { RichBody } from "@/components/cms/RichInline";
 
 export function ServiceDetailClient({ service, blockData }: { service: ServiceDetail; blockData: BlockData | null }) {
   const { t, lang } = useLanguage();
@@ -35,7 +36,7 @@ export function ServiceDetailClient({ service, blockData }: { service: ServiceDe
 
         {!blockData && (
           <div className="osta-card mt-8 p-6">
-            <p className="whitespace-pre-line text-sm leading-relaxed text-text-muted">{content}</p>
+            <RichBody text={content} className="text-sm leading-relaxed text-text-muted" />
           </div>
         )}
       </section>

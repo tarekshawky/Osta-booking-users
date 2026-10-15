@@ -12,6 +12,7 @@ import { BlogCard } from "@/components/blog/BlogCard";
 import { Breadcrumbs } from "@/components/blog/Breadcrumbs";
 import { useSite } from "@/lib/site-context";
 import { categoryPath } from "@/lib/blogPaths";
+import { RichBody } from "@/components/cms/RichInline";
 
 export function BlogDetailClient({ post, blockData, services = [] }: { post: BlogDetail; blockData: BlockData | null; services?: { slug: string; nameEn: string; nameAr: string }[] }) {
   const { t, lang } = useLanguage();
@@ -81,7 +82,7 @@ export function BlogDetailClient({ post, blockData, services = [] }: { post: Blo
 
         {!blockData && (
           <div className="osta-card mt-8 p-6">
-            <p className="whitespace-pre-line text-sm leading-relaxed text-text-muted">{content}</p>
+            <RichBody text={content} className="text-sm leading-relaxed text-text-muted" />
           </div>
         )}
       </article>
