@@ -9,6 +9,7 @@ import { ConsentManager } from "@/components/ConsentManager";
 import { fetchSite } from "@/lib/site";
 import type { Lang } from "@/lib/i18n";
 import { SITE_URL } from "@/lib/siteUrl";
+import { GlobalCode } from "@/components/CodeInjection";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -62,6 +63,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <LanguageProvider initialLang={initialLang}>
             <AuthProvider>{children}</AuthProvider>
             <ConsentManager />
+            <GlobalCode />
           </LanguageProvider>
         </SiteProvider>
       </body>

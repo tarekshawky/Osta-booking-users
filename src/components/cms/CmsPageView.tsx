@@ -6,12 +6,15 @@ import { BlockRenderer } from "@/components/cms/BlockRenderer";
 import type { CmsPage } from "@/lib/cms";
 import type { BlockData } from "@/lib/cms-data";
 import { useLanguage } from "@/lib/language-context";
+import { CodeInjection } from "@/components/CodeInjection";
 
 export function CmsPageView({ page, data, banner }: { page: CmsPage; data: BlockData; banner?: string }) {
   const { lang } = useLanguage();
   const updated = new Date(page.updatedAt).toLocaleDateString(lang === "ar" ? "ar-AE" : "en-AE", { day: "2-digit", month: "long", year: "numeric" });
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Custom code for this page: never in the admin preview (the banner marks a preview). */}
+      {!banner && <CodeInjection scope={`page:${page.id}`} code={page.code} />}
       {banner && <div className="bg-amber-400 px-4 py-2 text-center text-xs font-semibold text-black">{banner}</div>}
       <MarketingNav />
       <main className="flex-1">

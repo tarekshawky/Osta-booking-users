@@ -1,5 +1,6 @@
 // Cookie-consent state. Pure functions (no browser access) so the rules are unit-tested; ConsentManager does the I/O.
 export const CONSENT_KEY = "osta_consent";
+export const CONSENT_CHANGED_EVENT = "osta:consent-changed";
 export const CONSENT_VERSION = 1; // bump to ask everyone again (e.g. when a new kind of tracking is added)
 export const CONSENT_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
 

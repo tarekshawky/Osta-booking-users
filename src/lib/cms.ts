@@ -27,6 +27,8 @@ export type CmsPage = {
   jsonLd?: Record<string, unknown>[];
   showLastUpdated?: boolean;
   updatedAt: string;
+  // Custom code for this page only (raw HTML), set by the owner.
+  code?: { headCode: string; headCodeConsent: string; bodyCode: string; bodyCodeConsent: string };
 };
 
 export type CmsLookup = { page: CmsPage } | { redirect: string } | null;

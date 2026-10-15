@@ -21,6 +21,8 @@ export type SiteSettings = {
 export type SiteIntegrations = {
   ga4Id: string; gtmId: string; metaPixelId: string; searchConsoleToken: string; bingToken: string;
   requireConsent: boolean; consentTextEn: string; consentTextAr: string; privacyUrl: string;
+  // Custom code added by the owner (raw HTML) and what the visitor must allow before it runs.
+  headCode?: string; headCodeConsent?: string; bodyCode?: string; bodyCodeConsent?: string;
 };
 
 export type SiteData = {

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useSite } from "@/lib/site-context";
 import { useLanguage } from "@/lib/language-context";
-import { allowed, CONSENT_KEY, makeConsent, parseConsent, shouldAskConsent, type Consent } from "@/lib/consent";
+import { allowed, CONSENT_CHANGED_EVENT, CONSENT_KEY, makeConsent, parseConsent, shouldAskConsent, type Consent } from "@/lib/consent";
 import { configureTracking, track } from "@/lib/analytics";
 
 type W = { dataLayer?: unknown[]; gtag?: (...a: unknown[]) => void; fbq?: ((...a: unknown[]) => void) & { callMethod?: (...a: unknown[]) => void; queue?: unknown[]; loaded?: boolean; version?: string; push?: unknown } };
@@ -159,6 +159,8 @@ export function ConsentManager() {
       setConsent(c);
       setOpen(false);
       setCustom(false);
+      // Tells other parts of the page (custom code) that the visitor's choice changed.
+      window.dispatchEvent(new Event(CONSENT_CHANGED_EVENT));
       // Scripts already running can't be unloaded, so withdrawing a permission reloads the page without them.
       if ((had?.analytics && !analytics) || (had?.marketing && !marketing)) window.location.reload();
     },
