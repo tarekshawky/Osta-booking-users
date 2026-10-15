@@ -34,3 +34,17 @@ export function PriceLines({ quote, aed, t, compact }: { quote: Quote; aed: (f: 
     </div>
   );
 }
+
+// The optional note an admin set on a service (what the price covers or leaves out). Falls back to the other language.
+export const serviceNote = (s: { noteEn?: string; noteAr?: string }, ar: boolean) => ((ar ? s.noteAr || s.noteEn : s.noteEn || s.noteAr) ?? "").trim();
+
+// Shown with the chosen service and again in the summary, so customers see it before they book.
+export function ServiceNoteBox({ note }: { note: string }) {
+  if (!note) return null;
+  return (
+    <p role="note" className="flex gap-2 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2.5 text-xs leading-relaxed text-amber-100">
+      <span aria-hidden className="shrink-0">ⓘ</span>
+      <span className="whitespace-pre-line">{note}</span>
+    </p>
+  );
+}

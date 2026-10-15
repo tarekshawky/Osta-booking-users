@@ -12,7 +12,7 @@ import type { TranslationKey } from "@/lib/i18n";
 import { api, ApiError, type PricingConfig } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { priceQuote, QuoteError, type Quote } from "@/lib/priceQuote";
-import { bookingFee, PriceLines } from "@/components/booking/shared";
+import { bookingFee, PriceLines, ServiceNoteBox, serviceNote } from "@/components/booking/shared";
 import { loadDraft, clearDraft } from "@/lib/bookingDraft";
 
 const STEPS = ["emirate", "service", "type", "details", "when", "contact", "review"] as const;
@@ -178,6 +178,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
         `Order: ${order.number}`,
         `Service: ${service.nameEn} x ${qty} (${region?.nameEn})`,
         `Type: ${type.nameEn}`,
+        serviceNote(service, false) ? `Service note: ${serviceNote(service, false)}` : null,
         `Total: ${(order.totalFils / 100).toFixed(2)} AED`,
         `Requested time: ${scheduledAt.replace("T", " ")}`,
         `Location: ${locationUrl}`,
@@ -279,6 +280,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
                       {(ar ? s.descriptionAr : s.descriptionEn) && (
                         <p className="mt-1 text-xs text-text-muted">{ar ? s.descriptionAr : s.descriptionEn}</p>
                       )}
+                      {serviceNote(s, ar) && <p className="mt-1 text-xs text-amber-200">ⓘ {serviceNote(s, ar)}</p>}
                     </div>
                     <p className="shrink-0 text-xs text-accent-2">
                       {ok ? `${t("booking.from")} ${aed(price)}` : t("booking.notAvailable")}
@@ -318,6 +320,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
         {stepKey === "details" && service && (
           <>
             <h2 className="text-base font-semibold text-text">{name(service)}</h2>
+            <ServiceNoteBox note={serviceNote(service, ar)} />
             <div className="osta-card flex items-center justify-between p-4">
               <div>
                 <p className="text-sm font-medium text-text">{t("booking.quantity")}</p>
@@ -420,6 +423,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
               <p className="mt-1 text-text-muted" dir="ltr">{scheduledAt.replace("T", " ")}</p>
               <p className="mt-1 break-all text-text-muted">{locationUrl}</p>
             </div>
+            <ServiceNoteBox note={serviceNote(service, ar)} />
             {quote && <PriceLines quote={quote} aed={aed} t={t} />}
             {policy && (
               <div className="osta-card p-4">

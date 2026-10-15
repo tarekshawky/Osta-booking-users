@@ -132,6 +132,9 @@ export type PricingConfig = {
     pricingUnit: string;
     minQuantity: number;
     pricesIncludeVat: boolean | null;
+    // What the price does or does not include, e.g. "Repair only, spare parts not included" (set in the admin).
+    noteEn?: string;
+    noteAr?: string;
     prices: { regionId: string; unitPriceFils: number }[];
     tiers: PricingTier[];
     addOns: { id: string; nameEn: string; nameAr: string; prices: { regionId: string; priceFils: number }[] }[];

@@ -9,7 +9,7 @@ import type { PricingConfig } from "@/lib/api";
 import { priceQuote, type Quote } from "@/lib/priceQuote";
 import { saveDraft } from "@/lib/bookingDraft";
 import { track } from "@/lib/analytics";
-import { bookingFee, PriceLines } from "@/components/booking/shared";
+import { bookingFee, PriceLines, ServiceNoteBox, serviceNote } from "@/components/booking/shared";
 
 // Public, no-login price calculator: emirate -> service -> quantity -> booking type -> summary -> consent -> book.
 // Prices here are a preview; the server prices the order again when it is placed.
@@ -114,6 +114,7 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
                     <div>
                       <p className="text-sm font-semibold text-text">{name(s)}</p>
                       {(ar ? s.descriptionAr : s.descriptionEn) && <p className="mt-1 text-xs text-text-muted">{ar ? s.descriptionAr : s.descriptionEn}</p>}
+                      {serviceNote(s, ar) && <p className="mt-1 text-xs text-amber-200">ⓘ {serviceNote(s, ar)}</p>}
                     </div>
                     <p className="shrink-0 text-xs text-accent-2">{price === null ? t("booking.notAvailable") : `${t("booking.from")} ${aed(price)}`}</p>
                   </div>
@@ -127,6 +128,7 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
       {service && (
         <section>
           {heading(3, qtyLabel)}
+          {serviceNote(service, ar) && <div className="mb-3"><ServiceNoteBox note={serviceNote(service, ar)} /></div>}
           <div className="osta-card flex items-center justify-between p-4">
             <div>
               <p className="text-sm font-medium text-text">{qtyLabel}</p>
@@ -187,6 +189,7 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
           <div className="osta-card mb-3 p-4 text-sm text-text">
             <p className="font-semibold">{name(service)} × {qty}</p>
             <p className="text-text-muted">{name(config.regions.find((r) => r.id === regionId)!)} · {name(type)}</p>
+            {serviceNote(service, ar) && <div className="mt-3"><ServiceNoteBox note={serviceNote(service, ar)} /></div>}
           </div>
           <PriceLines quote={quote} aed={aed} t={t as (k: TranslationKey) => string} />
           {policy && (
