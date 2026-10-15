@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ServiceDetailClient } from "./ServiceDetailClient";
 import { api, ApiError } from "@/lib/api";
+import { loadBlockData } from "@/lib/cms-data";
 
 export const revalidate = 300;
 
@@ -49,7 +50,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <ServiceDetailClient service={service} />
+      <ServiceDetailClient service={service} blockData={service.blocks?.length ? await loadBlockData(service.blocks) : null} />
     </>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BlogDetailClient } from "./BlogDetailClient";
 import { api, ApiError } from "@/lib/api";
+import { loadBlockData } from "@/lib/cms-data";
 
 export const revalidate = 300;
 
@@ -54,7 +55,7 @@ export default async function BlogDetailPage({ params }: { params: Promise<{ slu
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <BlogDetailClient post={post} />
+      <BlogDetailClient post={post} blockData={post.blocks?.length ? await loadBlockData(post.blocks) : null} />
     </>
   );
 }

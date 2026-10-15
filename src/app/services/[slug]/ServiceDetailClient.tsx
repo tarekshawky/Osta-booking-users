@@ -6,8 +6,10 @@ import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingFooter } from "@/components/MarketingFooter";
 import { useLanguage } from "@/lib/language-context";
 import type { ServiceDetail } from "@/lib/api";
+import type { BlockData } from "@/lib/cms-data";
+import { BlockRenderer } from "@/components/cms/BlockRenderer";
 
-export function ServiceDetailClient({ service }: { service: ServiceDetail }) {
+export function ServiceDetailClient({ service, blockData }: { service: ServiceDetail; blockData: BlockData | null }) {
   const { t, lang } = useLanguage();
   const name = lang === "ar" ? service.nameAr : service.nameEn;
   const content = lang === "ar" ? service.contentAr : service.contentEn;
@@ -31,10 +33,17 @@ export function ServiceDetailClient({ service }: { service: ServiceDetail }) {
           </p>
         )}
 
-        <div className="osta-card mt-8 p-6">
-          <p className="whitespace-pre-line text-sm leading-relaxed text-text-muted">{content}</p>
-        </div>
+        {!blockData && (
+          <div className="osta-card mt-8 p-6">
+            <p className="whitespace-pre-line text-sm leading-relaxed text-text-muted">{content}</p>
+          </div>
+        )}
+      </section>
 
+      {/* A service page built from blocks in the admin shows them in place of the plain text. */}
+      {blockData && service.blocks && <BlockRenderer blocks={service.blocks} data={blockData} />}
+
+      <section className="mx-auto w-full max-w-3xl px-5 pb-14">
         <Link
           href="/pricing"
           className="osta-btn-primary mt-8 block rounded-xl px-6 py-3.5 text-center text-sm font-semibold text-white"

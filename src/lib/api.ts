@@ -1,3 +1,4 @@
+import type { CmsBlock } from "@/lib/cms";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "https://osta-invoices.vercel.app/api/v1";
 
 export class ApiError extends Error {
@@ -186,6 +187,8 @@ export type ServiceSummary = {
 };
 
 export type ServiceDetail = ServiceSummary & {
+  // Block-based body built in the admin; when present it is shown instead of the plain content.
+  blocks?: CmsBlock[];
   contentEn: string;
   contentAr: string;
   seoTitleEn: string | null;
@@ -206,6 +209,7 @@ export type BlogSummary = {
 };
 
 export type BlogDetail = BlogSummary & {
+  blocks?: CmsBlock[];
   contentEn: string;
   contentAr: string;
   seoTitleEn: string | null;

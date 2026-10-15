@@ -6,8 +6,10 @@ import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingFooter } from "@/components/MarketingFooter";
 import { useLanguage } from "@/lib/language-context";
 import type { BlogDetail } from "@/lib/api";
+import type { BlockData } from "@/lib/cms-data";
+import { BlockRenderer } from "@/components/cms/BlockRenderer";
 
-export function BlogDetailClient({ post }: { post: BlogDetail }) {
+export function BlogDetailClient({ post, blockData }: { post: BlogDetail; blockData: BlockData | null }) {
   const { t, lang } = useLanguage();
 
   function formatDate(iso: string | null) {
@@ -50,17 +52,24 @@ export function BlogDetailClient({ post }: { post: BlogDetail }) {
           />
         )}
 
-        <div className="osta-card mt-8 p-6">
-          <p className="whitespace-pre-line text-sm leading-relaxed text-text-muted">{content}</p>
-        </div>
+        {!blockData && (
+          <div className="osta-card mt-8 p-6">
+            <p className="whitespace-pre-line text-sm leading-relaxed text-text-muted">{content}</p>
+          </div>
+        )}
+      </article>
 
+      {/* An article built from blocks in the admin shows them in place of the plain text. */}
+      {blockData && post.blocks && <BlockRenderer blocks={post.blocks} data={blockData} />}
+
+      <section className="mx-auto w-full max-w-2xl px-5 pb-14">
         <Link
           href="/pricing"
           className="osta-btn-primary mt-8 block rounded-xl px-6 py-3.5 text-center text-sm font-semibold text-white"
         >
           {t("home.bookService")}
         </Link>
-      </article>
+      </section>
 
       </main>
 
