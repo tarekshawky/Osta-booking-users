@@ -8,6 +8,7 @@ import { useLanguage } from "@/lib/language-context";
 import { useSite } from "@/lib/site-context";
 import { telHref, whatsappHref } from "@/lib/site";
 import { OPEN_CONSENT_EVENT } from "@/components/ConsentManager";
+import { WhatsAppPopup } from "@/components/WhatsAppPopup";
 
 const SOCIAL_BADGE: Record<string, string> = { facebook: "f", instagram: "ig", linkedin: "in", tiktok: "tt", youtube: "yt", x: "X", whatsapp: "wa" };
 
@@ -25,6 +26,8 @@ export function MarketingFooter() {
 
   return (
     <footer className="border-t border-card-border bg-bg-elevated">
+      {/* Floating WhatsApp chat on every public page (controlled in Site & Contact). */}
+      <WhatsAppPopup />
       <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <SiteLogo size="xl" />

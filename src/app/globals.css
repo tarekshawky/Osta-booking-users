@@ -49,6 +49,14 @@ html[dir="rtl"] body {
   transform: scaleX(-1);
 }
 
+.osta-wa {
+  transition: bottom 0.2s;
+}
+
+html[data-consent-bar] .osta-wa {
+  bottom: 9rem;
+}
+
 .osta-card {
   background: linear-gradient(180deg, var(--card) 0%, var(--bg-elevated) 100%);
   border: 1px solid var(--card-border);

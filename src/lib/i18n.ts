@@ -309,6 +309,12 @@ const dict = {
     rightsReserved: { en: "All rights reserved.", ar: "جميع الحقوق محفوظة." },
   },
 
+  whatsappPopup: {
+    open: { en: "Chat with us on WhatsApp", ar: "تواصل معنا عبر واتساب" },
+    close: { en: "Close", ar: "إغلاق" },
+    online: { en: "Available 24/7", ar: "متاح على مدار الساعة" },
+  },
+
   home: {
     heroEyebrow: { en: "Trusted AC Repair & Home Maintenance", ar: "صيانة مكيفات ومنازل موثوقة" },
     heroTitleLine1: { en: "Your Comfort.", ar: "راحتك." },

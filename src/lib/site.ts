@@ -16,6 +16,9 @@ export type SiteSettings = {
   phone: string; whatsapp: string; whatsappMessageEn: string; whatsappMessageAr: string; email: string;
   addressEn: string; addressAr: string; hoursEn: string; hoursAr: string; mapsUrl: string; businessProfileUrl: string;
   headerCtaLabelEn: string; headerCtaLabelAr: string; headerCtaUrl: string; footerAreas: { en: string; ar: string }[];
+  // WhatsApp chat pop-up (optional: older admin versions don't send these)
+  waPopupEnabled?: boolean; waPopupAutoOpen?: boolean; waPopupDelaySeconds?: number;
+  waPopupTitleEn?: string; waPopupTitleAr?: string; waPopupTextEn?: string; waPopupTextAr?: string; waPopupButtonEn?: string; waPopupButtonAr?: string;
 };
 
 export type SiteIntegrations = {

@@ -168,6 +168,11 @@ export function ConsentManager() {
   );
 
   const visible = ready && integrations && (open || shouldAskConsent(needs, cfg.requireConsent, consent));
+  // Lets other floating widgets (WhatsApp) sit above the cookie bar while it is on screen.
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-consent-bar", !!visible);
+    return () => document.documentElement.removeAttribute("data-consent-bar");
+  }, [visible]);
   if (!visible) return null;
 
   const showCustom = custom;
