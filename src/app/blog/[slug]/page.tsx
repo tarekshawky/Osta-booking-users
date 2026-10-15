@@ -4,6 +4,7 @@ import { BlogDetailClient } from "./BlogDetailClient";
 import { api, ApiError } from "@/lib/api";
 import { loadBlockData } from "@/lib/cms-data";
 import { pick, serverLang } from "@/lib/serverLang";
+import { keywordList } from "@/lib/keywords";
 import { SITE_URL } from "@/lib/siteUrl";
 
 export const revalidate = 300;
@@ -27,6 +28,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title,
     description,
+    keywords: keywordList(pick(lang, post.seoKeywordsEn, post.seoKeywordsAr)),
     // One address per article: the plain /blog/<slug>, whatever category the visitor came from.
     alternates: { canonical: `/blog/${slug}` },
     openGraph: {

@@ -204,6 +204,8 @@ export type ServiceDetail = ServiceSummary & {
   seoTitleAr: string | null;
   seoDescriptionEn: string | null;
   seoDescriptionAr: string | null;
+  seoKeywordsEn?: string | null;
+  seoKeywordsAr?: string | null;
 };
 
 export type BlogCategoryBrief = { slug: string; nameEn: string; nameAr: string };
@@ -215,6 +217,8 @@ export type BlogCategory = BlogCategoryBrief & {
   seoTitleAr: string | null;
   seoDescriptionEn: string | null;
   seoDescriptionAr: string | null;
+  seoKeywordsEn?: string | null;
+  seoKeywordsAr?: string | null;
   coverImageUrl: string | null;
   count: number;
   // Enough articles for the category page to be offered to search engines.
@@ -244,6 +248,8 @@ export type BlogDetail = BlogSummary & {
   seoTitleAr: string | null;
   seoDescriptionEn: string | null;
   seoDescriptionAr: string | null;
+  seoKeywordsEn?: string | null;
+  seoKeywordsAr?: string | null;
 };
 
 export type HomeSectionItem = {

@@ -4,6 +4,7 @@ import { BlogIndex } from "@/components/blog/BlogIndex";
 import { api, ApiError, type BlogCategory } from "@/lib/api";
 import { loadBlogIndex } from "@/lib/blogData";
 import { blogListPath, categoryPath, parsePage } from "@/lib/blogPaths";
+import { keywordList } from "@/lib/keywords";
 import { pick, serverLang } from "@/lib/serverLang";
 import { SITE_URL } from "@/lib/siteUrl";
 
@@ -31,6 +32,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   return {
     title,
     description,
+    keywords: keywordList(pick(lang, cat.seoKeywordsEn, cat.seoKeywordsAr)),
     alternates: { canonical: blogListPath(categoryPath(slug), parsePage(p)) },
     // Thin-page protection: a category with only a few articles, and any search result, stays out of search engines.
     ...(!cat.indexable || q ? { robots: { index: false, follow: true } } : {}),
