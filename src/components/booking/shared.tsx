@@ -55,9 +55,12 @@ type PService = PricingConfig["services"][number];
 export function optionsIn(s: PService, regionId: string) {
   return (s.options ?? []).flatMap((o) => {
     const price = o.prices.find((p) => p.regionId === regionId)?.unitPriceFils;
-    return price === undefined ? [] : [{ id: o.id, nameEn: o.nameEn, nameAr: o.nameAr, priceFils: price }];
+    return price === undefined ? [] : [{ id: o.id, nameEn: o.nameEn, nameAr: o.nameAr, noteEn: o.noteEn ?? "", noteAr: o.noteAr ?? "", priceFils: price }];
   });
 }
+// The question above the options: the service's own wording (e.g. "What do you need?") or the standard one.
+export const optionQuestion = (s: PService, ar: boolean, fallback: string) => ((ar ? s.optionLabelAr || s.optionLabelEn : s.optionLabelEn || s.optionLabelAr) ?? "").trim() || fallback;
+export const optionNote = (o: { noteEn?: string; noteAr?: string }, ar: boolean) => ((ar ? o.noteAr || o.noteEn : o.noteEn || o.noteAr) ?? "").trim();
 export const hasOptions = (s: PService) => (s.options?.length ?? 0) > 0;
 export function unitPriceFor(s: PService, regionId: string, optionId: string): number | null {
   if (hasOptions(s)) return optionsIn(s, regionId).find((o) => o.id === optionId)?.priceFils ?? null;

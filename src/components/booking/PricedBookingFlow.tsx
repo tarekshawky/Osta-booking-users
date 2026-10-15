@@ -12,7 +12,7 @@ import type { TranslationKey } from "@/lib/i18n";
 import { api, ApiError, type PricingConfig } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { priceQuote, QuoteError, type Quote } from "@/lib/priceQuote";
-import { bookingFee, fromPrice, hasOptions, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
+import { bookingFee, fromPrice, hasOptions, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
 import { loadDraft, clearDraft } from "@/lib/bookingDraft";
 
 const BASE_STEPS = ["emirate", "service", "type", "details", "when", "contact", "review"] as const;
@@ -307,12 +307,15 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
 
         {stepKey === "option" && service && (
           <>
-            <h2 className="text-base font-semibold text-text">{name(service)} · {t("booking.chooseOption")}</h2>
+            <h2 className="text-base font-semibold text-text">{name(service)} · {optionQuestion(service, ar, t("booking.chooseOption"))}</h2>
             <ServiceNoteBox note={serviceNote(service, ar)} />
             {opts.map((o) => (
               <button key={o.id} type="button" onClick={() => { setOptionId(o.id); setError(null); }} className={pickCard(optionId === o.id)}>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-text">{name(o)}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-text">{name(o)}</p>
+                    {optionNote(o, ar) && <p className="mt-1 text-xs text-text-muted">{optionNote(o, ar)}</p>}
+                  </div>
                   <p className="shrink-0 text-xs text-accent-2">{aed(o.priceFils)}</p>
                 </div>
               </button>

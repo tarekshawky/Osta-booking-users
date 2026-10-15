@@ -9,7 +9,7 @@ import type { PricingConfig } from "@/lib/api";
 import { priceQuote, type Quote } from "@/lib/priceQuote";
 import { saveDraft } from "@/lib/bookingDraft";
 import { track } from "@/lib/analytics";
-import { bookingFee, fromPrice, hasOptions, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
+import { bookingFee, fromPrice, hasOptions, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
 
 // Public, no-login price calculator: emirate -> service -> quantity -> booking type -> summary -> consent -> book.
 // Prices here are a preview; the server prices the order again when it is placed.
@@ -134,12 +134,15 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
 
       {needsOption && (
         <section>
-          {heading(3, t("booking.chooseOption"))}
+          {heading(3, optionQuestion(service!, ar, t("booking.chooseOption")))}
           <div className="flex flex-col gap-3">
             {opts.map((o) => (
               <button key={o.id} type="button" aria-pressed={optionId === o.id} onClick={() => { setOptionId(o.id); setConsent(false); }} className={card(optionId === o.id)}>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-text">{name(o)}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-text">{name(o)}</p>
+                    {optionNote(o, ar) && <p className="mt-1 text-xs text-text-muted">{optionNote(o, ar)}</p>}
+                  </div>
                   <p className="shrink-0 text-xs text-accent-2">{aed(o.priceFils)}</p>
                 </div>
               </button>
