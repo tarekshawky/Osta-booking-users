@@ -12,12 +12,16 @@ import type { TranslationKey } from "@/lib/i18n";
 import { api, ApiError, type PricingConfig } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { priceQuote, QuoteError, type Quote } from "@/lib/priceQuote";
-import { bookingFee, PriceLines, ServiceNoteBox, serviceNote } from "@/components/booking/shared";
+import { bookingFee, fromPrice, hasOptions, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
 import { loadDraft, clearDraft } from "@/lib/bookingDraft";
 
-const STEPS = ["emirate", "service", "type", "details", "when", "contact", "review"] as const;
+const BASE_STEPS = ["emirate", "service", "type", "details", "when", "contact", "review"] as const;
+type StepKey = (typeof BASE_STEPS)[number] | "option";
 
 type Service = PricingConfig["services"][number];
+
+// A service with options gets one extra step right after the service: choosing the option (e.g. a gas weight).
+const stepsFor = (s?: Service): StepKey[] => (s && hasOptions(s) ? ["emirate", "service", "option", "type", "details", "when", "contact", "review"] : [...BASE_STEPS]);
 export function PricedBookingFlow({ config }: { config: PricingConfig }) {
   const { token, customer } = useAuth();
   const router = useRouter();
@@ -31,14 +35,16 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
     const d = loadDraft();
     const svc = d && config.services.find((s) => s.id === d.serviceId);
     const ok =
-      !!d && !!svc && svc.prices.some((p) => p.regionId === d.regionId) &&
+      !!d && !!svc && fromPrice(svc, d.regionId) !== null &&
+      (!hasOptions(svc) || optionsIn(svc, d.regionId).some((o) => o.id === d.optionId)) &&
       config.bookingTypes.some((b) => b.id === d.typeId) && d.qty >= svc.minQuantity;
     return ok ? d : null;
   });
-  const [step, setStep] = useState(draft ? STEPS.indexOf("when") : 0);
+  const [step, setStep] = useState(draft ? stepsFor(config.services.find((s) => s.id === draft.serviceId)).indexOf("when") : 0);
   const [regionId, setRegionId] = useState(draft?.regionId ?? "");
   const [serviceId, setServiceId] = useState(draft?.serviceId ?? "");
   const [typeId, setTypeId] = useState(draft?.typeId ?? "");
+  const [optionId, setOptionId] = useState(draft?.optionId ?? "");
   const [qty, setQty] = useState(draft?.qty ?? 1);
   const [addOnIds, setAddOnIds] = useState<string[]>(draft?.addOnIds ?? []);
   const [scheduledAt, setScheduledAt] = useState("");
@@ -62,14 +68,17 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
   const policyAmount = policy ? String(policy.amountFils / 100) : "";
   const fill = (text: string) => text.replaceAll("{amount}", policyAmount);
 
-  const unitFils = (s: Service) => s.prices.find((p) => p.regionId === regionId)?.unitPriceFils ?? null;
+  const unitFils = (s: Service) => fromPrice(s, regionId);
+  const opts = service ? optionsIn(service, regionId) : [];
+  const option = opts.find((o) => o.id === optionId);
+  const steps = stepsFor(service);
   const availableAddOns = service ? service.addOns.filter((a) => a.prices.some((p) => p.regionId === regionId)) : [];
 
   const { quote, quoteError } = useMemo((): { quote: Quote | null; quoteError: boolean } => {
     if (!service || !type || !regionId) return { quote: null, quoteError: false };
     try {
       const q = priceQuote({
-        unitPriceFils: service.prices.find((p) => p.regionId === regionId)?.unitPriceFils ?? null,
+        unitPriceFils: unitPriceFor(service, regionId, optionId),
         quantity: qty,
         minQuantity: service.minQuantity,
         tiers: service.tiers.map((x) => ({
@@ -91,7 +100,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
       return { quote: null, quoteError: e instanceof QuoteError };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [service, type, regionId, qty, addOnIds, config.tax]);
+  }, [service, type, regionId, qty, addOnIds, optionId, config.tax]);
 
   function slotProblem(): string | null {
     if (!scheduledAt || !type) return t("booking.pastDate");
@@ -106,9 +115,10 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
   }
 
   function stepProblem(): string | null {
-    switch (STEPS[step]) {
+    switch (steps[step]) {
       case "emirate": return regionId ? null : t("booking.chooseEmirate");
       case "service": return service && unitFils(service) !== null ? null : t("booking.chooseService");
+      case "option": return option ? null : t("booking.optionRequired");
       case "type": return typeId ? null : t("booking.chooseType");
       case "details": return qty >= (service?.minQuantity ?? 1) && quote ? null : t("booking.priceError");
       case "when": return slotProblem();
@@ -123,7 +133,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
     if (!problem) {
       if (step === 0) track("booking_started");
       setSummaryOpen(false);
-      setStep((s) => Math.min(s + 1, STEPS.length - 1));
+      setStep((s) => Math.min(s + 1, steps.length - 1));
     }
   }
 
@@ -166,6 +176,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
         bookingTypeId: typeId,
         quantity: qty,
         addOnIds,
+        optionId: optionId || undefined,
         scheduledAt: scheduledAt || undefined,
         locationUrl: locationUrl.trim(),
         customerLanguage,
@@ -176,7 +187,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
       const lines = [
         "New OSTA booking request",
         `Order: ${order.number}`,
-        `Service: ${service.nameEn} x ${qty} (${region?.nameEn})`,
+        `Service: ${service.nameEn}${option ? ` - ${option.nameEn}` : ""} x ${qty} (${region?.nameEn})`,
         `Type: ${type.nameEn}`,
         serviceNote(service, false) ? `Service note: ${serviceNote(service, false)}` : null,
         `Total: ${(order.totalFils / 100).toFixed(2)} AED`,
@@ -213,7 +224,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
 
   const pickCard = (selected: boolean, disabled = false) =>
     `osta-card osta-pick w-full p-4 text-start ${selected ? "osta-glow-border" : ""} ${disabled ? "opacity-45" : ""}`;
-  const stepKey = STEPS[step];
+  const stepKey = steps[step];
 
   return (
     <AppShell>
@@ -221,10 +232,10 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
 
       <div className="px-5 pt-4">
         <p className="text-xs text-text-muted" aria-live="polite">
-          {t("booking.stepOf")} {step + 1} {t("booking.of")} {STEPS.length} · {t(`booking.steps.${stepKey}` as TranslationKey)}
+          {t("booking.stepOf")} {step + 1} {t("booking.of")} {steps.length} · {t(`booking.steps.${stepKey}` as TranslationKey)}
         </p>
         <div className="mt-2 flex gap-1" aria-hidden>
-          {STEPS.map((s, i) => (
+          {steps.map((s, i) => (
             <div key={s} className={`h-1 flex-1 rounded-full ${i <= step ? "bg-accent" : "bg-card-border"}`} />
           ))}
         </div>
@@ -242,6 +253,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
                   onClick={() => {
                     setRegionId(r.id);
                     setServiceId("");
+                    setOptionId("");
                     setAddOnIds([]);
                     setError(null);
                   }}
@@ -268,6 +280,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
                   disabled={!ok}
                   onClick={() => {
                     setServiceId(s.id);
+                    setOptionId("");
                     setQty(s.minQuantity);
                     setAddOnIds([]);
                     setError(null);
@@ -289,6 +302,21 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
                 </button>
               );
             })}
+          </>
+        )}
+
+        {stepKey === "option" && service && (
+          <>
+            <h2 className="text-base font-semibold text-text">{name(service)} · {t("booking.chooseOption")}</h2>
+            <ServiceNoteBox note={serviceNote(service, ar)} />
+            {opts.map((o) => (
+              <button key={o.id} type="button" onClick={() => { setOptionId(o.id); setError(null); }} className={pickCard(optionId === o.id)}>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-text">{name(o)}</p>
+                  <p className="shrink-0 text-xs text-accent-2">{aed(o.priceFils)}</p>
+                </div>
+              </button>
+            ))}
           </>
         )}
 
@@ -418,7 +446,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
           <>
             <h2 className="text-base font-semibold text-text">{t("booking.reviewTitle")}</h2>
             <div className="osta-card p-4 text-sm text-text">
-              <p className="font-semibold">{name(service)} × {qty}</p>
+              <p className="font-semibold">{name(service)}{option ? ` — ${name(option)}` : ""} × {qty}</p>
               <p className="text-text-muted">{region && name(region)} · {name(type)}</p>
               <p className="mt-1 text-text-muted" dir="ltr">{scheduledAt.replace("T", " ")}</p>
               <p className="mt-1 break-all text-text-muted">{locationUrl}</p>

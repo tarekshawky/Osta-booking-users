@@ -6,6 +6,7 @@ export type BookingDraft = {
   regionId: string;
   serviceId: string;
   typeId: string;
+  optionId?: string;
   qty: number;
   addOnIds: string[];
   consent: boolean;
@@ -33,7 +34,7 @@ export function loadDraft(): BookingDraft | null {
     if (!raw) return null;
     const d = JSON.parse(raw) as Partial<BookingDraft>;
     if (typeof d.regionId !== "string" || typeof d.serviceId !== "string" || typeof d.typeId !== "string" || typeof d.qty !== "number") return null;
-    return { regionId: d.regionId, serviceId: d.serviceId, typeId: d.typeId, qty: d.qty, addOnIds: Array.isArray(d.addOnIds) ? d.addOnIds.filter((x) => typeof x === "string") : [], consent: d.consent === true };
+    return { regionId: d.regionId, serviceId: d.serviceId, typeId: d.typeId, optionId: typeof d.optionId === "string" ? d.optionId : undefined, qty: d.qty, addOnIds: Array.isArray(d.addOnIds) ? d.addOnIds.filter((x) => typeof x === "string") : [], consent: d.consent === true };
   } catch {
     return null;
   }

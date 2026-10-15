@@ -184,6 +184,7 @@ const dict = {
     steps: {
       emirate: { en: "Emirate", ar: "الإمارة" },
       service: { en: "Service", ar: "الخدمة" },
+      option: { en: "Option", ar: "الخيار" },
       type: { en: "Booking type", ar: "نوع الحجز" },
       details: { en: "Details", ar: "التفاصيل" },
       when: { en: "Date & time", ar: "الموعد" },
@@ -196,6 +197,8 @@ const dict = {
     back: { en: "Back", ar: "رجوع" },
     chooseEmirate: { en: "Where do you need the service?", ar: "أين تحتاج الخدمة؟" },
     chooseService: { en: "Choose a service", ar: "اختر الخدمة" },
+    chooseOption: { en: "Choose an option", ar: "اختر الخيار" },
+    optionRequired: { en: "Please choose an option.", ar: "يرجى اختيار أحد الخيارات." },
     from: { en: "From", ar: "ابتداءً من" },
     perUnit: { en: "per unit", ar: "للوحدة" },
     notAvailable: { en: "Not available in this emirate", ar: "غير متاحة في هذه الإمارة" },

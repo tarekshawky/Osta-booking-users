@@ -9,7 +9,7 @@ import type { PricingConfig } from "@/lib/api";
 import { priceQuote, type Quote } from "@/lib/priceQuote";
 import { saveDraft } from "@/lib/bookingDraft";
 import { track } from "@/lib/analytics";
-import { bookingFee, PriceLines, ServiceNoteBox, serviceNote } from "@/components/booking/shared";
+import { bookingFee, fromPrice, hasOptions, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
 
 // Public, no-login price calculator: emirate -> service -> quantity -> booking type -> summary -> consent -> book.
 // Prices here are a preview; the server prices the order again when it is placed.
@@ -21,15 +21,22 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
   const [regionId, setRegionId] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [typeId, setTypeId] = useState("");
+  const [optionId, setOptionId] = useState("");
   const [qty, setQty] = useState(1);
   const [addOnIds, setAddOnIds] = useState<string[]>([]);
   const [consent, setConsent] = useState(false);
 
   const name = (x: { nameEn: string; nameAr: string }) => (ar ? x.nameAr : x.nameEn);
   const aed = (fils: number) => `${(fils / 100).toFixed(2)} ${t("common.aed")}`;
-  const priceIn = (s: PricingConfig["services"][number]) => s.prices.find((p) => p.regionId === regionId)?.unitPriceFils ?? null;
+  const priceIn = (s: PricingConfig["services"][number]) => fromPrice(s, regionId);
 
   const service = config.services.find((s) => s.id === serviceId);
+  const opts = service ? optionsIn(service, regionId) : [];
+  const needsOption = !!service && hasOptions(service);
+  const option = opts.find((o) => o.id === optionId);
+  // With options, nothing below the option step is shown until one is chosen.
+  const ready = !!service && (!needsOption || !!option);
+  const n = needsOption ? 1 : 0; // later headings shift by one when there is an option step
   const type = config.bookingTypes.find((b) => b.id === typeId);
   const policy = config.visitFeePolicy;
   const fill = (text: string) => text.replaceAll("{amount}", policy ? String(policy.amountFils / 100) : "");
@@ -39,7 +46,7 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
     if (!service || !type || !regionId) return null;
     try {
       return priceQuote({
-        unitPriceFils: priceIn(service),
+        unitPriceFils: unitPriceFor(service, regionId, optionId),
         quantity: qty,
         minQuantity: service.minQuantity,
         tiers: service.tiers.map((x) => ({
@@ -57,7 +64,7 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
       return null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [service, type, regionId, qty, addOnIds, config.tax]);
+  }, [service, type, regionId, qty, addOnIds, optionId, config.tax]);
 
   const qtyLabel = service?.pricingUnit === "AC_UNIT" ? t("booking.qtyAc") : service?.pricingUnit === "ROOM" ? t("booking.qtyRoom") : t("booking.qtyUnit");
   const card = (selected: boolean, disabled = false) =>
@@ -70,8 +77,8 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
   );
 
   function book() {
-    if (!service || !type || !quote || !consent) return;
-    saveDraft({ regionId, serviceId, typeId, qty, addOnIds, consent });
+    if (!service || !type || !quote || !consent || (needsOption && !option)) return;
+    saveDraft({ regionId, serviceId, typeId, optionId: optionId || undefined, qty, addOnIds, consent });
     track("booking_started");
     router.push("/orders/new");
   }
@@ -86,7 +93,7 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
               key={r.id}
               type="button"
               aria-pressed={regionId === r.id}
-              onClick={() => { setRegionId(r.id); setServiceId(""); setAddOnIds([]); setConsent(false); }}
+              onClick={() => { setRegionId(r.id); setServiceId(""); setOptionId(""); setAddOnIds([]); setConsent(false); }}
               className={card(regionId === r.id)}
             >
               <span className="text-sm font-medium text-text">{name(r)}</span>
@@ -107,7 +114,7 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
                   type="button"
                   disabled={price === null}
                   aria-pressed={serviceId === s.id}
-                  onClick={() => { setServiceId(s.id); setQty(s.minQuantity); setAddOnIds([]); setConsent(false); }}
+                  onClick={() => { setServiceId(s.id); setOptionId(""); setQty(s.minQuantity); setAddOnIds([]); setConsent(false); }}
                   className={card(serviceId === s.id, price === null)}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -125,9 +132,25 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
         </section>
       )}
 
-      {service && (
+      {needsOption && (
         <section>
-          {heading(3, qtyLabel)}
+          {heading(3, t("booking.chooseOption"))}
+          <div className="flex flex-col gap-3">
+            {opts.map((o) => (
+              <button key={o.id} type="button" aria-pressed={optionId === o.id} onClick={() => { setOptionId(o.id); setConsent(false); }} className={card(optionId === o.id)}>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-text">{name(o)}</p>
+                  <p className="shrink-0 text-xs text-accent-2">{aed(o.priceFils)}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {ready && service && (
+        <section>
+          {heading(3 + n, qtyLabel)}
           {serviceNote(service, ar) && <div className="mb-3"><ServiceNoteBox note={serviceNote(service, ar)} /></div>}
           <div className="osta-card flex items-center justify-between p-4">
             <div>
@@ -161,9 +184,9 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
         </section>
       )}
 
-      {service && (
+      {ready && service && (
         <section>
-          {heading(4, t("booking.steps.type"))}
+          {heading(4 + n, t("booking.steps.type"))}
           <div className="flex flex-col gap-3">
             {config.bookingTypes.map((b) => {
               const fee = bookingFee(b, service.id, regionId);
@@ -185,9 +208,9 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
 
       {service && type && quote && (
         <section>
-          {heading(5, t("booking.summaryTitle"))}
+          {heading(5 + n, t("booking.summaryTitle"))}
           <div className="osta-card mb-3 p-4 text-sm text-text">
-            <p className="font-semibold">{name(service)} × {qty}</p>
+            <p className="font-semibold">{name(service)}{option ? ` — ${name(option)}` : ""} × {qty}</p>
             <p className="text-text-muted">{name(config.regions.find((r) => r.id === regionId)!)} · {name(type)}</p>
             {serviceNote(service, ar) && <div className="mt-3"><ServiceNoteBox note={serviceNote(service, ar)} /></div>}
           </div>

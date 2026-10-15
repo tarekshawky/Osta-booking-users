@@ -136,6 +136,8 @@ export type PricingConfig = {
     noteEn?: string;
     noteAr?: string;
     prices: { regionId: string; unitPriceFils: number }[];
+    // Choices the customer must pick (e.g. a gas weight), each with its own price per emirate.
+    options?: { id: string; nameEn: string; nameAr: string; prices: { regionId: string; unitPriceFils: number }[] }[];
     tiers: PricingTier[];
     addOns: { id: string; nameEn: string; nameAr: string; prices: { regionId: string; priceFils: number }[] }[];
   }[];
@@ -170,6 +172,7 @@ export type PricedOrderBody = {
   bookingTypeId: string;
   quantity: number;
   addOnIds?: string[];
+  optionId?: string;
   scheduledAt?: string;
   locationUrl?: string;
   customerLanguage?: string;

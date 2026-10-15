@@ -48,3 +48,26 @@ export function ServiceNoteBox({ note }: { note: string }) {
     </p>
   );
 }
+
+type PService = PricingConfig["services"][number];
+
+// A service with options is priced by the chosen option; one without uses its own price. Mirrors the server's rule.
+export function optionsIn(s: PService, regionId: string) {
+  return (s.options ?? []).flatMap((o) => {
+    const price = o.prices.find((p) => p.regionId === regionId)?.unitPriceFils;
+    return price === undefined ? [] : [{ id: o.id, nameEn: o.nameEn, nameAr: o.nameAr, priceFils: price }];
+  });
+}
+export const hasOptions = (s: PService) => (s.options?.length ?? 0) > 0;
+export function unitPriceFor(s: PService, regionId: string, optionId: string): number | null {
+  if (hasOptions(s)) return optionsIn(s, regionId).find((o) => o.id === optionId)?.priceFils ?? null;
+  return s.prices.find((p) => p.regionId === regionId)?.unitPriceFils ?? null;
+}
+// The lowest price a service can start from in an emirate (null = not bookable there).
+export function fromPrice(s: PService, regionId: string): number | null {
+  if (hasOptions(s)) {
+    const prices = optionsIn(s, regionId).map((o) => o.priceFils);
+    return prices.length ? Math.min(...prices) : null;
+  }
+  return s.prices.find((p) => p.regionId === regionId)?.unitPriceFils ?? null;
+}
