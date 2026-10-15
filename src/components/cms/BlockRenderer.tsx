@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { useSite } from "@/lib/site-context";
-import { RichInline } from "@/components/cms/RichInline";
+import { RichHtml, RichInline, isRichText } from "@/components/cms/RichInline";
 import { telHref, whatsappHref } from "@/lib/site";
 import { BookingCalculator } from "@/components/booking/BookingCalculator";
 import { DynamicIcon } from "@/components/DynamicIcon";
@@ -40,6 +40,7 @@ function useBi() {
 }
 
 function Paragraphs({ text, className }: { text: string; className?: string }) {
+  if (isRichText(text)) return <RichHtml html={text} className={className} />;
   return (
     <>
       {text.split(/\n\s*\n/).filter(Boolean).map((para, i) => (
@@ -225,7 +226,9 @@ function Faq({ p }: { p: P }) {
               {bi(it.question)}
               <ChevronDown size={16} className="shrink-0 text-text-muted transition group-open:rotate-180" />
             </summary>
-            <p className="mt-3 whitespace-pre-line text-sm text-text-muted"><RichInline text={bi(it.answer)} /></p>
+            {isRichText(bi(it.answer))
+              ? <RichHtml html={bi(it.answer)} className="mt-3 text-sm text-text-muted" />
+              : <p className="mt-3 whitespace-pre-line text-sm text-text-muted"><RichInline text={bi(it.answer)} /></p>}
           </details>
         ))}
       </div>

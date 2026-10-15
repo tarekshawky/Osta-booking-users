@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { parseInline } from "@/lib/inlineLinks";
+import { isRichHtml, richToText } from "@/lib/richText";
 
 // Text with optional [words](address){flags} links, drawn as real links. Same tab unless the link was set to open in a
 // new tab. Only site paths, https://, tel: and mailto: are ever linked (the parser refuses anything else).
@@ -24,4 +25,17 @@ export function RichInline({ text }: { text: string }) {
       })}
     </>
   );
+}
+
+// HTML written in the admin's visual editor. The admin rebuilds it through an allow-list on every save; this is a second,
+// cheap guard so something unexpected is shown as plain words instead of being run.
+const UNEXPECTED = /<\s*(script|iframe|object|embed|style|svg|math|form|input|link|meta|base)|\son[a-z]+\s*=|javascript:|data:text/i;
+
+export function isRichText(text: string) {
+  return isRichHtml(text);
+}
+
+export function RichHtml({ html, className = "" }: { html: string; className?: string }) {
+  if (UNEXPECTED.test(html)) return <div className={className}><p>{richToText(html)}</p></div>;
+  return <div className={`rich-text ${className}`} dangerouslySetInnerHTML={{ __html: html }} />;
 }
