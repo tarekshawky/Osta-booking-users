@@ -93,7 +93,7 @@ export function MarketingFooter() {
 
       <div className="border-t border-card-border px-5 py-5 text-center text-xs text-text-faint">
         <a href="https://tarekshawky.vercel.app" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-accent-2 hover:underline">
-          © {year} {pick(settings.siteNameEn, settings.siteNameAr)}. {pick(settings.copyrightEn, settings.copyrightAr)}
+          © {year} tarekshawky. {pick(settings.copyrightEn, settings.copyrightAr)}
         </a>
         {hasTracking && (
           <button type="button" onClick={() => window.dispatchEvent(new Event(OPEN_CONSENT_EVENT))} className="ms-3 underline hover:text-text">
