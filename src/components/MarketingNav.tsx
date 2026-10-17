@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isActivePath } from "@/lib/nav";
@@ -31,13 +31,30 @@ function NavLink({ item, className, activeClass = "", onClick, label }: { item: 
 }
 
 // Top-bar links: colour change plus an underline that grows on hover and stays on the page you are on.
-const BAR_LINK = "relative py-1 text-sm text-text-muted transition-colors hover:text-accent-2 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-center after:scale-x-0 after:rounded after:bg-accent-2 after:transition-transform hover:after:scale-x-100";
+const BAR_LINK = "relative whitespace-nowrap py-1 text-sm text-text-muted transition-colors hover:text-accent-2 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-center after:scale-x-0 after:rounded after:bg-accent-2 after:transition-transform hover:after:scale-x-100";
 const BAR_ACTIVE = "!text-text font-semibold after:!scale-x-100";
-const DROP_LINK = "block rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-card hover:text-accent-2";
+const DROP_LINK = "block whitespace-nowrap rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-card hover:text-accent-2";
 const DROP_ACTIVE = "bg-card !text-accent-2 font-medium";
 const MOBILE_LINK = "block rounded-lg px-2 py-2.5 text-sm text-text-muted transition-colors hover:bg-card hover:text-accent-2";
 const MOBILE_SUB = "block rounded-lg px-2 py-2 ps-6 text-sm text-text-faint transition-colors hover:bg-card hover:text-accent-2";
 const MOBILE_ACTIVE = "bg-card !text-accent-2 font-semibold";
+
+function BarItem({ item, label }: { item: SiteMenuItem; label: (m: SiteMenuItem) => string }) {
+  const pathname = usePathname();
+  if (!item.children.length) return <NavLink item={item} label={label(item)} className={BAR_LINK} activeClass={BAR_ACTIVE} />;
+  return (
+    <div className="group relative">
+      <button type="button" className={`flex items-center gap-1 ${BAR_LINK} ${item.children.some((c) => isActivePath(pathname, c.url)) ? BAR_ACTIVE : ""}`}>
+        {label(item)} <ChevronDown size={14} />
+      </button>
+      <div className="invisible absolute start-0 top-full z-40 min-w-44 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+        {item.children.filter((c) => c.showDesktop).map((c) => (
+          <NavLink key={c.url + c.labelEn} item={c} label={label(c)} className={DROP_LINK} activeClass={DROP_ACTIVE} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function MarketingNav() {
   const { t, lang } = useLanguage();
@@ -49,41 +66,87 @@ export function MarketingNav() {
   const desktop = menus.header.filter((m) => m.showDesktop);
   const mobile = menus.header.filter((m) => m.showMobile);
   // "Book" always starts at the price calculator; only signed-in screens link straight to the booking form.
+  // Desktop bar: every link stays on one line. Links that do not fit move into a "More" menu (measured, so it adapts to the screen and language).
+  const navRef = useRef<HTMLElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState<number | null>(null);
+  const shown = fit === null ? desktop : desktop.slice(0, fit);
+  const hidden = fit === null ? [] : desktop.slice(fit);
+  const signature = desktop.map((m) => m.url + m.labelEn + m.labelAr).join("|") + lang;
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    const measure = measureRef.current;
+    if (!nav || !measure) return;
+    const compute = () => {
+      const widths = [...measure.children].map((c) => (c as HTMLElement).offsetWidth);
+      const moreW = widths.pop() ?? 0;
+      const gap = parseFloat(getComputedStyle(measure).columnGap) || 20;
+      const room = nav.clientWidth;
+      const total = widths.reduce((a, w) => a + w, 0) + gap * Math.max(widths.length - 1, 0);
+      if (total <= room) return setFit(widths.length);
+      let used = moreW;
+      let count = 0;
+      for (const w of widths) {
+        if (used + gap + w > room) break;
+        used += gap + w;
+        count++;
+      }
+      setFit(Math.max(count, 0));
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(nav);
+    void document.fonts?.ready.then(compute);
+    return () => ro.disconnect();
+  }, [signature]);
   const cta = { label: lang === "ar" ? settings.headerCtaLabelAr : settings.headerCtaLabelEn, url: settings.headerCtaUrl === "/orders/new" ? "/pricing" : settings.headerCtaUrl };
 
   return (
     <header className="sticky top-0 z-30 border-b border-card-border bg-bg-elevated/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
-        <Link href="/">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-2">
+        <Link href="/" className="shrink-0">
           <SiteLogo size="xl" />
         </Link>
 
-        <nav className="hidden items-center gap-6 lg:flex">
-          {desktop.map((item) =>
-            item.children.length ? (
-              <div key={item.url + item.labelEn} className="group relative">
-                <button type="button" className={`flex items-center gap-1 ${BAR_LINK} ${item.children.some((c) => isActivePath(pathname, c.url)) ? BAR_ACTIVE : ""}`}>
-                  {label(item)} <ChevronDown size={14} />
-                </button>
-                <div className="invisible absolute start-0 top-full z-40 min-w-44 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-                  {item.children.filter((c) => c.showDesktop).map((c) => (
-                    <NavLink key={c.url + c.labelEn} item={c} label={label(c)} className={DROP_LINK} activeClass={DROP_ACTIVE} />
-                  ))}
-                </div>
+        <nav ref={navRef} className="relative mx-4 hidden min-w-0 flex-1 items-center gap-5 overflow-visible whitespace-nowrap lg:flex xl:gap-6">
+          {/* Hidden copy used only to measure each link, so the bar can show as many as fit on ONE line each. */}
+          <div ref={measureRef} aria-hidden className="pointer-events-none invisible absolute -z-10 flex h-0 items-center gap-5 overflow-hidden whitespace-nowrap xl:gap-6">
+            {desktop.map((item) => (
+              <span key={item.url + item.labelEn} className={`flex items-center gap-1 ${BAR_LINK}`}>
+                {label(item)} {item.children.length > 0 && <ChevronDown size={14} />}
+              </span>
+            ))}
+            <span className={`flex items-center gap-1 ${BAR_LINK}`}>{t("nav.more")} <ChevronDown size={14} /></span>
+          </div>
+          {shown.map((item) => (
+            <BarItem key={item.url + item.labelEn} item={item} label={label} />
+          ))}
+          {hidden.length > 0 && (
+            <div className="group relative">
+              <button type="button" className={`flex items-center gap-1 ${BAR_LINK} ${hidden.some((m) => isActivePath(pathname, m.url) || m.children.some((c) => isActivePath(pathname, c.url))) ? BAR_ACTIVE : ""}`}>
+                {t("nav.more")} <ChevronDown size={14} />
+              </button>
+              <div className="invisible absolute end-0 top-full z-40 min-w-52 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                {hidden.map((item) => (
+                  <div key={item.url + item.labelEn}>
+                    <NavLink item={item} label={label(item)} className={DROP_LINK} activeClass={DROP_ACTIVE} />
+                    {item.children.filter((c) => c.showDesktop).map((c) => (
+                      <NavLink key={c.url + c.labelEn} item={c} label={label(c)} className={`${DROP_LINK} ps-7 text-text-faint`} activeClass={DROP_ACTIVE} />
+                    ))}
+                  </div>
+                ))}
               </div>
-            ) : (
-              <NavLink key={item.url + item.labelEn} item={item} label={label(item)} className={BAR_LINK} activeClass={BAR_ACTIVE} />
-            )
+            </div>
           )}
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden shrink-0 items-center gap-3 whitespace-nowrap lg:flex">
           <LanguageToggle />
-          <Link href={token ? "/dashboard" : "/login"} className="rounded-full border border-card-border px-4 py-2 text-sm font-medium text-text">
+          <Link href={token ? "/dashboard" : "/login"} className="whitespace-nowrap rounded-full border border-card-border px-4 py-2 text-sm font-medium text-text">
             {token ? t("nav.dashboard") : t("nav.logIn")}
           </Link>
           {cta.label && cta.url && (
-            <NavLink item={{ url: cta.url, labelEn: cta.label, labelAr: cta.label, newTab: false, showDesktop: true, showMobile: true, children: [] }} label={cta.label} className="osta-btn-primary rounded-full px-4 py-2 text-sm font-semibold text-white" />
+            <NavLink item={{ url: cta.url, labelEn: cta.label, labelAr: cta.label, newTab: false, showDesktop: true, showMobile: true, children: [] }} label={cta.label} className="osta-btn-primary whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold text-white" />
           )}
         </div>
 

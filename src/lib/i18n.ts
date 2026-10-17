@@ -299,6 +299,7 @@ const dict = {
     bookNow: { en: "Book Now", ar: "احجز الآن" },
     dashboard: { en: "Dashboard", ar: "حسابي" },
     logIn: { en: "Log In", ar: "تسجيل الدخول" },
+    more: { en: "More", ar: "المزيد" },
   },
 
   footer: {
