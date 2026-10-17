@@ -9,6 +9,7 @@ import { useSite } from "@/lib/site-context";
 import { telHref, whatsappHref } from "@/lib/site";
 import { OPEN_CONSENT_EVENT } from "@/components/ConsentManager";
 import { WhatsAppPopup } from "@/components/WhatsAppPopup";
+import { BodyCodeSlot } from "@/components/CodeInjection";
 
 const SOCIAL_BADGE: Record<string, string> = { facebook: "f", instagram: "ig", linkedin: "in", tiktok: "tt", youtube: "yt", x: "X", whatsapp: "wa" };
 
@@ -25,6 +26,7 @@ export function MarketingFooter() {
   const pick = (en: string, arText: string) => (ar ? arText || en : en || arText);
 
   return (
+    <>
     <footer className="border-t border-card-border bg-bg-elevated">
       {/* Floating WhatsApp chat on every public page (controlled in Site & Contact). */}
       <WhatsAppPopup />
@@ -100,5 +102,7 @@ export function MarketingFooter() {
         )}
       </div>
     </footer>
+    <BodyCodeSlot />
+    </>
   );
 }
