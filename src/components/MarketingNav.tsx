@@ -56,6 +56,36 @@ function BarItem({ item, label }: { item: SiteMenuItem; label: (m: SiteMenuItem)
   );
 }
 
+// A mobile menu entry with sub-links: closed by default, the arrow opens and closes it. The link itself (when it has an
+// address) still navigates; an entry without an address toggles as a whole.
+function MobileGroup({ item, subs, label, onNavigate }: { item: SiteMenuItem; subs: SiteMenuItem[]; label: (m: SiteMenuItem) => string; onNavigate: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const id = `sub-${(item.url || item.labelEn).replace(/[^a-z0-9]/gi, "")}`;
+  return (
+    <>
+      <div className="flex items-center">
+        {item.url ? (
+          <div className="min-w-0 flex-1"><NavLink item={item} label={label(item)} onClick={onNavigate} className={MOBILE_LINK} activeClass={MOBILE_ACTIVE} /></div>
+        ) : (
+          <button type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} aria-controls={id} className={`${MOBILE_LINK} min-w-0 flex-1 text-start`}>
+            {label(item)}
+          </button>
+        )}
+        <button type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} aria-controls={id} aria-label={label(item)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-card hover:text-accent-2">
+          <ChevronDown size={18} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </button>
+      </div>
+      {expanded && (
+        <div id={id}>
+          {subs.map((c) => (
+            <NavLink key={c.url + c.labelEn} item={c} label={label(c)} onClick={onNavigate} className={MOBILE_SUB} activeClass={MOBILE_ACTIVE} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 export function MarketingNav() {
   const { t, lang } = useLanguage();
   const { token } = useAuth();
@@ -157,14 +187,18 @@ export function MarketingNav() {
 
       {open && (
         <div className="flex flex-col gap-1 border-t border-card-border px-5 py-4 lg:hidden">
-          {mobile.map((item) => (
-            <div key={item.url + item.labelEn}>
-              <NavLink item={item} label={label(item)} onClick={() => setOpen(false)} className={MOBILE_LINK} activeClass={MOBILE_ACTIVE} />
-              {item.children.filter((c) => c.showMobile).map((c) => (
-                <NavLink key={c.url + c.labelEn} item={c} label={label(c)} onClick={() => setOpen(false)} className={MOBILE_SUB} activeClass={MOBILE_ACTIVE} />
-              ))}
-            </div>
-          ))}
+          {mobile.map((item) => {
+            const subs = item.children.filter((c) => c.showMobile);
+            return (
+              <div key={item.url + item.labelEn}>
+                {subs.length ? (
+                  <MobileGroup item={item} subs={subs} label={label} onNavigate={() => setOpen(false)} />
+                ) : (
+                  <NavLink item={item} label={label(item)} onClick={() => setOpen(false)} className={MOBILE_LINK} activeClass={MOBILE_ACTIVE} />
+                )}
+              </div>
+            );
+          })}
           <div className="mt-2 flex items-center gap-3">
             <LanguageToggle />
             <Link href={token ? "/dashboard" : "/login"} onClick={() => setOpen(false)} className="flex-1 rounded-full border border-card-border px-4 py-2 text-center text-sm font-medium text-text">
