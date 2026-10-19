@@ -212,6 +212,66 @@ function ImageText({ p }: { p: P }) {
   );
 }
 
+const RATIO: Record<string, string> = { "16:9": "aspect-video", "3:2": "aspect-[3/2]", "1:1": "aspect-square", "21:9": "aspect-[21/9]" };
+const oneOf = <T extends string>(v: unknown, allowed: readonly T[], fallback: T): T => (allowed.includes(v as T) ? (v as T) : fallback);
+
+// A picture on its own, with an optional caption and link.
+function ImageBlock({ p }: { p: P }) {
+  const bi = useBi();
+  const url = typeof p.imageUrl === "string" ? p.imageUrl : "";
+  if (!url) return null;
+  const size = oneOf(p.size, ["content", "wide", "full"] as const, "wide");
+  const ratio = RATIO[oneOf(p.ratio, ["auto", "16:9", "3:2", "1:1", "21:9"] as const, "auto")] ?? "";
+  const align = oneOf(p.align, ["start", "center", "end"] as const, "center");
+  const rounded = p.rounded !== "no" && size !== "full";
+  const link = typeof p.link === "string" ? p.link : "";
+  const caption = bi(p.caption as Bi);
+  const img = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img {...imgProps(url, size === "content" ? "(min-width: 768px) 768px, 100vw" : "100vw")} alt={bi(p.imageAlt as Bi)} className={`h-auto w-full object-cover ${ratio} ${rounded ? "rounded-xl" : ""}`} />
+  );
+  const width = size === "full" ? "w-full" : size === "wide" ? "mx-auto w-full max-w-6xl px-5" : `w-full max-w-3xl px-5 ${align === "start" ? "me-auto" : align === "end" ? "ms-auto" : "mx-auto"}`;
+  return (
+    <figure className={`${width} ${size === "full" ? "" : "py-8"}`}>
+      {link ? <SmartLink href={link} className="block">{img}</SmartLink> : img}
+      {caption && <figcaption className="mt-2 text-center text-xs text-text-muted">{caption}</figcaption>}
+    </figure>
+  );
+}
+
+// 1-3 columns side by side (stacked on phones); each column is formatted text or an image.
+function Columns({ p }: { p: P }) {
+  const bi = useBi();
+  const cols = ((p.columns as { kind?: string; heading?: Bi; body?: Bi; cta?: Cta; imageUrl?: string; imageAlt?: Bi }[]) ?? []).slice(0, 3);
+  if (!cols.length) return null;
+  const layout = oneOf(p.layout, ["equal", "wide-start", "wide-end"] as const, "equal");
+  const valign = { start: "md:items-start", center: "md:items-center", end: "md:items-end" }[oneOf(p.valign, ["start", "center", "end"] as const, "center")];
+  const gap = { sm: "gap-4", md: "gap-8", lg: "gap-12" }[oneOf(p.gap, ["sm", "md", "lg"] as const, "md")];
+  const template = cols.length === 1 ? "md:grid-cols-1" : cols.length === 3 ? "md:grid-cols-3" : { equal: "md:grid-cols-2", "wide-start": "md:grid-cols-[2fr_1fr]", "wide-end": "md:grid-cols-[1fr_2fr]" }[layout];
+  const heading = bi(p.heading as Bi);
+  return (
+    <section className="mx-auto w-full max-w-6xl px-5 py-12">
+      {heading && <h2 className="mb-8 text-center text-2xl font-bold text-text sm:text-3xl">{heading}</h2>}
+      <div className={`flex ${p.reverseMobile === "yes" ? "flex-col-reverse" : "flex-col"} ${gap} md:grid ${template} ${valign}`}>
+        {cols.map((c, i) =>
+          c.kind === "image" ? (
+            c.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={i} {...imgProps(c.imageUrl, "(min-width: 768px) 50vw, 100vw")} alt={bi(c.imageAlt)} className="aspect-[3/2] h-auto w-full rounded-xl object-cover" />
+            ) : <div key={i} />
+          ) : (
+            <div key={i} className="min-w-0">
+              {bi(c.heading) && <h3 className="text-xl font-bold text-text sm:text-2xl">{bi(c.heading)}</h3>}
+              <div className={`${bi(c.heading) ? "mt-3 " : ""}flex flex-col gap-3`}><Paragraphs text={bi(c.body)} className="text-sm text-text-muted" /></div>
+              {c.cta?.url && bi(c.cta.label) && <Buttons ctas={[c.cta]} />}
+            </div>
+          ),
+        )}
+      </div>
+    </section>
+  );
+}
+
 function Faq({ p }: { p: P }) {
   const bi = useBi();
   const items = (p.items as { question: Bi; answer: Bi }[]) ?? [];
@@ -525,6 +585,8 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "servicesGrid": return <ServicesGrid p={p} services={data.services} />;
     case "richText": return <RichText p={p} />;
     case "imageText": return <ImageText p={p} />;
+    case "image": return <ImageBlock p={p} />;
+    case "columns": return <Columns p={p} />;
     case "faq": return <Faq p={p} />;
     case "stats": return <Stats p={p} />;
     case "cta": return <CtaBlock p={p} />;
