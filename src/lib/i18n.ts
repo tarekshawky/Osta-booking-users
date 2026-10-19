@@ -307,6 +307,8 @@ const dict = {
     quickLinks: { en: "Quick Links", ar: "روابط سريعة" },
     getInTouch: { en: "Get in Touch", ar: "تواصل معنا" },
     areasWeCover: { en: "Areas We Cover", ar: "المناطق التي نغطيها" },
+    services: { en: "Services", ar: "الخدمات" },
+    locations: { en: "Locations", ar: "المواقع" },
     rightsReserved: { en: "All rights reserved.", ar: "جميع الحقوق محفوظة." },
   },
 

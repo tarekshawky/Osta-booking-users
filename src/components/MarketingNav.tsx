@@ -94,7 +94,8 @@ export function MarketingNav() {
   const [open, setOpen] = useState(false);
   const label = (m: SiteMenuItem) => (lang === "ar" ? m.labelAr || m.labelEn : m.labelEn || m.labelAr);
   const desktop = menus.header.filter((m) => m.showDesktop);
-  const mobile = menus.header.filter((m) => m.showMobile);
+  // The phone menu is its own menu when the admin filled it in; otherwise it follows the header menu.
+  const mobile = (menus.mobile?.length ? menus.mobile : menus.header).filter((m) => m.showMobile);
   // "Book" always starts at the price calculator; only signed-in screens link straight to the booking form.
   // Desktop bar: every link stays on one line. Links that do not fit move into a "More" menu (measured, so it adapts to the screen and language).
   const navRef = useRef<HTMLElement>(null);

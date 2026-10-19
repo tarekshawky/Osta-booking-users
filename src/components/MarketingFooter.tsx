@@ -16,6 +16,26 @@ const SOCIAL_BADGE: Record<string, string> = { facebook: "f", instagram: "ig", l
 const FOOT_LINK = "transition-colors hover:text-accent-2 hover:underline underline-offset-4";
 const FOOT_ACTIVE = "!text-accent-2 font-medium";
 
+type FooterLink = { url: string; labelEn: string; labelAr: string; newTab: boolean; showDesktop: boolean; showMobile: boolean };
+
+function LinkList({ items, pathname, pick }: { items: FooterLink[]; pathname: string; pick: (en: string, ar: string) => string }) {
+  return (
+    <ul className="flex flex-col gap-2 text-sm text-text-muted">
+      {items.filter((m) => m.showDesktop || m.showMobile).map((m) => (
+        <li key={m.url + m.labelEn}>
+          {m.url.startsWith("/") && !m.newTab ? (
+            <Link href={m.url} className={`${FOOT_LINK} ${isActivePath(pathname, m.url) ? FOOT_ACTIVE : ""}`} {...(isActivePath(pathname, m.url) ? { "aria-current": "page" as const } : {})}>{pick(m.labelEn, m.labelAr)}</Link>
+          ) : m.url ? (
+            <a href={m.url} className={FOOT_LINK} {...(m.newTab || m.url.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>{pick(m.labelEn, m.labelAr)}</a>
+          ) : (
+            <span>{pick(m.labelEn, m.labelAr)}</span>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function MarketingFooter() {
   const { t, lang } = useLanguage();
   const pathname = usePathname();
@@ -23,6 +43,8 @@ export function MarketingFooter() {
   const hasTracking = !!(integrations?.requireConsent && (integrations.gtmId || integrations.ga4Id || integrations.metaPixelId));
   const year = new Date().getFullYear();
   const ar = lang === "ar";
+  const servicesMenu = menus.services ?? [];
+  const locationsMenu = menus.locations ?? [];
   const pick = (en: string, arText: string) => (ar ? arText || en : en || arText);
 
   return (
@@ -30,7 +52,7 @@ export function MarketingFooter() {
     <footer className="border-t border-card-border bg-bg-elevated">
       {/* Floating WhatsApp chat on every public page (controlled in Site & Contact). */}
       <WhatsAppPopup />
-      <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={`mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-2 ${servicesMenu.length > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
         <div>
           <SiteLogo size="xl" />
           <p className="mt-3 text-sm text-text-muted">{pick(settings.taglineEn, settings.taglineAr)}</p>
@@ -50,19 +72,16 @@ export function MarketingFooter() {
           )}
         </div>
 
+        {servicesMenu.length > 0 && (
+          <div>
+            <h3 className="mb-3 text-sm font-semibold text-text">{t("footer.services")}</h3>
+            <LinkList items={servicesMenu} pathname={pathname} pick={pick} />
+          </div>
+        )}
+
         <div>
           <h3 className="mb-3 text-sm font-semibold text-text">{t("footer.quickLinks")}</h3>
-          <ul className="flex flex-col gap-2 text-sm text-text-muted">
-            {menus.footer.filter((m) => m.showDesktop || m.showMobile).map((m) => (
-              <li key={m.url + m.labelEn}>
-                {m.url.startsWith("/") && !m.newTab ? (
-                  <Link href={m.url} className={`${FOOT_LINK} ${isActivePath(pathname, m.url) ? FOOT_ACTIVE : ""}`} {...(isActivePath(pathname, m.url) ? { "aria-current": "page" as const } : {})}>{pick(m.labelEn, m.labelAr)}</Link>
-                ) : (
-                  <a href={m.url} className={FOOT_LINK} {...(m.newTab || m.url.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>{pick(m.labelEn, m.labelAr)}</a>
-                )}
-              </li>
-            ))}
-          </ul>
+          <LinkList items={menus.footer} pathname={pathname} pick={pick} />
         </div>
 
         <div>
@@ -86,8 +105,12 @@ export function MarketingFooter() {
         </div>
 
         <div>
-          <h3 className="mb-3 text-sm font-semibold text-text">{t("footer.areasWeCover")}</h3>
+          <h3 className="mb-3 text-sm font-semibold text-text">{locationsMenu.length > 0 ? t("footer.locations") : t("footer.areasWeCover")}</h3>
+          {locationsMenu.length > 0 ? (
+            <LinkList items={locationsMenu} pathname={pathname} pick={pick} />
+          ) : (
           <p className="text-sm text-text-muted">{(serviceAreas.length ? serviceAreas.map((a) => pick(a.nameEn, a.nameAr)) : settings.footerAreas.map((a) => pick(a.en, a.ar))).join(" · ")}</p>
+          )}
         </div>
       </div>
 

@@ -31,7 +31,8 @@ export type SiteIntegrations = {
 export type SiteData = {
   integrations: SiteIntegrations | null;
   settings: SiteSettings;
-  menus: { header: SiteMenuItem[]; footer: SiteMenuItem[] };
+  // Independent menus. mobile/services/locations are optional: with no items the site falls back (phones use header; the footer hides the column).
+  menus: { header: SiteMenuItem[]; footer: SiteMenuItem[]; mobile?: SiteMenuItem[]; services?: SiteMenuItem[]; locations?: SiteMenuItem[] };
   social: { platform: string; label: string; url: string }[];
   // Active entries of the admin's Service Areas screen; drives "Areas We Cover" when it has any.
   serviceAreas: { slug: string; nameEn: string; nameAr: string; pageSlug: string | null }[];
@@ -76,6 +77,9 @@ export async function fetchSite(): Promise<SiteData> {
       menus: {
         header: data.menus?.header?.length ? data.menus.header : DEFAULT_SITE.menus.header,
         footer: data.menus?.footer?.length ? data.menus.footer : DEFAULT_SITE.menus.footer,
+        mobile: data.menus?.mobile ?? [],
+        services: data.menus?.services ?? [],
+        locations: data.menus?.locations ?? [],
       },
       social: data.social ?? [],
       serviceAreas: data.serviceAreas ?? [],
