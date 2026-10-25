@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ClipboardList, Receipt, User, Menu } from "lucide-react";
+import { Home, ClipboardList, Receipt, User, Menu, Wrench } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import type { TranslationKey } from "@/lib/i18n";
 
 const items: { href: string; labelKey: TranslationKey; icon: typeof Home }[] = [
   { href: "/dashboard", labelKey: "common.home", icon: Home },
+  { href: "/services", labelKey: "common.services", icon: Wrench },
   { href: "/orders", labelKey: "common.orders", icon: ClipboardList },
   { href: "/invoices", labelKey: "common.invoices", icon: Receipt },
   { href: "/profile", labelKey: "common.profile", icon: User },

@@ -77,6 +77,8 @@ export type Order = {
   team: { name: string } | null;
   assignedTo: { name: string } | null;
   invoiceId: string | null;
+  // Money still to pay on this order (set once an invoice exists and is unpaid).
+  paymentDue?: number | null;
   doneAt: string | null;
   cancelledAt: string | null;
   cancellationReason: string | null;
@@ -90,7 +92,11 @@ export type OrderDetail = Order & {
   quantity: number | null;
   bookableService: { nameEn: string; nameAr: string } | null;
   events: { type: string; createdAt: string }[];
+  // Only a paid invoice is sent. Rate first, then pay, then the invoice appears.
   invoice: { number: string; amount: number; status: string } | null;
+  review: { rating: number; comment: string | null; createdAt: string } | null;
+  canReview: boolean;
+  payment: { amount: number; link: string | null; locked: boolean } | null;
   acceptedAt: string | null;
   departedAt: string | null;
   etaMinutes: string | null;
@@ -317,6 +323,12 @@ export const api = {
   },
 
   order: (token: string, id: string) => apiFetch<OrderDetail>(`/orders/${id}`, { token }),
+
+  reviewOrder: (token: string, id: string, body: { rating: number; comment?: string }) =>
+    apiFetch<{ rating: number; comment: string | null; createdAt: string }>(`/orders/${id}/review`, { method: "POST", body, token }),
+
+  resetPassword: (resetToken: string, password: string) =>
+    apiFetch<{ reset: boolean }>("/auth/reset-password", { method: "POST", body: { token: resetToken, password } }),
 
   pricingConfig: () => apiFetch<PricingConfig>("/pricing/config"),
 

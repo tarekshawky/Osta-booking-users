@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, ClipboardList, Receipt, User, LogOut, ChevronRight } from "lucide-react";
+import { Plus, Wrench, ClipboardList, Receipt, User, LogOut, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { TopBar } from "@/components/TopBar";
 import { FullPageSpinner } from "@/components/Spinner";
@@ -13,6 +13,7 @@ import type { TranslationKey } from "@/lib/i18n";
 
 const links: { href: string; key: TranslationKey; icon: typeof Plus }[] = [
   { href: "/orders/new", key: "more.bookService", icon: Plus },
+  { href: "/services", key: "more.browseServices", icon: Wrench },
   { href: "/orders", key: "more.myOrders", icon: ClipboardList },
   { href: "/invoices", key: "more.myInvoices", icon: Receipt },
   { href: "/profile", key: "more.myProfile", icon: User },

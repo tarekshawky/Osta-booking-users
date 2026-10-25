@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, ChevronDown, MapPin, Minus, Plus } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -14,6 +14,7 @@ import { track } from "@/lib/analytics";
 import { priceQuote, QuoteError, type Quote } from "@/lib/priceQuote";
 import { bookingFee, fromPrice, hasOptions, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
 import { loadDraft, clearDraft } from "@/lib/bookingDraft";
+import { availableTimes, localDateStr, withinHours } from "@/lib/slots";
 
 const BASE_STEPS = ["emirate", "service", "type", "details", "when", "contact", "review"] as const;
 type StepKey = (typeof BASE_STEPS)[number] | "option";
@@ -47,7 +48,10 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
   const [optionId, setOptionId] = useState(draft?.optionId ?? "");
   const [qty, setQty] = useState(draft?.qty ?? 1);
   const [addOnIds, setAddOnIds] = useState<string[]>(draft?.addOnIds ?? []);
-  const [scheduledAt, setScheduledAt] = useState("");
+  const [openedAt] = useState(() => Date.now()); // "today" for the earliest bookable date
+  const [dateStr, setDateStr] = useState("");
+  const [timeStr, setTimeStr] = useState("");
+  const scheduledAt = dateStr && timeStr ? `${dateStr}T${timeStr}` : "";
   const [locationUrl, setLocationUrl] = useState("");
   const [customerLanguage, setCustomerLanguage] = useState(ar ? "Arabic" : "English");
   const [notes, setNotes] = useState("");
@@ -57,6 +61,12 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // A choice carried over from the price page is used once: it is removed as soon as this booking opens, so the next
+  // new booking always starts empty instead of showing the previous selection and its total.
+  useEffect(() => {
+    clearDraft();
+  }, []);
 
   const name = (x: { nameEn: string; nameAr: string }) => (ar ? x.nameAr : x.nameEn);
   const aed = (fils: number) => `${(fils / 100).toFixed(2)} ${t("common.aed")}`;
@@ -107,10 +117,8 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
     const when = new Date(scheduledAt);
     if (isNaN(+when) || when <= new Date()) return t("booking.pastDate");
     if (!type.sameDayAllowed && when.toDateString() === new Date().toDateString()) return t("booking.sameDayNotAllowed");
-    if (type.hoursStart && type.hoursEnd) {
-      const hhmm = scheduledAt.slice(11, 16);
-      if (hhmm < type.hoursStart || hhmm > type.hoursEnd) return `${t("booking.hours")}: ${type.hoursStart}–${type.hoursEnd}`;
-    }
+    // Hours may run past midnight (10:00–01:00), so this is not a plain "between" check.
+    if (!withinHours(scheduledAt.slice(11, 16), type.hoursStart, type.hoursEnd)) return `${t("booking.hours")}: ${type.hoursStart}–${type.hoursEnd}`;
     return null;
   }
 
@@ -391,15 +399,32 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
 
         {stepKey === "when" && (
           <>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-semibold text-text">{t("booking.whenTitle")}</span>
-              <input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => { setScheduledAt(e.target.value); setError(null); }}
-                className="osta-input rounded-xl px-3 py-3 text-sm"
-              />
-            </label>
+            <h2 className="text-base font-semibold text-text">{t("booking.whenTitle")}</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-text-muted">{t("booking.date")}</span>
+                <input
+                  type="date"
+                  min={localDateStr(new Date(openedAt + (type && !type.sameDayAllowed ? 86_400_000 : 0)))}
+                  value={dateStr}
+                  onChange={(e) => { setDateStr(e.target.value); setTimeStr(""); setError(null); }}
+                  className="osta-input rounded-xl px-3 py-3 text-sm"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-text-muted">{t("booking.time")}</span>
+                <select
+                  value={timeStr}
+                  disabled={!dateStr}
+                  onChange={(e) => { setTimeStr(e.target.value); setError(null); }}
+                  className="osta-input rounded-xl px-3 py-3 text-sm disabled:opacity-60"
+                >
+                  <option value="">{dateStr ? t("booking.pickTime") : t("booking.pickDateFirst")}</option>
+                  {dateStr && availableTimes(dateStr, type?.hoursStart, type?.hoursEnd).map((hhmm) => <option key={hhmm} value={hhmm}>{hhmm}</option>)}
+                </select>
+              </label>
+            </div>
+            {dateStr && availableTimes(dateStr, type?.hoursStart, type?.hoursEnd).length === 0 && <p className="text-xs text-amber-200">{t("booking.noTimesLeft")}</p>}
             {type?.hoursStart && type.hoursEnd && (
               <p className="text-xs text-text-muted">{t("booking.hours")}: {type.hoursStart}–{type.hoursEnd}</p>
             )}

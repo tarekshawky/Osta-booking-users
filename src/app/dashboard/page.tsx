@@ -28,6 +28,7 @@ export default function DashboardPage() {
   }
 
   const [orders, setOrders] = useState<Order[] | null>(null);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
   const [ordersTotal, setOrdersTotal] = useState(0);
   const [invoicesTotal, setInvoicesTotal] = useState(0);
@@ -35,9 +36,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!ready || !token) return;
-    Promise.all([api.orders(token, { pageSize: 5 }), api.invoices(token, { pageSize: 50 })])
+    Promise.all([api.orders(token, { pageSize: 50 }), api.invoices(token, { pageSize: 50 })])
       .then(([ordersRes, invoicesRes]) => {
-        setOrders(ordersRes.data);
+        setAllOrders(ordersRes.data);
+        setOrders(ordersRes.data.slice(0, 5));
         setOrdersTotal(ordersRes.total);
         setInvoices(invoicesRes.data);
         setInvoicesTotal(invoicesRes.total);
@@ -48,9 +50,8 @@ export default function DashboardPage() {
 
   if (!ready) return <FullPageSpinner />;
 
-  const amountDue = (invoices ?? [])
-    .filter((i) => i.status !== "Paid" && i.status !== "Refunded")
-    .reduce((sum, i) => sum + i.amount - i.refundedAmount, 0);
+  // Money still to pay: unpaid invoices are not shown to the customer, so it comes from the orders that await payment.
+  const amountDue = allOrders.reduce((sum, o) => sum + (o.paymentDue ?? 0), 0);
 
   const lastOrder = orders?.[0];
   const firstName = customer?.name?.split(" ")[0] ?? "…";
