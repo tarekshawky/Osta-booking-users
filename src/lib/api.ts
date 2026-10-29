@@ -1,5 +1,7 @@
 import type { CmsBlock } from "@/lib/cms";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "https://osta-invoices.vercel.app/api/v1";
+// The ERP itself (the job application form posts straight to it).
+export const ERP_ORIGIN = API_BASE.replace(/\/api\/v1\/?$/, "");
 
 export class ApiError extends Error {
   code?: string;
@@ -264,7 +266,24 @@ export type OpenJob = {
   propertyEn: string | null; propertyAr: string | null; workersEn: string; workersAr: string; wageEn: string | null; wageAr: string | null;
   durationEn: string | null; durationAr: string | null; startEn: string | null; startAr: string | null; deadlineEn: string | null; deadlineAr: string | null;
 };
-export type OpenJobs = { listUrl: string; items: OpenJob[] };
+export type OpenJobListItem = OpenJob & { categoryKey: string; emirateKey: string; propertyKey: string | null };
+export type OpenJobs = { listUrl: string; items: OpenJobListItem[]; categories?: { key: string; nameEn: string; nameAr: string }[] };
+
+export type PublicJob = {
+  id: string; slug: string | null; type: "PERMANENT" | "DAILY"; state: "open" | "closed" | "completed" | "cancelled";
+  title: string; descriptionHtml: string; requirements: string; fallbackNote: "ar-only" | "en-only" | null;
+  category: string; emirate: string; area: string | null; property: string | null; workers: number; workersText: string; durationText: string | null;
+  wage: { kind: "amount" | "range" | "agreed"; text: string } | null; duration: number | null; daysPerWeek: number | null; hours: string | null; materials: string | null;
+  startDate: string | null; deadline: string | null; fields: { label: string; value: string }[];
+};
+export type JobDetail = {
+  slug: string; url: string; listUrl: string; status: string; ar: PublicJob; en: PublicJob; emirateEn: string; emirateAr: string;
+  jsonLd: { ar: Record<string, unknown> | null; en: Record<string, unknown> | null } | null;
+  form: {
+    skills: { key: string; labelEn: string; labelAr: string }[]; emirates: { key: string; en: string; ar: string }[];
+    minPhotos: number; maxPhotos: number; maxFileMb: number; privacyUrl: string | null; turnstileSiteKey: string | null;
+  };
+};
 
 export type HomeSectionItem = {
   titleEn: string;
@@ -341,6 +360,7 @@ export const api = {
   pricingConfig: () => apiFetch<PricingConfig>("/pricing/config"),
 
   // Jobs that are open for applications (Jobs & Workforce). Cached for 60 s like the other public lists.
+  jobDetail: (slug: string) => apiFetch<JobDetail>(`/jobs/${encodeURIComponent(slug)}`),
   openJobs: (params: { limit?: number; type?: string } = {}) => {
     const qs = new URLSearchParams();
     if (params.limit) qs.set("limit", String(params.limit));

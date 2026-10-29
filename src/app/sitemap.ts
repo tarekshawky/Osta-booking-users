@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { api } from "@/lib/api";
 import { fetchPublishedList } from "@/lib/cms";
+import { jobPath, JOBS_PATH } from "@/lib/jobsPaths";
 import { SITE_URL } from "@/lib/siteUrl";
 
 const BASE_URL = SITE_URL;
@@ -43,6 +44,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Same as above.
   }
 
+  // The jobs list and every job that is open for applications.
+  let jobRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const jobs = await api.openJobs({ limit: 100 });
+    jobRoutes = [
+      { url: `${BASE_URL}${JOBS_PATH}`, changeFrequency: "daily" as const, priority: 0.7 },
+      ...jobs.items.map((j) => ({ url: `${BASE_URL}${jobPath(j.slug)}`, changeFrequency: "weekly" as const, priority: 0.6 })),
+    ];
+  } catch {
+    // Same as above.
+  }
+
   // Category pages with enough articles to stand on their own (thin ones stay out of the index and the sitemap).
   let categoryRoutes: MetadataRoute.Sitemap = [];
   try {
@@ -59,5 +72,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .filter((p) => p.showInSitemap && !p.noindex)
     .map((p) => ({ url: `${BASE_URL}/${p.slug}`, lastModified: p.updatedAt, changeFrequency: "monthly" as const, priority: 0.6 }));
 
-  return [...staticRoutes, ...serviceRoutes, ...blogRoutes, ...categoryRoutes, ...cmsRoutes];
+  return [...staticRoutes, ...serviceRoutes, ...blogRoutes, ...jobRoutes, ...categoryRoutes, ...cmsRoutes];
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { JOBS_PATH, jobPath } from "@/lib/jobsPaths";
 import { ChevronDown, ChevronRight, Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { useSite } from "@/lib/site-context";
 import { RichHtml, RichInline, RichLine, isRichText } from "@/components/cms/RichInline";
@@ -373,14 +374,14 @@ function JobsList({ p, jobs }: { p: P; jobs: BlockData["jobs"] }) {
                 {(ar ? j.startAr : j.startEn) && <div>🗓️ {L.start}: {ar ? j.startAr : j.startEn}</div>}
                 {(ar ? j.deadlineAr : j.deadlineEn) && <div>⏰ {L.deadline}: {ar ? j.deadlineAr : j.deadlineEn}</div>}
               </dl>
-              <a href={`${j.url}${j.url.includes("?") ? "&" : "?"}lang=${ar ? "ar" : "en"}`} className="osta-btn-primary mt-auto rounded-xl px-5 py-2.5 text-center text-sm font-semibold text-white">{L.apply}</a>
+              <Link href={jobPath(j.slug)} className="osta-btn-primary mt-auto rounded-xl px-5 py-2.5 text-center text-sm font-semibold text-white">{L.apply}</Link>
             </article>
           ))}
         </div>
       )}
-      {viewAllLabel && jobs.listUrl && (
+      {viewAllLabel && (
         <div className="mt-8 text-center">
-          <a href={`${jobs.listUrl}?lang=${ar ? "ar" : "en"}`} className="inline-block rounded-xl border border-card-border px-6 py-3 text-sm font-semibold text-text hover:border-accent">{viewAllLabel}</a>
+          <Link href={JOBS_PATH} className="inline-block rounded-xl border border-card-border px-6 py-3 text-sm font-semibold text-text hover:border-accent">{viewAllLabel}</Link>
         </div>
       )}
     </section>
