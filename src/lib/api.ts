@@ -258,6 +258,14 @@ export type BlogDetail = BlogSummary & {
   seoKeywordsAr?: string | null;
 };
 
+export type OpenJob = {
+  slug: string; url: string; type: "PERMANENT" | "DAILY";
+  titleEn: string; titleAr: string; categoryEn: string; categoryAr: string; emirateEn: string; emirateAr: string; area: string | null;
+  propertyEn: string | null; propertyAr: string | null; workersEn: string; workersAr: string; wageEn: string | null; wageAr: string | null;
+  durationEn: string | null; durationAr: string | null; startEn: string | null; startAr: string | null; deadlineEn: string | null; deadlineAr: string | null;
+};
+export type OpenJobs = { listUrl: string; items: OpenJob[] };
+
 export type HomeSectionItem = {
   titleEn: string;
   titleAr: string;
@@ -331,6 +339,14 @@ export const api = {
     apiFetch<{ reset: boolean }>("/auth/reset-password", { method: "POST", body: { token: resetToken, password } }),
 
   pricingConfig: () => apiFetch<PricingConfig>("/pricing/config"),
+
+  // Jobs that are open for applications (Jobs & Workforce). Cached for 60 s like the other public lists.
+  openJobs: (params: { limit?: number; type?: string } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.limit) qs.set("limit", String(params.limit));
+    if (params.type && params.type !== "all") qs.set("type", params.type);
+    return apiFetch<OpenJobs>(`/jobs${qs.toString() ? `?${qs}` : ""}`);
+  },
 
   createPricedOrder: (token: string, body: PricedOrderBody) =>
     apiFetch<Order & { totalFils: number }>("/orders", { method: "POST", body, token }),

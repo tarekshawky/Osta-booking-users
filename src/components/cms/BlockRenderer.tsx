@@ -336,6 +336,57 @@ function CtaBlock({ p }: { p: P }) {
   );
 }
 
+// Open jobs from Jobs & Workforce. Each card links to the job page (where the application form is).
+function JobsList({ p, jobs }: { p: P; jobs: BlockData["jobs"] }) {
+  const bi = useBi();
+  const { lang } = useLanguage();
+  const ar = lang === "ar";
+  const type = String(p.jobType ?? "all");
+  const items = jobs.items.filter((j) => type === "all" || j.type === type).slice(0, Number(p.limit) || 6);
+  const L = ar
+    ? { daily: "عمل باليومية", permanent: "وظيفة ثابتة", workers: "العدد المطلوب", duration: "مدة العمل", start: "تاريخ البدء", deadline: "آخر موعد للتقديم", apply: "قدّم الآن" }
+    : { daily: "Daily work", permanent: "Permanent position", workers: "Workers needed", duration: "Duration", start: "Start date", deadline: "Apply by", apply: "Apply now" };
+  const viewAllLabel = bi(p.viewAllLabel as Bi);
+  return (
+    <section className="mx-auto w-full max-w-6xl px-5 py-16">
+      <div className="text-center">
+        {bi(p.eyebrow as Bi) && <span className="text-xs font-semibold uppercase tracking-wide text-accent-2">{bi(p.eyebrow as Bi)}</span>}
+        {bi(p.heading as Bi) && <h2 className="mt-2 text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>}
+        {bi(p.subtitle as Bi) && <p className="mx-auto mt-3 max-w-2xl text-sm text-text-muted">{bi(p.subtitle as Bi)}</p>}
+      </div>
+      {items.length === 0 ? (
+        <p className="osta-card mx-auto mt-10 max-w-xl p-6 text-center text-sm text-text-muted">{bi(p.emptyText as Bi)}</p>
+      ) : (
+        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((j) => (
+            <article key={j.slug} className="osta-card flex flex-col gap-3 p-5">
+              <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+                <span className={`rounded-full px-2.5 py-1 ${j.type === "DAILY" ? "bg-amber-400/15 text-amber-300" : "bg-accent/15 text-accent-2"}`}>{j.type === "DAILY" ? L.daily : L.permanent}</span>
+                <span className="rounded-full border border-card-border px-2.5 py-1 text-text-muted">{ar ? j.categoryAr : j.categoryEn}</span>
+              </div>
+              <h3 className="text-base font-semibold text-text">{ar ? j.titleAr : j.titleEn}</h3>
+              <dl className="flex flex-col gap-1 text-sm text-text-muted">
+                <div>📍 {ar ? j.emirateAr : j.emirateEn}{j.area ? ` – ${j.area}` : ""}</div>
+                <div>👷 {L.workers}: {ar ? j.workersAr : j.workersEn}</div>
+                {(ar ? j.durationAr : j.durationEn) && <div>📅 {L.duration}: {ar ? j.durationAr : j.durationEn}</div>}
+                {(ar ? j.wageAr : j.wageEn) && <div>💰 {ar ? j.wageAr : j.wageEn}</div>}
+                {(ar ? j.startAr : j.startEn) && <div>🗓️ {L.start}: {ar ? j.startAr : j.startEn}</div>}
+                {(ar ? j.deadlineAr : j.deadlineEn) && <div>⏰ {L.deadline}: {ar ? j.deadlineAr : j.deadlineEn}</div>}
+              </dl>
+              <a href={`${j.url}${j.url.includes("?") ? "&" : "?"}lang=${ar ? "ar" : "en"}`} className="osta-btn-primary mt-auto rounded-xl px-5 py-2.5 text-center text-sm font-semibold text-white">{L.apply}</a>
+            </article>
+          ))}
+        </div>
+      )}
+      {viewAllLabel && jobs.listUrl && (
+        <div className="mt-8 text-center">
+          <a href={`${jobs.listUrl}?lang=${ar ? "ar" : "en"}`} className="inline-block rounded-xl border border-card-border px-6 py-3 text-sm font-semibold text-text hover:border-accent">{viewAllLabel}</a>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function BlogPreview({ p, posts }: { p: P; posts: BlockData["posts"] }) {
   const bi = useBi();
   const { lang, t } = useLanguage();
@@ -592,6 +643,7 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "cta": return <CtaBlock p={p} />;
     case "form": return <FormBlock p={p} />;
     case "blogPreview": return <BlogPreview p={p} posts={data.posts} />;
+    case "jobsList": return <JobsList p={p} jobs={data.jobs} />;
     case "homeSections": return <HomeSections sections={data.sections} />;
     case "contactCards": return <ContactCards p={p} />;
     case "bookingCalculator": return <BookingCalcBlock p={p} pricing={data.pricing} />;
