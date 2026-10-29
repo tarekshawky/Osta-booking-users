@@ -357,9 +357,9 @@ function JobsList({ p, jobs }: { p: P; jobs: BlockData["jobs"] }) {
       {items.length === 0 ? (
         <p className="osta-card mx-auto mt-10 max-w-xl p-6 text-center text-sm text-text-muted">{bi(p.emptyText as Bi)}</p>
       ) : (
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 flex flex-wrap justify-center gap-4">
           {items.map((j) => (
-            <article key={j.slug} className="osta-card flex flex-col gap-3 p-5">
+            <article key={j.slug} className="osta-card flex w-full flex-col gap-3 p-5 sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.7rem)]">
               <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
                 <span className={`rounded-full px-2.5 py-1 ${j.type === "DAILY" ? "bg-amber-400/15 text-amber-300" : "bg-accent/15 text-accent-2"}`}>{j.type === "DAILY" ? L.daily : L.permanent}</span>
                 <span className="rounded-full border border-card-border px-2.5 py-1 text-text-muted">{ar ? j.categoryAr : j.categoryEn}</span>
