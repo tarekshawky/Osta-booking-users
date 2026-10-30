@@ -12,7 +12,8 @@ import type { TranslationKey } from "@/lib/i18n";
 import { api, ApiError, type PricingConfig } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { priceQuote, QuoteError, type Quote } from "@/lib/priceQuote";
-import { bookingFee, fromPrice, hasOptions, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
+import { ServicePicker } from "@/components/booking/ServicePicker";
+import { bookingFee, fromPrice, hasOptions, isInspection, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
 import { loadDraft, clearDraft } from "@/lib/bookingDraft";
 import { availableTimes, localDateStr, withinHours } from "@/lib/slots";
 
@@ -22,7 +23,12 @@ type StepKey = (typeof BASE_STEPS)[number] | "option";
 type Service = PricingConfig["services"][number];
 
 // A service with options gets one extra step right after the service: choosing the option (e.g. a gas weight).
-const stepsFor = (s?: Service): StepKey[] => (s && hasOptions(s) ? ["emirate", "service", "option", "type", "details", "when", "contact", "review"] : [...BASE_STEPS]);
+const stepsFor = (s?: Service): StepKey[] => {
+  const withOption = !!s && hasOptions(s) && !isInspection(s);
+  const steps: StepKey[] = withOption ? ["emirate", "service", "option", "type", "details", "when", "contact", "review"] : [...BASE_STEPS];
+  // "Price after inspection" has no quantity to choose.
+  return s && isInspection(s) ? steps.filter((k) => k !== "details") : steps;
+};
 export function PricedBookingFlow({ config }: { config: PricingConfig }) {
   const { token, customer } = useAuth();
   const router = useRouter();
@@ -278,38 +284,14 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
           <>
             <h2 className="text-base font-semibold text-text">{t("booking.chooseService")}</h2>
             {config.services.length === 0 && <p className="text-sm text-text-muted">{t("booking.noServices")}</p>}
-            {config.services.map((s) => {
-              const price = unitFils(s);
-              const ok = price !== null;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  disabled={!ok}
-                  onClick={() => {
-                    setServiceId(s.id);
-                    setOptionId("");
-                    setQty(s.minQuantity);
-                    setAddOnIds([]);
-                    setError(null);
-                  }}
-                  className={pickCard(serviceId === s.id, !ok)}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-text">{name(s)}</p>
-                      {(ar ? s.descriptionAr : s.descriptionEn) && (
-                        <p className="mt-1 text-xs text-text-muted">{ar ? s.descriptionAr : s.descriptionEn}</p>
-                      )}
-                      {serviceNote(s, ar) && <p className="mt-1 text-xs text-amber-200">ⓘ {serviceNote(s, ar)}</p>}
-                    </div>
-                    <p className="shrink-0 text-xs text-accent-2">
-                      {ok ? `${t("booking.from")} ${aed(price)}` : t("booking.notAvailable")}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
+            <ServicePicker
+              services={config.services}
+              regionId={regionId}
+              selectedId={serviceId}
+              aed={aed}
+              card={pickCard}
+              onPick={(s) => { setServiceId(s.id); setOptionId(""); setQty(s.minQuantity); setAddOnIds([]); setError(null); }}
+            />
           </>
         )}
 
@@ -480,7 +462,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
               <p className="mt-1 break-all text-text-muted">{locationUrl}</p>
             </div>
             <ServiceNoteBox note={serviceNote(service, ar)} />
-            {quote && <PriceLines quote={quote} aed={aed} t={t} />}
+            {quote && <PriceLines quote={quote} aed={aed} t={t} inspection={!!service && isInspection(service)} />}
             {policy && (
               <div className="osta-card p-4">
                 <p className="whitespace-pre-line text-xs leading-relaxed text-text-muted">{fill(ar ? policy.textAr : policy.textEn)}</p>
@@ -507,7 +489,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
                 {aed(quote.totalFils)} <ChevronDown size={14} className={summaryOpen ? "rotate-180" : ""} />
               </span>
             </button>
-            {summaryOpen && <div className="mt-2"><PriceLines quote={quote} aed={aed} t={t} compact /></div>}
+            {summaryOpen && <div className="mt-2"><PriceLines quote={quote} aed={aed} t={t} compact inspection={!!service && isInspection(service)} /></div>}
           </div>
         )}
         <div className="flex gap-3">

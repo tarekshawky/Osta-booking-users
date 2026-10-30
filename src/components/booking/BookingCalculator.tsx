@@ -9,7 +9,8 @@ import type { PricingConfig } from "@/lib/api";
 import { priceQuote, type Quote } from "@/lib/priceQuote";
 import { saveDraft } from "@/lib/bookingDraft";
 import { track } from "@/lib/analytics";
-import { bookingFee, fromPrice, hasOptions, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
+import { ServicePicker } from "@/components/booking/ServicePicker";
+import { bookingFee, hasOptions, isInspection, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
 
 // Public, no-login price calculator: emirate -> service -> quantity -> booking type -> summary -> consent -> book.
 // Prices here are a preview; the server prices the order again when it is placed.
@@ -28,7 +29,6 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
 
   const name = (x: { nameEn: string; nameAr: string }) => (ar ? x.nameAr : x.nameEn);
   const aed = (fils: number) => `${(fils / 100).toFixed(2)} ${t("common.aed")}`;
-  const priceIn = (s: PricingConfig["services"][number]) => fromPrice(s, regionId);
 
   const service = config.services.find((s) => s.id === serviceId);
   const opts = service ? optionsIn(service, regionId) : [];
@@ -36,7 +36,8 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
   const option = opts.find((o) => o.id === optionId);
   // With options, nothing below the option step is shown until one is chosen.
   const ready = !!service && (!needsOption || !!option);
-  const n = needsOption ? 1 : 0; // later headings shift by one when there is an option step
+  const inspection = !!service && isInspection(service); // "price after inspection": no quantity step
+  const n = (needsOption ? 1 : 0) - (inspection ? 1 : 0); // later headings shift when the option step is added or the quantity step is skipped
   const type = config.bookingTypes.find((b) => b.id === typeId);
   const policy = config.visitFeePolicy;
   const fill = (text: string) => text.replaceAll("{amount}", policy ? String(policy.amountFils / 100) : "");
@@ -105,32 +106,18 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
       {regionId && (
         <section>
           {heading(2, t("booking.chooseService"))}
-          <div className="flex flex-col gap-3">
-            {config.services.map((s) => {
-              const price = priceIn(s);
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  disabled={price === null}
-                  aria-pressed={serviceId === s.id}
-                  onClick={() => { setServiceId(s.id); setOptionId(""); setQty(s.minQuantity); setAddOnIds([]); setConsent(false); }}
-                  className={card(serviceId === s.id, price === null)}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-text">{name(s)}</p>
-                      {(ar ? s.descriptionAr : s.descriptionEn) && <p className="mt-1 text-xs text-text-muted">{ar ? s.descriptionAr : s.descriptionEn}</p>}
-                      {serviceNote(s, ar) && <p className="mt-1 text-xs text-amber-200">ⓘ {serviceNote(s, ar)}</p>}
-                    </div>
-                    <p className="shrink-0 text-xs text-accent-2">{price === null ? t("booking.notAvailable") : `${t("booking.from")} ${aed(price)}`}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          <ServicePicker
+            services={config.services}
+            regionId={regionId}
+            selectedId={serviceId}
+            aed={aed}
+            card={card}
+            onPick={(s) => { setServiceId(s.id); setOptionId(""); setQty(s.minQuantity); setAddOnIds([]); setConsent(false); }}
+          />
         </section>
       )}
+
+      {ready && service && inspection && <ServiceNoteBox note={serviceNote(service, ar) || t("booking.inspectionNote")} />}
 
       {needsOption && (
         <section>
@@ -151,7 +138,7 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
         </section>
       )}
 
-      {ready && service && (
+      {ready && service && !inspection && (
         <section>
           {heading(3 + n, qtyLabel)}
           {serviceNote(service, ar) && <div className="mb-3"><ServiceNoteBox note={serviceNote(service, ar)} /></div>}
@@ -213,11 +200,11 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
         <section>
           {heading(5 + n, t("booking.summaryTitle"))}
           <div className="osta-card mb-3 p-4 text-sm text-text">
-            <p className="font-semibold">{name(service)}{option ? ` — ${name(option)}` : ""} × {qty}</p>
+            <p className="font-semibold">{name(service)}{option ? ` — ${name(option)}` : ""}{inspection ? "" : ` × ${qty}`}</p>
             <p className="text-text-muted">{name(config.regions.find((r) => r.id === regionId)!)} · {name(type)}</p>
             {serviceNote(service, ar) && <div className="mt-3"><ServiceNoteBox note={serviceNote(service, ar)} /></div>}
           </div>
-          <PriceLines quote={quote} aed={aed} t={t as (k: TranslationKey) => string} />
+          <PriceLines quote={quote} aed={aed} t={t as (k: TranslationKey) => string} inspection={inspection} />
           {policy && (
             <div className="osta-card mt-3 p-4">
               <p className="whitespace-pre-line text-xs leading-relaxed text-text-muted">{fill(ar ? policy.textAr : policy.textEn)}</p>

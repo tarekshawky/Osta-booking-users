@@ -138,6 +138,10 @@ export type PricingConfig = {
     descriptionAr: string | null;
     imageUrl: string | null;
     pricingUnit: string;
+    // "INSPECTION" = price after inspection: bookable in every emirate with no price. Older APIs don't send it (= priced).
+    priceMode?: "PRICED" | "INSPECTION";
+    // The service category the booking page groups it under (from the Service Catalogue).
+    group?: { en: string; ar: string; order: number } | null;
     minQuantity: number;
     pricesIncludeVat: boolean | null;
     // What the price does or does not include, e.g. "Repair only, spare parts not included" (set in the admin).

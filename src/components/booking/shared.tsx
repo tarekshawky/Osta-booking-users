@@ -14,13 +14,24 @@ export function bookingFee(type: BookingType, serviceId: string, regionId: strin
   );
 }
 
-export function PriceLines({ quote, aed, t, compact }: { quote: Quote; aed: (f: number) => string; t: (k: TranslationKey) => string; compact?: boolean }) {
+export function PriceLines({ quote, aed, t, compact, inspection }: { quote: Quote; aed: (f: number) => string; t: (k: TranslationKey) => string; compact?: boolean; inspection?: boolean }) {
   const row = (label: string, value: string, strong = false) => (
     <div key={label} className={`flex justify-between py-0.5 ${strong ? "font-bold text-text" : "text-text-muted"}`}>
       <span>{label}</span>
       <span>{value}</span>
     </div>
   );
+  // "Price after inspection": no amounts to add up, just the service price note and any booking fee.
+  if (inspection) {
+    return (
+      <div className={compact ? "text-xs" : "osta-card p-4 text-sm"}>
+        {row(t("booking.servicePrice"), t("booking.afterInspection"))}
+        {quote.bookingFeeFils > 0 && row(t("booking.bookingFee"), aed(quote.bookingFeeFils))}
+        {quote.totalFils > 0 && <div className="mt-1 border-t border-card-border pt-1">{row(t("booking.total"), aed(quote.totalFils), true)}</div>}
+        <p className="mt-2 text-[11px] leading-relaxed text-text-muted">{t("booking.inspectionNote")}</p>
+      </div>
+    );
+  }
   return (
     <div className={compact ? "text-xs" : "osta-card p-4 text-sm"}>
       {row(`${t("booking.unitPrice")} × ${quote.quantity}`, `${aed(quote.unitPriceFils)} × ${quote.quantity}`)}
@@ -62,12 +73,16 @@ export function optionsIn(s: PService, regionId: string) {
 export const optionQuestion = (s: PService, ar: boolean, fallback: string) => ((ar ? s.optionLabelAr || s.optionLabelEn : s.optionLabelEn || s.optionLabelAr) ?? "").trim() || fallback;
 export const optionNote = (o: { noteEn?: string; noteAr?: string }, ar: boolean) => ((ar ? o.noteAr || o.noteEn : o.noteEn || o.noteAr) ?? "").trim();
 export const hasOptions = (s: PService) => (s.options?.length ?? 0) > 0;
+// "Price after inspection": bookable in every emirate with nothing to price.
+export const isInspection = (s: PService) => s.priceMode === "INSPECTION";
 export function unitPriceFor(s: PService, regionId: string, optionId: string): number | null {
+  if (isInspection(s)) return 0;
   if (hasOptions(s)) return optionsIn(s, regionId).find((o) => o.id === optionId)?.priceFils ?? null;
   return s.prices.find((p) => p.regionId === regionId)?.unitPriceFils ?? null;
 }
 // The lowest price a service can start from in an emirate (null = not bookable there).
 export function fromPrice(s: PService, regionId: string): number | null {
+  if (isInspection(s)) return 0;
   if (hasOptions(s)) {
     const prices = optionsIn(s, regionId).map((o) => o.priceFils);
     return prices.length ? Math.min(...prices) : null;
