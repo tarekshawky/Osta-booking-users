@@ -88,7 +88,7 @@ function BarItem({ item, label }: { item: SiteMenuItem; label: (m: SiteMenuItem)
         {label(item)} <ChevronDown size={14} />
       </button>
       <div
-        className={`invisible absolute start-0 top-full z-40 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100 ${wide ? "grid min-w-[34rem]" : "min-w-44"}`}
+        className={`invisible absolute start-0 top-full z-40 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100 ${wide ? "grid min-w-[34rem] [&_a]:!py-1.5 [&_span]:!py-1.5" : "min-w-44"}`}
         style={wide ? { gridAutoFlow: "column", gridTemplateRows: `repeat(${Math.ceil(subs.length / 2)}, auto)` } : undefined}
       >
         {subs.map((c, i) => (
