@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isActivePath } from "@/lib/nav";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Menu, X } from "lucide-react";
 import { SiteLogo } from "./SiteLogo";
 import { LanguageToggle } from "./LanguageToggle";
 import { useAuth } from "@/lib/auth-context";
@@ -32,24 +32,58 @@ function NavLink({ item, className, activeClass = "", onClick, label }: { item: 
 
 // Top-bar links: colour change plus an underline that grows on hover and stays on the page you are on.
 const BAR_LINK = "relative whitespace-nowrap py-1 text-sm text-text-muted transition-colors hover:text-accent-2 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-center after:scale-x-0 after:rounded after:bg-accent-2 after:transition-transform hover:after:scale-x-100";
+// True when the item or any item below it is the page being viewed.
+const anyActive = (pathname: string, m: SiteMenuItem): boolean => isActivePath(pathname, m.url) || m.children.some((c) => anyActive(pathname, c));
+
 const BAR_ACTIVE = "!text-text font-semibold after:!scale-x-100";
 const DROP_LINK = "block whitespace-nowrap rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-card hover:text-accent-2";
 const DROP_ACTIVE = "bg-card !text-accent-2 font-medium";
 const MOBILE_LINK = "block rounded-lg px-2 py-2.5 text-sm text-text-muted transition-colors hover:bg-card hover:text-accent-2";
-const MOBILE_SUB = "block rounded-lg px-2 py-2 ps-6 text-sm text-text-faint transition-colors hover:bg-card hover:text-accent-2";
+const MOBILE_SUB = "block rounded-lg px-2 py-2 text-sm text-text-faint transition-colors hover:bg-card hover:text-accent-2";
 const MOBILE_ACTIVE = "bg-card !text-accent-2 font-semibold";
+
+// One row of a desktop dropdown. A row with sub-items of its own opens a fly-out panel beside it (up to three levels in all).
+function DropItem({ item, label }: { item: SiteMenuItem; label: (m: SiteMenuItem) => string }) {
+  const subs = item.children.filter((c) => c.showDesktop);
+  if (!subs.length) return <NavLink item={item} label={label(item)} className={DROP_LINK} activeClass={DROP_ACTIVE} />;
+  return (
+    <div className="group/sub relative">
+      <div className="flex items-center">
+        <div className="min-w-0 flex-1"><NavLink item={item} label={label(item)} className={DROP_LINK} activeClass={DROP_ACTIVE} /></div>
+        <ChevronRight size={14} aria-hidden className="me-2 shrink-0 text-text-faint rtl:rotate-180" />
+      </div>
+      <div className="invisible absolute start-full top-0 z-40 min-w-44 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within/sub:visible group-focus-within/sub:opacity-100 group-hover/sub:visible group-hover/sub:opacity-100">
+        {subs.map((c) => <DropItem key={c.url + c.labelEn} item={c} label={label} />)}
+      </div>
+    </div>
+  );
+}
+
+// The "More" menu is a plain list, so deeper levels are shown indented under their parent.
+function MoreItems({ items, label, depth }: { items: SiteMenuItem[]; label: (m: SiteMenuItem) => string; depth: number }) {
+  return (
+    <>
+      {items.filter((m) => m.showDesktop).map((m) => (
+        <div key={m.url + m.labelEn}>
+          <NavLink item={m} label={label(m)} className={depth === 0 ? DROP_LINK : `${DROP_LINK} ${depth === 1 ? "ps-7" : "ps-11"} text-text-faint`} activeClass={DROP_ACTIVE} />
+          <MoreItems items={m.children} label={label} depth={depth + 1} />
+        </div>
+      ))}
+    </>
+  );
+}
 
 function BarItem({ item, label }: { item: SiteMenuItem; label: (m: SiteMenuItem) => string }) {
   const pathname = usePathname();
   if (!item.children.length) return <NavLink item={item} label={label(item)} className={BAR_LINK} activeClass={BAR_ACTIVE} />;
   return (
     <div className="group relative">
-      <button type="button" className={`flex items-center gap-1 ${BAR_LINK} ${item.children.some((c) => isActivePath(pathname, c.url)) ? BAR_ACTIVE : ""}`}>
+      <button type="button" className={`flex items-center gap-1 ${BAR_LINK} ${item.children.some((c) => anyActive(pathname, c)) ? BAR_ACTIVE : ""}`}>
         {label(item)} <ChevronDown size={14} />
       </button>
       <div className="invisible absolute start-0 top-full z-40 min-w-44 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
         {item.children.filter((c) => c.showDesktop).map((c) => (
-          <NavLink key={c.url + c.labelEn} item={c} label={label(c)} className={DROP_LINK} activeClass={DROP_ACTIVE} />
+          <DropItem key={c.url + c.labelEn} item={c} label={label} />
         ))}
       </div>
     </div>
@@ -58,7 +92,7 @@ function BarItem({ item, label }: { item: SiteMenuItem; label: (m: SiteMenuItem)
 
 // A mobile menu entry with sub-links: closed by default, the arrow opens and closes it. The link itself (when it has an
 // address) still navigates; an entry without an address toggles as a whole.
-function MobileGroup({ item, subs, label, onNavigate }: { item: SiteMenuItem; subs: SiteMenuItem[]; label: (m: SiteMenuItem) => string; onNavigate: () => void }) {
+function MobileGroup({ item, subs, label, onNavigate, level = 0 }: { item: SiteMenuItem; subs: SiteMenuItem[]; label: (m: SiteMenuItem) => string; onNavigate: () => void; level?: number }) {
   const [expanded, setExpanded] = useState(false);
   const id = `sub-${(item.url || item.labelEn).replace(/[^a-z0-9]/gi, "")}`;
   return (
@@ -77,9 +111,17 @@ function MobileGroup({ item, subs, label, onNavigate }: { item: SiteMenuItem; su
       </div>
       {expanded && (
         <div id={id}>
-          {subs.map((c) => (
-            <NavLink key={c.url + c.labelEn} item={c} label={label(c)} onClick={onNavigate} className={MOBILE_SUB} activeClass={MOBILE_ACTIVE} />
-          ))}
+          {subs.map((c) => {
+            const deeper = c.children.filter((d) => d.showMobile);
+            const indent = level === 0 ? "ps-6" : "ps-10";
+            return deeper.length ? (
+              <div key={c.url + c.labelEn} className={level === 0 ? "ps-4" : "ps-8"}>
+                <MobileGroup item={c} subs={deeper} label={label} onNavigate={onNavigate} level={level + 1} />
+              </div>
+            ) : (
+              <NavLink key={c.url + c.labelEn} item={c} label={label(c)} onClick={onNavigate} className={`${MOBILE_SUB} ${indent}`} activeClass={MOBILE_ACTIVE} />
+            );
+          })}
         </div>
       )}
     </>
@@ -154,18 +196,11 @@ export function MarketingNav() {
           ))}
           {hidden.length > 0 && (
             <div className="group relative">
-              <button type="button" className={`flex items-center gap-1 ${BAR_LINK} ${hidden.some((m) => isActivePath(pathname, m.url) || m.children.some((c) => isActivePath(pathname, c.url))) ? BAR_ACTIVE : ""}`}>
+              <button type="button" className={`flex items-center gap-1 ${BAR_LINK} ${hidden.some((m) => anyActive(pathname, m)) ? BAR_ACTIVE : ""}`}>
                 {t("nav.more")} <ChevronDown size={14} />
               </button>
               <div className="invisible absolute end-0 top-full z-40 min-w-52 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-                {hidden.map((item) => (
-                  <div key={item.url + item.labelEn}>
-                    <NavLink item={item} label={label(item)} className={DROP_LINK} activeClass={DROP_ACTIVE} />
-                    {item.children.filter((c) => c.showDesktop).map((c) => (
-                      <NavLink key={c.url + c.labelEn} item={c} label={label(c)} className={`${DROP_LINK} ps-7 text-text-faint`} activeClass={DROP_ACTIVE} />
-                    ))}
-                  </div>
-                ))}
+                <MoreItems items={hidden} label={label} depth={0} />
               </div>
             </div>
           )}
