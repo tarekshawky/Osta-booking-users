@@ -55,7 +55,7 @@ function DropItem({ item, label, up = false }: { item: SiteMenuItem; label: (m: 
         <div className="min-w-0 flex-1"><NavLink item={item} label={label(item)} className={DROP_LINK} activeClass={DROP_ACTIVE} /></div>
         <ChevronRight size={14} aria-hidden className="me-2 shrink-0 text-text-faint rtl:rotate-180" />
       </div>
-      <div className={`invisible absolute start-full ${up ? "bottom-0" : "top-0"} z-40 min-w-44 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within/sub:visible group-focus-within/sub:opacity-100 group-hover/sub:visible group-hover/sub:opacity-100 ${leafPanel ? "max-h-[min(70vh,28rem)] overflow-y-auto" : ""}`}>
+      <div className={`invisible absolute start-full ${up ? "bottom-0" : "top-0"} z-40 min-w-44 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within/sub:visible group-focus-within/sub:opacity-100 group-hover/sub:visible group-hover/sub:opacity-100 ${leafPanel ? "max-h-[min(60vh,24rem)] overflow-y-auto" : ""}`}>
         {subs.map((c, i) => <DropItem key={c.url + c.labelEn} item={c} label={label} up={!leafPanel && i >= subs.length / 2} />)}
       </div>
     </div>
@@ -92,7 +92,7 @@ function BarItem({ item, label }: { item: SiteMenuItem; label: (m: SiteMenuItem)
         style={wide ? { gridAutoFlow: "column", gridTemplateRows: `repeat(${Math.ceil(subs.length / 2)}, auto)` } : undefined}
       >
         {subs.map((c, i) => (
-          <DropItem key={c.url + c.labelEn} item={c} label={label} up={wide && i % Math.ceil(subs.length / 2) >= Math.ceil(subs.length / 2) / 2} />
+          <DropItem key={c.url + c.labelEn} item={c} label={label} up={wide ? i % Math.ceil(subs.length / 2) >= Math.ceil(subs.length / 2) / 2 : subs.length >= 6 && i >= subs.length / 2} />
         ))}
       </div>
     </div>
