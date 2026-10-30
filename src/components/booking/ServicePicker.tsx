@@ -21,13 +21,14 @@ export function ServicePicker({ services, regionId, selectedId, onPick, card, ae
   const needle = q.trim().toLowerCase();
   const long = services.length > 12;
   const selected = services.find((s) => s.id === selectedId);
-  const [open, setOpen] = useState<Set<string>>(() => new Set(selected?.group ? [selected.group.en] : []));
+  const [open, setOpen] = useState<Set<string>>(() => new Set(selected && isInspection(selected) && selected.group ? [selected.group.en] : []));
 
   const groups = useMemo(() => {
     const matches = needle ? services.filter((s) => `${s.nameEn} ${s.nameAr} ${s.slug} ${s.descriptionEn ?? ""} ${s.descriptionAr ?? ""}`.toLowerCase().includes(needle)) : services;
     const map = new Map<string, { key: string; en: string; ar: string; order: number; items: Service[] }>();
     for (const s of matches) {
-      const g = s.group;
+      // Priced services (the ones you set a price for) stay at the top; the many "price after inspection" ones are grouped.
+      const g = isInspection(s) ? s.group : null;
       const key = g?.en ?? "";
       const entry = map.get(key) ?? { key, en: g?.en ?? "", ar: g?.ar ?? "", order: g?.order ?? -1, items: [] };
       entry.items.push(s);
