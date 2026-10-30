@@ -6,6 +6,9 @@ import { SITE_URL } from "@/lib/siteUrl";
 
 const BASE_URL = SITE_URL;
 
+// Rebuilt every 5 minutes, so pages, jobs and articles published later reach the sitemap without a new deployment.
+export const revalidate = 300;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${BASE_URL}/`, changeFrequency: "weekly", priority: 1 },
