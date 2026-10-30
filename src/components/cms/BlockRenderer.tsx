@@ -388,6 +388,33 @@ function JobsList({ p, jobs }: { p: P; jobs: BlockData["jobs"] }) {
   );
 }
 
+// Links to the pages directly under this one in the page tree (for example a category page listing its services). The API sends
+// only published pages, so a link never leads to a page that is not live.
+function SubPages({ p, items }: { p: P; items: BlockData["subPages"] }) {
+  const bi = useBi();
+  const { lang } = useLanguage();
+  if (!items.length) return null;
+  return (
+    <section className="mx-auto w-full max-w-6xl px-5 py-12">
+      <div className="text-center">
+        {bi(p.eyebrow as Bi) && <span className="text-xs font-semibold uppercase tracking-wide text-accent-2">{bi(p.eyebrow as Bi)}</span>}
+        {bi(p.heading as Bi) && <h2 className="mt-2 text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>}
+        {bi(p.subtitle as Bi) && <p className="mx-auto mt-3 max-w-2xl text-sm text-text-muted">{bi(p.subtitle as Bi)}</p>}
+      </div>
+      <ul className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((s) => (
+          <li key={s.slug}>
+            <Link href={`/${s.slug}`} className="osta-card osta-pick flex h-full items-center justify-between gap-3 px-4 py-3.5 text-sm font-medium text-text">
+              <span>{lang === "ar" ? s.titleAr || s.titleEn : s.titleEn || s.titleAr}</span>
+              <ChevronRight size={16} aria-hidden className="shrink-0 text-accent-2 rtl:rotate-180" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function BlogPreview({ p, posts }: { p: P; posts: BlockData["posts"] }) {
   const bi = useBi();
   const { lang, t } = useLanguage();
@@ -645,6 +672,7 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "form": return <FormBlock p={p} />;
     case "blogPreview": return <BlogPreview p={p} posts={data.posts} />;
     case "jobsList": return <JobsList p={p} jobs={data.jobs} />;
+    case "subPages": return <SubPages p={p} items={data.subPages} />;
     case "homeSections": return <HomeSections sections={data.sections} />;
     case "contactCards": return <ContactCards p={p} />;
     case "bookingCalculator": return <BookingCalcBlock p={p} pricing={data.pricing} />;

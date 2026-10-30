@@ -6,7 +6,7 @@ import type { CmsBlock } from "@/lib/cms";
 export const slimPosts = (posts: BlogSummary[]): BlogSummary[] =>
   posts.map((p) => ({ ...p, coverImageUrl: p.coverImageUrl?.startsWith("data:") ? null : p.coverImageUrl }));
 
-export type BlockData = { services: ServiceSummary[]; posts: BlogSummary[]; sections: HomeSection[]; pricing: PricingConfig | null; jobs: OpenJobs };
+export type BlockData = { services: ServiceSummary[]; posts: BlogSummary[]; sections: HomeSection[]; pricing: PricingConfig | null; jobs: OpenJobs; subPages: { slug: string; titleEn: string; titleAr: string }[] };
 
 // Loads only the data the page's blocks actually need, and never lets a briefly unavailable API break the page.
 export async function loadBlockData(blocks: CmsBlock[]): Promise<BlockData> {
@@ -22,5 +22,5 @@ export async function loadBlockData(blocks: CmsBlock[]): Promise<BlockData> {
     has("bookingCalculator") ? api.pricingConfig().catch(() => null) : Promise.resolve(null),
     jobBlocks.length ? api.openJobs({ limit: Math.min(24, jobLimit), type: jobTypes.size === 1 ? [...jobTypes][0] : "all" }).catch(() => ({ listUrl: "", items: [] }) as OpenJobs) : Promise.resolve({ listUrl: "", items: [] } as OpenJobs),
   ]);
-  return { services, posts, sections, pricing, jobs };
+  return { services, posts, sections, pricing, jobs, subPages: [] };
 }

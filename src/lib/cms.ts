@@ -5,7 +5,7 @@ export type Cta = { label: Bi; url: string };
 
 export type CmsBlock = {
   id: string;
-  type: "hero" | "servicesGrid" | "richText" | "imageText" | "image" | "columns" | "faq" | "stats" | "cta" | "form" | "blogPreview" | "jobsList" | "homeSections" | "contactCards" | "bookingCalculator";
+  type: "hero" | "servicesGrid" | "richText" | "imageText" | "image" | "columns" | "faq" | "stats" | "cta" | "form" | "blogPreview" | "jobsList" | "subPages" | "homeSections" | "contactCards" | "bookingCalculator";
   props: Record<string, unknown>;
   hidden: boolean;
   visibility: { desktop: boolean; mobile: boolean };
@@ -27,6 +27,8 @@ export type CmsPage = {
   jsonLd?: Record<string, unknown>[];
   showLastUpdated?: boolean;
   updatedAt: string;
+  // Pages directly under this one (for a "Sub-pages list" block); published ones only on the live site.
+  subPages?: { slug: string; titleEn: string; titleAr: string }[];
   // Custom code for this page only (raw HTML), set by the owner.
   code?: { headCode: string; headCodeConsent: string; bodyCode: string; bodyCodeConsent: string };
 };

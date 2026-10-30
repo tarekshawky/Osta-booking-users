@@ -18,7 +18,7 @@ export function CmsPageView({ page, data, banner }: { page: CmsPage; data: Block
       {banner && <div className="bg-amber-400 px-4 py-2 text-center text-xs font-semibold text-black">{banner}</div>}
       <MarketingNav />
       <main className="flex-1">
-        <BlockRenderer blocks={page.blocks} data={data} />
+        <BlockRenderer blocks={page.blocks} data={{ ...data, subPages: page.subPages ?? [] }} />
         {page.showLastUpdated && (
           <p className="mx-auto max-w-3xl px-5 pb-10 text-center text-xs text-text-faint">
             {lang === "ar" ? "آخر تحديث:" : "Last updated:"} <time dateTime={page.updatedAt}>{updated}</time>

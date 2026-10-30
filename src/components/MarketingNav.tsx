@@ -42,31 +42,34 @@ const MOBILE_LINK = "block rounded-lg px-2 py-2.5 text-sm text-text-muted transi
 const MOBILE_SUB = "block rounded-lg px-2 py-2 text-sm text-text-faint transition-colors hover:bg-card hover:text-accent-2";
 const MOBILE_ACTIVE = "bg-card !text-accent-2 font-semibold";
 
-// One row of a desktop dropdown. A row with sub-items of its own opens a fly-out panel beside it (up to three levels in all).
-function DropItem({ item, label }: { item: SiteMenuItem; label: (m: SiteMenuItem) => string }) {
+// One row of a desktop dropdown. A row with sub-items of its own opens a fly-out panel beside it (up to three levels in all). A
+// fly-out whose rows have no sub-items of their own scrolls when it is long (a category can have dozens of services); rows in the
+// lower half of a tall panel open their fly-out upwards so it stays on screen.
+function DropItem({ item, label, up = false }: { item: SiteMenuItem; label: (m: SiteMenuItem) => string; up?: boolean }) {
   const subs = item.children.filter((c) => c.showDesktop);
   if (!subs.length) return <NavLink item={item} label={label(item)} className={DROP_LINK} activeClass={DROP_ACTIVE} />;
+  const leafPanel = subs.every((c) => !c.children.some((d) => d.showDesktop));
   return (
     <div className="group/sub relative">
       <div className="flex items-center">
         <div className="min-w-0 flex-1"><NavLink item={item} label={label(item)} className={DROP_LINK} activeClass={DROP_ACTIVE} /></div>
         <ChevronRight size={14} aria-hidden className="me-2 shrink-0 text-text-faint rtl:rotate-180" />
       </div>
-      <div className="invisible absolute start-full top-0 z-40 min-w-44 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within/sub:visible group-focus-within/sub:opacity-100 group-hover/sub:visible group-hover/sub:opacity-100">
-        {subs.map((c) => <DropItem key={c.url + c.labelEn} item={c} label={label} />)}
+      <div className={`invisible absolute start-full ${up ? "bottom-0" : "top-0"} z-40 min-w-44 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within/sub:visible group-focus-within/sub:opacity-100 group-hover/sub:visible group-hover/sub:opacity-100 ${leafPanel ? "max-h-[min(70vh,28rem)] overflow-y-auto" : ""}`}>
+        {subs.map((c, i) => <DropItem key={c.url + c.labelEn} item={c} label={label} up={!leafPanel && i >= subs.length / 2} />)}
       </div>
     </div>
   );
 }
 
-// The "More" menu is a plain list, so deeper levels are shown indented under their parent.
+// The "More" menu is a plain list: an item and its direct sub-items (the item's own page lists anything deeper).
 function MoreItems({ items, label, depth }: { items: SiteMenuItem[]; label: (m: SiteMenuItem) => string; depth: number }) {
   return (
     <>
       {items.filter((m) => m.showDesktop).map((m) => (
         <div key={m.url + m.labelEn}>
           <NavLink item={m} label={label(m)} className={depth === 0 ? DROP_LINK : `${DROP_LINK} ${depth === 1 ? "ps-7" : "ps-11"} text-text-faint`} activeClass={DROP_ACTIVE} />
-          <MoreItems items={m.children} label={label} depth={depth + 1} />
+          {depth < 1 && <MoreItems items={m.children} label={label} depth={depth + 1} />}
         </div>
       ))}
     </>
@@ -76,14 +79,20 @@ function MoreItems({ items, label, depth }: { items: SiteMenuItem[]; label: (m: 
 function BarItem({ item, label }: { item: SiteMenuItem; label: (m: SiteMenuItem) => string }) {
   const pathname = usePathname();
   if (!item.children.length) return <NavLink item={item} label={label(item)} className={BAR_LINK} activeClass={BAR_ACTIVE} />;
+  const subs = item.children.filter((c) => c.showDesktop);
+  // A long list (for example all the service categories) is shown in two columns.
+  const wide = subs.length > 10;
   return (
     <div className="group relative">
       <button type="button" className={`flex items-center gap-1 ${BAR_LINK} ${item.children.some((c) => anyActive(pathname, c)) ? BAR_ACTIVE : ""}`}>
         {label(item)} <ChevronDown size={14} />
       </button>
-      <div className="invisible absolute start-0 top-full z-40 min-w-44 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-        {item.children.filter((c) => c.showDesktop).map((c) => (
-          <DropItem key={c.url + c.labelEn} item={c} label={label} />
+      <div
+        className={`invisible absolute start-0 top-full z-40 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100 ${wide ? "grid min-w-[34rem]" : "min-w-44"}`}
+        style={wide ? { gridAutoFlow: "column", gridTemplateRows: `repeat(${Math.ceil(subs.length / 2)}, auto)` } : undefined}
+      >
+        {subs.map((c, i) => (
+          <DropItem key={c.url + c.labelEn} item={c} label={label} up={wide && i % Math.ceil(subs.length / 2) >= Math.ceil(subs.length / 2) / 2} />
         ))}
       </div>
     </div>
