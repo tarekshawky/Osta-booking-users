@@ -28,12 +28,18 @@ const cairo = Cairo({
 
 export async function generateMetadata(): Promise<Metadata> {
   const { settings, integrations } = await fetchSite();
+  const iconVersion = settings.faviconUrl ? `?v=${encodeURIComponent(settings.faviconUrl.slice(-12))}` : "";
   return {
     metadataBase: new URL(SITE_URL),
     title: { default: settings.siteNameEn, template: `%s | ${settings.siteNameEn}` },
     description: settings.descriptionEn || undefined,
     robots: settings.allowIndexing ? { index: true, follow: true } : { index: false, follow: false },
-    ...(settings.faviconUrl ? { icons: { icon: settings.faviconUrl } } : {}),
+    // Small PNG versions of the favicon chosen in the admin (see src/lib/favicon.ts). The version in the address makes browsers
+    // fetch the new picture when it is changed.
+    icons: {
+      icon: [{ url: `/favicon.ico${iconVersion}`, sizes: "48x48", type: "image/png" }, { url: `/icon${iconVersion}`, sizes: "192x192", type: "image/png" }],
+      apple: `/apple-icon${iconVersion}`,
+    },
     // Ownership checks for Google Search Console and Bing: plain meta tags, no cookies, no consent needed.
     ...(integrations?.searchConsoleToken || integrations?.bingToken
       ? { verification: { ...(integrations.searchConsoleToken ? { google: integrations.searchConsoleToken } : {}), ...(integrations.bingToken ? { other: { "msvalidate.01": integrations.bingToken } } : {}) } }
