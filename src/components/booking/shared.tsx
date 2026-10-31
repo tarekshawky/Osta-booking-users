@@ -1,6 +1,6 @@
 import type { PricingConfig } from "@/lib/api";
 import type { TranslationKey } from "@/lib/i18n";
-import type { Quote } from "@/lib/priceQuote";
+import { priceQuote, type Quote } from "@/lib/priceQuote";
 
 type BookingType = PricingConfig["bookingTypes"][number];
 
@@ -88,4 +88,25 @@ export function fromPrice(s: PService, regionId: string): number | null {
     return prices.length ? Math.min(...prices) : null;
   }
   return s.prices.find((p) => p.regionId === regionId)?.unitPriceFils ?? null;
+}
+
+// One more service booked together with the first (same visit): priced like any service, but with no booking fee (it is charged once).
+export type ExtraLine = { serviceId: string; optionId?: string; qty: number };
+export function extraQuote(config: PricingConfig, regionId: string, line: ExtraLine): Quote | null {
+  const s = config.services.find((x) => x.id === line.serviceId);
+  if (!s || !regionId) return null;
+  const inspection = isInspection(s);
+  try {
+    return priceQuote({
+      unitPriceFils: unitPriceFor(s, regionId, line.optionId ?? ""),
+      quantity: inspection ? 1 : line.qty,
+      minQuantity: inspection ? 1 : s.minQuantity,
+      tiers: inspection ? [] : s.tiers.map((x) => ({ ...x, startsAt: x.startsAt ? new Date(x.startsAt) : null, endsAt: x.endsAt ? new Date(x.endsAt) : null })),
+      bookingFeeFils: 0,
+      addOns: [],
+      vat: { ratePercent: config.tax.vatRatePercent, pricesIncludeVat: s.pricesIncludeVat ?? config.tax.pricesIncludeVat },
+    });
+  } catch {
+    return null;
+  }
 }

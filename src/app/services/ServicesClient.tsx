@@ -5,9 +5,10 @@ import { ChevronRight } from "lucide-react";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingFooter } from "@/components/MarketingFooter";
 import { useLanguage } from "@/lib/language-context";
-import type { ServiceSummary } from "@/lib/api";
+import { CatalogBrowser } from "@/components/services/CatalogBrowser";
+import type { CatalogCategory, ServiceSummary } from "@/lib/api";
 
-export function ServicesClient({ services }: { services: ServiceSummary[] }) {
+export function ServicesClient({ services, catalog = [] }: { services: ServiceSummary[]; catalog?: CatalogCategory[] }) {
   const { t, lang } = useLanguage();
 
   return (
@@ -46,6 +47,8 @@ export function ServicesClient({ services }: { services: ServiceSummary[] }) {
           </div>
         )}
       </section>
+
+      <CatalogBrowser categories={catalog} />
 
       </main>
 

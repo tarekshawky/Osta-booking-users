@@ -191,8 +191,17 @@ export type PricedOrderBody = {
   locationUrl?: string;
   customerLanguage?: string;
   notes?: string;
+  // More services for the same visit (same place, time and booking type): one order is created for each, the booking fee only once.
+  extraServices?: { serviceId: string; quantity: number; optionId?: string; addOnIds?: string[] }[];
   consent: true;
   idempotencyKey: string;
+};
+
+// The Service Catalogue for the Services page: each category with its services, the page that describes each one (when published)
+// and the booking service its Book button opens.
+export type CatalogCategory = {
+  slug: string | null; nameEn: string; nameAr: string; icon: string;
+  services: { nameEn: string; nameAr: string; slug: string | null; bookSlug: string | null }[];
 };
 
 export type ServiceSummary = {
@@ -373,7 +382,7 @@ export const api = {
   },
 
   createPricedOrder: (token: string, body: PricedOrderBody) =>
-    apiFetch<Order & { totalFils: number }>("/orders", { method: "POST", body, token }),
+    apiFetch<Order & { totalFils: number; extraOrders?: Order[] }>("/orders", { method: "POST", body, token }),
 
   createOrder: (
     token: string,
@@ -398,6 +407,7 @@ export const api = {
 
   // Public marketing-site content -- no bearer token required.
   services: () => apiFetch<ServiceSummary[]>("/services"),
+  catalog: () => apiFetch<{ categories: CatalogCategory[] }>("/catalog"),
   service: (slug: string) => apiFetch<ServiceDetail>(`/services/${slug}`),
   blogCategories: () => apiFetch<BlogCategory[]>("/blog/categories"),
   blogCategory: (slug: string) => apiFetch<BlogCategory>(`/blog/categories/${encodeURIComponent(slug)}`),

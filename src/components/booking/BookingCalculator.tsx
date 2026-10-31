@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Minus, Plus } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import type { TranslationKey } from "@/lib/i18n";
@@ -10,20 +10,27 @@ import { priceQuote, type Quote } from "@/lib/priceQuote";
 import { saveDraft } from "@/lib/bookingDraft";
 import { track } from "@/lib/analytics";
 import { ServicePicker } from "@/components/booking/ServicePicker";
-import { bookingFee, hasOptions, isInspection, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
+import { bookingFee, fromPrice, hasOptions, isInspection, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
 
 // Public, no-login price calculator: emirate -> service -> quantity -> booking type -> summary -> consent -> book.
 // Prices here are a preview; the server prices the order again when it is placed.
 export function BookingCalculator({ config }: { config: PricingConfig }) {
+  // useSearchParams needs a Suspense boundary: "?service=<slug>" (the Book buttons) opens this with that service already chosen.
+  return <Suspense fallback={null}><Calculator config={config} /></Suspense>;
+}
+
+function Calculator({ config }: { config: PricingConfig }) {
   const router = useRouter();
+  const wanted = useSearchParams().get("service");
+  const preset = config.services.find((s) => s.slug === wanted);
   const { t, lang } = useLanguage();
   const ar = lang === "ar";
 
   const [regionId, setRegionId] = useState("");
-  const [serviceId, setServiceId] = useState("");
+  const [serviceId, setServiceId] = useState(preset?.id ?? "");
   const [typeId, setTypeId] = useState("");
   const [optionId, setOptionId] = useState("");
-  const [qty, setQty] = useState(1);
+  const [qty, setQty] = useState(preset?.minQuantity ?? 1);
   const [addOnIds, setAddOnIds] = useState<string[]>([]);
   const [consent, setConsent] = useState(false);
 
@@ -86,6 +93,13 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-5 pb-20">
+      {service && !regionId && (
+        <div className="osta-card osta-glow-border p-4">
+          <p className="text-[11px] text-text-faint">{t("booking.presetService")}</p>
+          <p className="text-sm font-semibold text-text">{name(service)}</p>
+        </div>
+      )}
+
       <section>
         {heading(1, t("booking.chooseEmirate"))}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -94,7 +108,7 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
               key={r.id}
               type="button"
               aria-pressed={regionId === r.id}
-              onClick={() => { setRegionId(r.id); setServiceId(""); setOptionId(""); setAddOnIds([]); setConsent(false); }}
+              onClick={() => { setRegionId(r.id); if (!(service && fromPrice(service, r.id) !== null)) setServiceId(""); setOptionId(""); setAddOnIds([]); setConsent(false); }}
               className={card(regionId === r.id)}
             >
               <span className="text-sm font-medium text-text">{name(r)}</span>

@@ -12,8 +12,9 @@ import type { TranslationKey } from "@/lib/i18n";
 import { api, ApiError, type PricingConfig } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { priceQuote, QuoteError, type Quote } from "@/lib/priceQuote";
+import { ExtraServices } from "@/components/booking/ExtraServices";
 import { ServicePicker } from "@/components/booking/ServicePicker";
-import { bookingFee, fromPrice, hasOptions, isInspection, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
+import { bookingFee, extraQuote, fromPrice, hasOptions, isInspection, type ExtraLine, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
 import { loadDraft, clearDraft } from "@/lib/bookingDraft";
 import { availableTimes, localDateStr, withinHours } from "@/lib/slots";
 
@@ -54,6 +55,8 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
   const [optionId, setOptionId] = useState(draft?.optionId ?? "");
   const [qty, setQty] = useState(draft?.qty ?? 1);
   const [addOnIds, setAddOnIds] = useState<string[]>(draft?.addOnIds ?? []);
+  // More services for the same visit; each becomes its own order and the booking fee is charged once.
+  const [extra, setExtra] = useState<ExtraLine[]>([]);
   const [openedAt] = useState(() => Date.now()); // "today" for the earliest bookable date
   const [dateStr, setDateStr] = useState("");
   const [timeStr, setTimeStr] = useState("");
@@ -117,6 +120,9 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [service, type, regionId, qty, addOnIds, optionId, config.tax]);
+  // The other services of this visit and the total of everything.
+  const extraQuotes = extra.map((l) => extraQuote(config, regionId, l));
+  const grandTotalFils = (quote?.totalFils ?? 0) + extraQuotes.reduce((n, q) => n + (q?.totalFils ?? 0), 0);
 
   function slotProblem(): string | null {
     if (!scheduledAt || !type) return t("booking.pastDate");
@@ -191,6 +197,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
         quantity: qty,
         addOnIds,
         optionId: optionId || undefined,
+        extraServices: extra.length ? extra.map((l) => ({ serviceId: l.serviceId, quantity: isInspection(config.services.find((x) => x.id === l.serviceId)!) ? 1 : l.qty, optionId: l.optionId })) : undefined,
         scheduledAt: scheduledAt || undefined,
         locationUrl: locationUrl.trim(),
         customerLanguage,
@@ -202,19 +209,21 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
         "New OSTA booking request",
         `Order: ${order.number}`,
         `Service: ${service.nameEn}${option ? ` - ${option.nameEn}` : ""} x ${qty} (${region?.nameEn})`,
+        ...extra.map((l) => { const s = config.services.find((x) => x.id === l.serviceId); return s ? `Also: ${s.nameEn}${isInspection(s) ? "" : ` x ${l.qty}`}` : null; }),
         `Type: ${type.nameEn}`,
         serviceNote(service, false) ? `Service note: ${serviceNote(service, false)}` : null,
-        `Total: ${(order.totalFils / 100).toFixed(2)} AED`,
+        `Total: ${((order.totalFils + (order.extraOrders ?? []).reduce((n, o) => n + ((o as { totalFils?: number }).totalFils ?? 0), 0)) / 100).toFixed(2)} AED`,
         `Requested time: ${scheduledAt.replace("T", " ")}`,
         `Location: ${locationUrl}`,
         notes ? `Notes: ${notes}` : null,
         customer ? `Customer: ${customer.name} (${customer.phone})` : null,
       ].filter(Boolean);
       if (whatsappTab) whatsappTab.location.href = `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(lines.join("\n"))}`;
-      track("booking_completed", { value: order.totalFils / 100, currency: "AED" });
+      track("booking_completed", { value: grandTotalFils / 100, currency: "AED" });
       clearDraft();
       setSuccess(true);
-      setTimeout(() => router.replace(`/orders/${order.id}`), 1200);
+      // Several services = several orders (one each): open the list, a single service opens its order.
+      setTimeout(() => router.replace(extra.length ? "/orders" : `/orders/${order.id}`), 1200);
     } catch (err) {
       whatsappTab?.close();
       setError(err instanceof ApiError ? err.message : t("newOrder.genericError"));
@@ -266,6 +275,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
                   type="button"
                   onClick={() => {
                     setRegionId(r.id);
+                    setExtra([]);
                     setServiceId("");
                     setOptionId("");
                     setAddOnIds([]);
@@ -290,8 +300,9 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
               selectedId={serviceId}
               aed={aed}
               card={pickCard}
-              onPick={(s) => { setServiceId(s.id); setOptionId(""); setQty(s.minQuantity); setAddOnIds([]); setError(null); }}
+              onPick={(s) => { setServiceId(s.id); setOptionId(""); setQty(s.minQuantity); setAddOnIds([]); setExtra((e) => e.filter((l) => l.serviceId !== s.id)); setError(null); }}
             />
+            {service && unitFils(service) !== null && <ExtraServices config={config} regionId={regionId} primaryId={serviceId} lines={extra} onChange={setExtra} aed={aed} />}
           </>
         )}
 
@@ -463,6 +474,23 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
             </div>
             <ServiceNoteBox note={serviceNote(service, ar)} />
             {quote && <PriceLines quote={quote} aed={aed} t={t} inspection={!!service && isInspection(service)} />}
+            {extra.length > 0 && (
+              <div className="osta-card p-4 text-sm text-text">
+                <p className="mb-1 font-semibold">{t("booking.yourServices")}</p>
+                {extra.map((l, i) => {
+                  const s = config.services.find((x) => x.id === l.serviceId);
+                  const q = extraQuotes[i];
+                  return s ? (
+                    <div key={l.serviceId} className="flex justify-between gap-3 py-0.5 text-text-muted">
+                      <span>{name(s)}{isInspection(s) ? "" : ` × ${l.qty}`}</span>
+                      <span className="shrink-0">{isInspection(s) ? t("booking.afterInspection") : q ? aed(q.totalFils) : "—"}</span>
+                    </div>
+                  ) : null;
+                })}
+                <div className="mt-1 flex justify-between border-t border-card-border pt-1 font-bold"><span>{t("booking.total")}</span><span>{aed(grandTotalFils)}</span></div>
+              </div>
+            )}
+            <ExtraServices config={config} regionId={regionId} primaryId={serviceId} lines={extra} onChange={setExtra} aed={aed} />
             {policy && (
               <div className="osta-card p-4">
                 <p className="whitespace-pre-line text-xs leading-relaxed text-text-muted">{fill(ar ? policy.textAr : policy.textEn)}</p>
@@ -486,7 +514,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
             <button type="button" onClick={() => setSummaryOpen((o) => !o)} className="flex w-full items-center justify-between text-sm" aria-expanded={summaryOpen}>
               <span className="text-text-muted">{t("booking.total")}</span>
               <span className="flex items-center gap-1 font-bold text-accent-2" aria-live="polite">
-                {aed(quote.totalFils)} <ChevronDown size={14} className={summaryOpen ? "rotate-180" : ""} />
+                {aed(grandTotalFils)} <ChevronDown size={14} className={summaryOpen ? "rotate-180" : ""} />
               </span>
             </button>
             {summaryOpen && <div className="mt-2"><PriceLines quote={quote} aed={aed} t={t} compact inspection={!!service && isInspection(service)} /></div>}
