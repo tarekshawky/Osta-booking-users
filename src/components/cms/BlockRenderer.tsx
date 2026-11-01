@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { JOBS_PATH, jobPath } from "@/lib/jobsPaths";
 import { ChevronDown, ChevronRight, Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
@@ -149,11 +150,31 @@ function Hero({ p }: { p: P }) {
   );
 }
 
-function ServicesGrid({ p, services }: { p: P; services: BlockData["services"] }) {
+function ServicesGrid({ p, services, catalog }: { p: P; services: BlockData["services"]; catalog: BlockData["catalog"] }) {
   const bi = useBi();
   const { lang, t } = useLanguage();
-  const items = services.slice(0, Number(p.limit) || 8);
-  if (!items.length) return null;
+  const limit = Number(p.limit) || 8;
+  // "All services from the Service Catalogue": each service once (a service in several categories is listed under its first), in
+  // catalogue order, optionally only one category (matched by its English name or page address).
+  const catalogItems = useMemo(() => {
+    if (p.source !== "catalogue") return [];
+    const only = String(p.category ?? "").trim().toLowerCase();
+    const seen = new Set<string>();
+    const out: { s: BlockData["catalog"][number]["services"][number]; category: BlockData["catalog"][number] }[] = [];
+    for (const c of catalog) {
+      if (only && c.nameEn.toLowerCase() !== only && (c.slug ?? "").toLowerCase() !== only) continue;
+      for (const s of c.services) {
+        const key = s.bookSlug ?? s.slug ?? s.nameEn;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ s, category: c });
+      }
+    }
+    return out;
+  }, [p.source, p.category, catalog]);
+  const items = services.slice(0, limit);
+  const shownCatalog = catalogItems.slice(0, limit);
+  if (p.source === "catalogue" ? !shownCatalog.length : !items.length) return null;
   const viewAll = p.viewAllUrl as string | undefined;
   return (
     <section className="mx-auto w-full max-w-6xl px-5 py-16">
@@ -162,6 +183,19 @@ function ServicesGrid({ p, services }: { p: P; services: BlockData["services"] }
         {bi(p.heading as Bi) && <h2 className="mt-2 text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>}
         {bi(p.subtitle as Bi) && <RichLine className="mx-auto mt-2 max-w-xl text-sm text-text-muted" text={bi(p.subtitle as Bi)} />}
       </div>
+      {p.source === "catalogue" ? (
+        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {shownCatalog.map(({ s, category }) => (
+            <div key={s.bookSlug ?? s.slug ?? s.nameEn} className="osta-card flex flex-col gap-3 p-5">
+              <div>
+                {s.slug ? <Link href={`/${s.slug}`} className="text-base font-semibold text-text hover:text-accent-2">{lang === "ar" ? s.nameAr || s.nameEn : s.nameEn}</Link> : <h3 className="text-base font-semibold text-text">{lang === "ar" ? s.nameAr || s.nameEn : s.nameEn}</h3>}
+                <p className="mt-1 text-[11px] text-text-faint">{lang === "ar" ? category.nameAr || category.nameEn : category.nameEn}</p>
+              </div>
+              {s.bookSlug && <Link href={`/pricing?service=${encodeURIComponent(s.bookSlug)}`} className="osta-btn-primary mt-auto rounded-lg px-4 py-2 text-center text-xs font-semibold text-white">{t("services.book")}</Link>}
+            </div>
+          ))}
+        </div>
+      ) : (
       <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((s) => (
           <Link key={s.slug} href={`/services/${s.slug}`} className="osta-card group p-5">
@@ -173,6 +207,7 @@ function ServicesGrid({ p, services }: { p: P; services: BlockData["services"] }
           </Link>
         ))}
       </div>
+      )}
       {viewAll && bi(p.viewAllLabel as Bi | undefined) && (
         <div className="mt-8 text-center">
           <SmartLink href={viewAll} className="text-sm font-semibold text-accent-2">{bi(p.viewAllLabel as Bi | undefined)}</SmartLink>
@@ -661,7 +696,7 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
   const p = block.props;
   switch (block.type) {
     case "hero": return <Hero p={p} />;
-    case "servicesGrid": return <ServicesGrid p={p} services={data.services} />;
+    case "servicesGrid": return <ServicesGrid p={p} services={data.services} catalog={data.catalog} />;
     case "richText": return <RichText p={p} />;
     case "imageText": return <ImageText p={p} />;
     case "image": return <ImageBlock p={p} />;
