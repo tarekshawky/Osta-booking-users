@@ -11,7 +11,7 @@ import { saveDraft } from "@/lib/bookingDraft";
 import { track } from "@/lib/analytics";
 import { ExtraServices } from "@/components/booking/ExtraServices";
 import { ServicePicker } from "@/components/booking/ServicePicker";
-import { bookingFee, extraQuote, fromPrice, hasOptions, isInspection, type ExtraLine, optionNote, optionQuestion, optionsIn, isSingleUnit, PriceDisclaimer, PriceLines, ruleInputs, workFils, ServiceNoteBox, serviceNote, unitLabel, unitPriceFor } from "@/components/booking/shared";
+import { bookingFee, extraQuote, fromPrice, hasOptions, isInspection, type ExtraLine, optionNote, optionQuestion, optionsIn, isSingleUnit, PriceDisclaimer, PriceLines, ruleInputs, typeText, workFils, ServiceNoteBox, serviceNote, unitLabel, unitPriceFor } from "@/components/booking/shared";
 
 // Public, no-login price calculator: emirate -> service -> quantity -> booking type -> summary -> consent -> book.
 // Prices here are a preview; the server prices the order again when it is placed.
@@ -213,7 +213,7 @@ function Calculator({ config }: { config: PricingConfig }) {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-text">{name(b)}</p>
-                      {(ar ? b.descriptionAr : b.descriptionEn) && <p className="mt-1 text-xs text-text-muted">{ar ? b.descriptionAr : b.descriptionEn}</p>}
+                      {(ar ? b.descriptionAr : b.descriptionEn) && <p className="mt-1 text-xs text-text-muted">{typeText(ar ? b.descriptionAr : b.descriptionEn, service ? name(service) : undefined, ar ? "الخدمة" : "service")}</p>}
                     </div>
                     <p className="shrink-0 text-xs text-accent-2">{fee === 0 ? t("booking.noFee") : `${t("booking.fee")} ${aed(fee)}`}</p>
                   </div>

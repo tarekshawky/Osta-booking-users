@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fromPrice, hasOptions, isSingleUnit, optionsIn, ruleInputs, unitLabel, unitPriceFor } from "./shared";
+import { fromPrice, hasOptions, isSingleUnit, optionsIn, ruleInputs, typeText, unitLabel, unitPriceFor } from "./shared";
 import type { PricingConfig } from "@/lib/api";
 
 const base = { id: "s", slug: "s", nameEn: "Gas", nameAr: "غاز", descriptionEn: null, descriptionAr: null, imageUrl: null, pricingUnit: "UNIT", minQuantity: 1, pricesIncludeVat: null, tiers: [], addOns: [] };
@@ -61,5 +61,13 @@ describe("pricing rules in the preview", () => {
   });
   it("applies nothing when the API sends no rules", () => {
     expect(ruleInputs({} as PricingConfig, "EMERGENCY", "2026-11-03T22:30")).toEqual({ minimumOrderFils: 0, surcharge: null });
+  });
+});
+
+describe("booking type text", () => {
+  it("names the service being booked", () => {
+    expect(typeText("Book a regular {service} appointment.", "Flea Control", "service")).toBe("Book a regular Flea Control appointment.");
+    expect(typeText("Book a regular {service} appointment.", undefined, "service")).toBe("Book a regular service appointment.");
+    expect(typeText(null, "X", "service")).toBe("");
   });
 });

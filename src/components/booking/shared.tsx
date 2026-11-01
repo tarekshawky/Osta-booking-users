@@ -54,6 +54,9 @@ export function PriceDisclaimer({ text }: { text: string }) {
   return <p className="mt-2 text-[11px] leading-relaxed text-text-faint">{text}</p>;
 }
 
+// A booking type's description may say {service}: it becomes the name of the service being booked (so "Flea Control", not "AC").
+export const typeText = (text: string | null | undefined, serviceName: string | undefined, fallback: string) => (text ?? "").replaceAll("{service}", serviceName || fallback);
+
 // The optional note an admin set on a service (what the price covers or leaves out). Falls back to the other language.
 export const serviceNote = (s: { noteEn?: string; noteAr?: string }, ar: boolean) => ((ar ? s.noteAr || s.noteEn : s.noteEn || s.noteAr) ?? "").trim();
 
