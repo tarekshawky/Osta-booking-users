@@ -9,8 +9,9 @@ import type { PricingConfig } from "@/lib/api";
 import { priceQuote, type Quote } from "@/lib/priceQuote";
 import { saveDraft } from "@/lib/bookingDraft";
 import { track } from "@/lib/analytics";
+import { ExtraServices } from "@/components/booking/ExtraServices";
 import { ServicePicker } from "@/components/booking/ServicePicker";
-import { bookingFee, fromPrice, hasOptions, isInspection, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
+import { bookingFee, extraQuote, fromPrice, hasOptions, isInspection, type ExtraLine, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
 
 // Public, no-login price calculator: emirate -> service -> quantity -> booking type -> summary -> consent -> book.
 // Prices here are a preview; the server prices the order again when it is placed.
@@ -21,8 +22,12 @@ export function BookingCalculator({ config }: { config: PricingConfig }) {
 
 function Calculator({ config }: { config: PricingConfig }) {
   const router = useRouter();
-  const wanted = useSearchParams().get("service");
-  const preset = config.services.find((s) => s.slug === wanted);
+  // "?service=<slug>" (a Book button) or "?services=a,b,c" (the basket on the Services page) opens this with those services chosen:
+  // the first is the main one, the others are added to the same visit.
+  const params = useSearchParams();
+  const wantedSlugs = [...new Set([params.get("service") ?? "", ...(params.get("services") ?? "").split(",")].map((x) => x.trim()).filter(Boolean))];
+  const presets = wantedSlugs.map((slug) => config.services.find((s) => s.slug === slug)).filter((s): s is PricingConfig["services"][number] => !!s);
+  const preset = presets[0];
   const { t, lang } = useLanguage();
   const ar = lang === "ar";
 
@@ -33,6 +38,8 @@ function Calculator({ config }: { config: PricingConfig }) {
   const [qty, setQty] = useState(preset?.minQuantity ?? 1);
   const [addOnIds, setAddOnIds] = useState<string[]>([]);
   const [consent, setConsent] = useState(false);
+  // The other services of this visit (a service that needs an option is added from the picker, where the option can be chosen).
+  const [extra, setExtra] = useState<ExtraLine[]>(() => presets.slice(1).filter((s) => !hasOptions(s)).map((s) => ({ serviceId: s.id, qty: s.minQuantity })));
 
   const name = (x: { nameEn: string; nameAr: string }) => (ar ? x.nameAr : x.nameEn);
   const aed = (fils: number) => `${(fils / 100).toFixed(2)} ${t("common.aed")}`;
@@ -86,7 +93,7 @@ function Calculator({ config }: { config: PricingConfig }) {
 
   function book() {
     if (!service || !type || !quote || !consent || (needsOption && !option)) return;
-    saveDraft({ regionId, serviceId, typeId, optionId: optionId || undefined, qty, addOnIds, consent });
+    saveDraft({ regionId, serviceId, typeId, optionId: optionId || undefined, qty, addOnIds, extra, consent });
     track("booking_started");
     router.push("/orders/new");
   }
@@ -97,6 +104,7 @@ function Calculator({ config }: { config: PricingConfig }) {
         <div className="osta-card osta-glow-border p-4">
           <p className="text-[11px] text-text-faint">{t("booking.presetService")}</p>
           <p className="text-sm font-semibold text-text">{name(service)}</p>
+          {extra.length > 0 && <p className="mt-1 text-xs text-text-muted">+ {extra.map((l) => { const x = config.services.find((v) => v.id === l.serviceId); return x ? name(x) : ""; }).filter(Boolean).join(" · ")}</p>}
         </div>
       )}
 
@@ -108,7 +116,7 @@ function Calculator({ config }: { config: PricingConfig }) {
               key={r.id}
               type="button"
               aria-pressed={regionId === r.id}
-              onClick={() => { setRegionId(r.id); if (!(service && fromPrice(service, r.id) !== null)) setServiceId(""); setOptionId(""); setAddOnIds([]); setConsent(false); }}
+              onClick={() => { setRegionId(r.id); if (!(service && fromPrice(service, r.id) !== null)) setServiceId(""); setExtra((e) => e.filter((l) => { const x = config.services.find((v) => v.id === l.serviceId); return !!x && fromPrice(x, r.id) !== null; })); setOptionId(""); setAddOnIds([]); setConsent(false); }}
               className={card(regionId === r.id)}
             >
               <span className="text-sm font-medium text-text">{name(r)}</span>
@@ -126,7 +134,7 @@ function Calculator({ config }: { config: PricingConfig }) {
             selectedId={serviceId}
             aed={aed}
             card={card}
-            onPick={(s) => { setServiceId(s.id); setOptionId(""); setQty(s.minQuantity); setAddOnIds([]); setConsent(false); }}
+            onPick={(s) => { setServiceId(s.id); setOptionId(""); setQty(s.minQuantity); setAddOnIds([]); setExtra((e) => e.filter((l) => l.serviceId !== s.id)); setConsent(false); }}
           />
         </section>
       )}
@@ -188,6 +196,8 @@ function Calculator({ config }: { config: PricingConfig }) {
         </section>
       )}
 
+      {ready && service && <ExtraServices config={config} regionId={regionId} primaryId={serviceId} lines={extra} onChange={(l) => { setExtra(l); setConsent(false); }} aed={aed} />}
+
       {ready && service && (
         <section>
           {heading(4 + n, t("booking.steps.type"))}
@@ -219,6 +229,22 @@ function Calculator({ config }: { config: PricingConfig }) {
             {serviceNote(service, ar) && <div className="mt-3"><ServiceNoteBox note={serviceNote(service, ar)} /></div>}
           </div>
           <PriceLines quote={quote} aed={aed} t={t as (k: TranslationKey) => string} inspection={inspection} />
+          {extra.length > 0 && (
+            <div className="osta-card mt-3 p-4 text-sm text-text">
+              <p className="mb-1 font-semibold">{t("booking.yourServices")}</p>
+              {extra.map((l) => {
+                const x = config.services.find((v) => v.id === l.serviceId);
+                const q = extraQuote(config, regionId, l);
+                return x ? (
+                  <div key={l.serviceId} className="flex justify-between gap-3 py-0.5 text-text-muted">
+                    <span>{name(x)}{isInspection(x) ? "" : ` × ${l.qty}`}</span>
+                    <span className="shrink-0">{isInspection(x) ? t("booking.afterInspection") : q ? aed(q.totalFils) : "—"}</span>
+                  </div>
+                ) : null;
+              })}
+              <div className="mt-1 flex justify-between border-t border-card-border pt-1 font-bold"><span>{t("booking.total")}</span><span>{aed(quote.totalFils + extra.reduce((sum, l) => sum + (extraQuote(config, regionId, l)?.totalFils ?? 0), 0))}</span></div>
+            </div>
+          )}
           {policy && (
             <div className="osta-card mt-3 p-4">
               <p className="whitespace-pre-line text-xs leading-relaxed text-text-muted">{fill(ar ? policy.textAr : policy.textEn)}</p>

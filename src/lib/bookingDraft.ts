@@ -9,6 +9,8 @@ export type BookingDraft = {
   optionId?: string;
   qty: number;
   addOnIds: string[];
+  // More services for the same visit (the basket on the Services page, or "add another service" in the calculator).
+  extra?: { serviceId: string; optionId?: string; qty: number }[];
   consent: boolean;
   // When the choice was made. A draft older than a few hours is ignored.
   savedAt?: number;
@@ -39,7 +41,7 @@ export function loadDraft(): BookingDraft | null {
     const d = JSON.parse(raw) as Partial<BookingDraft>;
     if (typeof d.savedAt === "number" && Date.now() - d.savedAt > MAX_AGE_MS) return null;
     if (typeof d.regionId !== "string" || typeof d.serviceId !== "string" || typeof d.typeId !== "string" || typeof d.qty !== "number") return null;
-    return { regionId: d.regionId, serviceId: d.serviceId, typeId: d.typeId, optionId: typeof d.optionId === "string" ? d.optionId : undefined, qty: d.qty, addOnIds: Array.isArray(d.addOnIds) ? d.addOnIds.filter((x) => typeof x === "string") : [], consent: d.consent === true };
+    return { regionId: d.regionId, serviceId: d.serviceId, typeId: d.typeId, optionId: typeof d.optionId === "string" ? d.optionId : undefined, qty: d.qty, addOnIds: Array.isArray(d.addOnIds) ? d.addOnIds.filter((x) => typeof x === "string") : [], extra: Array.isArray(d.extra) ? d.extra.filter((l): l is { serviceId: string; optionId?: string; qty: number } => !!l && typeof l.serviceId === "string" && typeof l.qty === "number").slice(0, 19) : [], consent: d.consent === true };
   } catch {
     return null;
   }

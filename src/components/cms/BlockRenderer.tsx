@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { JOBS_PATH, jobPath } from "@/lib/jobsPaths";
+import { CatalogBrowser } from "@/components/services/CatalogBrowser";
 import { ChevronDown, ChevronRight, Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { useSite } from "@/lib/site-context";
 import { RichHtml, RichInline, RichLine, isRichText } from "@/components/cms/RichInline";
@@ -450,6 +451,12 @@ function SubPages({ p, items }: { p: P; items: BlockData["subPages"] }) {
   );
 }
 
+// The whole Service Catalogue on a page (search, categories, Add to a basket, Book). Heading and text can be overridden in the block.
+function ServiceCatalog({ p, categories }: { p: P; categories: BlockData["catalog"] }) {
+  const bi = useBi();
+  return <CatalogBrowser categories={categories} heading={bi(p.heading as Bi) || undefined} subtitle={bi(p.subtitle as Bi) || undefined} />;
+}
+
 function BlogPreview({ p, posts }: { p: P; posts: BlockData["posts"] }) {
   const bi = useBi();
   const { lang, t } = useLanguage();
@@ -708,6 +715,7 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "blogPreview": return <BlogPreview p={p} posts={data.posts} />;
     case "jobsList": return <JobsList p={p} jobs={data.jobs} />;
     case "subPages": return <SubPages p={p} items={data.subPages} />;
+    case "serviceCatalog": return <ServiceCatalog p={p} categories={data.catalog} />;
     case "homeSections": return <HomeSections sections={data.sections} />;
     case "contactCards": return <ContactCards p={p} />;
     case "bookingCalculator": return <BookingCalcBlock p={p} pricing={data.pricing} />;

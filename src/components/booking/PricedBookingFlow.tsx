@@ -56,7 +56,12 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
   const [qty, setQty] = useState(draft?.qty ?? 1);
   const [addOnIds, setAddOnIds] = useState<string[]>(draft?.addOnIds ?? []);
   // More services for the same visit; each becomes its own order and the booking fee is charged once.
-  const [extra, setExtra] = useState<ExtraLine[]>([]);
+  const [extra, setExtra] = useState<ExtraLine[]>(() =>
+    (draft?.extra ?? []).filter((l) => {
+      const x = config.services.find((v) => v.id === l.serviceId);
+      return !!x && x.id !== draft?.serviceId && fromPrice(x, draft!.regionId) !== null && (!hasOptions(x) || isInspection(x) || optionsIn(x, draft!.regionId).some((o) => o.id === l.optionId));
+    }),
+  );
   const [openedAt] = useState(() => Date.now()); // "today" for the earliest bookable date
   const [dateStr, setDateStr] = useState("");
   const [timeStr, setTimeStr] = useState("");
