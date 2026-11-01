@@ -171,6 +171,8 @@ export type PricingConfig = {
     hoursEnd: string | null;
     overrides: { serviceId: string | null; regionId: string | null; feeFils: number }[];
   }[];
+  // Minimum order and the emergency off-hours / holiday surcharges (older APIs don't send it).
+  rules?: { minimumOrderFils: number; offHoursPercent: number; holidayPercent: number; normalStart: string; normalEnd: string; holidays: string[] };
   tax: { vatRatePercent: number; pricesIncludeVat: boolean };
   visitFeePolicy: {
     id: string;

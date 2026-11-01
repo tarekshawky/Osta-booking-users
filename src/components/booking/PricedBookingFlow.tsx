@@ -14,7 +14,7 @@ import { track } from "@/lib/analytics";
 import { priceQuote, QuoteError, type Quote } from "@/lib/priceQuote";
 import { ExtraServices } from "@/components/booking/ExtraServices";
 import { ServicePicker } from "@/components/booking/ServicePicker";
-import { bookingFee, extraQuote, fromPrice, hasOptions, isInspection, type ExtraLine, optionNote, optionQuestion, optionsIn, isSingleUnit, PriceDisclaimer, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
+import { bookingFee, extraQuote, fromPrice, hasOptions, isInspection, type ExtraLine, optionNote, optionQuestion, optionsIn, isSingleUnit, PriceDisclaimer, PriceLines, ruleInputs, workFils, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
 import { loadDraft, clearDraft } from "@/lib/bookingDraft";
 import { availableTimes, localDateStr, withinHours } from "@/lib/slots";
 
@@ -118,15 +118,19 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
           ratePercent: config.tax.vatRatePercent,
           pricesIncludeVat: service.pricesIncludeVat ?? config.tax.pricesIncludeVat,
         },
+        // Minimum order (whole booking) and the emergency off-hours / holiday surcharge for the chosen time.
+        minimumOrderFils: isInspection(service) ? 0 : ruleInputs(config, type.code, scheduledAt).minimumOrderFils,
+        otherLinesFils: extra.reduce((sum, l) => sum + workFils(extraQuote(config, regionId, l, { typeCode: type.code, scheduledLocal: scheduledAt })), 0),
+        surcharge: isInspection(service) ? null : ruleInputs(config, type.code, scheduledAt).surcharge,
       });
       return { quote: q, quoteError: false };
     } catch (e) {
       return { quote: null, quoteError: e instanceof QuoteError };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [service, type, regionId, qty, addOnIds, optionId, config.tax]);
+  }, [service, type, regionId, qty, addOnIds, optionId, config.tax, scheduledAt, extra]);
   // The other services of this visit and the total of everything.
-  const extraQuotes = extra.map((l) => extraQuote(config, regionId, l));
+  const extraQuotes = extra.map((l) => extraQuote(config, regionId, l, { typeCode: type?.code, scheduledLocal: scheduledAt }));
   const grandTotalFils = (quote?.totalFils ?? 0) + extraQuotes.reduce((n, q) => n + (q?.totalFils ?? 0), 0);
 
   function slotProblem(): string | null {

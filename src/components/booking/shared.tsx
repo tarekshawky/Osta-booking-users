@@ -1,6 +1,7 @@
 import type { PricingConfig } from "@/lib/api";
 import type { TranslationKey } from "@/lib/i18n";
 import { priceQuote, type Quote } from "@/lib/priceQuote";
+import { surchargeFor } from "@/lib/pricingRules";
 
 type BookingType = PricingConfig["bookingTypes"][number];
 
@@ -40,6 +41,8 @@ export function PriceLines({ quote, aed, t, compact, inspection }: { quote: Quot
       {quote.discountFils > 0 && row(t("booking.afterDiscount"), aed(quote.serviceNetFils))}
       {quote.bookingFeeFils > 0 && row(t("booking.bookingFee"), aed(quote.bookingFeeFils))}
       {quote.addOnsFils > 0 && row(t("booking.addOnsTotal"), aed(quote.addOnsFils))}
+      {(quote.minimumTopUpFils ?? 0) > 0 && row(t("booking.minimumTopUp"), aed(quote.minimumTopUpFils!))}
+      {(quote.surchargeFils ?? 0) > 0 && row(`${quote.surchargeKind === "HOLIDAY" ? t("booking.surchargeHoliday") : t("booking.surchargeOffHours")} (${quote.surchargePercent}%)`, aed(quote.surchargeFils!))}
       {row(quote.pricesIncludeVat ? `${t("booking.vatIncluded")} (${quote.vatRatePercent}%)` : `${t("booking.vatAdded")} (${quote.vatRatePercent}%)`, aed(quote.vatFils))}
       <div className="mt-1 border-t border-card-border pt-1">{row(t("booking.total"), aed(quote.totalFils), true)}</div>
     </div>
@@ -101,7 +104,17 @@ export function fromPrice(s: PService, regionId: string): number | null {
 
 // One more service booked together with the first (same visit): priced like any service, but with no booking fee (it is charged once).
 export type ExtraLine = { serviceId: string; optionId?: string; qty: number };
-export function extraQuote(config: PricingConfig, regionId: string, line: ExtraLine): Quote | null {
+
+// The pricing rules for a booking: the emergency off-hours / holiday surcharge (needs the booking type and the chosen time,
+// "YYYY-MM-DDTHH:mm" UAE time) and the minimum order. The server decides the final amounts; this keeps the preview in step.
+export function ruleInputs(config: PricingConfig, typeCode: string | undefined, scheduledLocal: string | undefined) {
+  const rules = config.rules;
+  return { minimumOrderFils: rules?.minimumOrderFils ?? 0, surcharge: rules && typeCode ? surchargeFor(rules, typeCode, scheduledLocal) : null };
+}
+// The priced work of a quote (what counts toward the minimum order).
+export const workFils = (q: Quote | null) => (q ? q.serviceNetFils + q.addOnsFils : 0);
+
+export function extraQuote(config: PricingConfig, regionId: string, line: ExtraLine, when?: { typeCode?: string; scheduledLocal?: string }): Quote | null {
   const s = config.services.find((x) => x.id === line.serviceId);
   if (!s || !regionId) return null;
   const inspection = isInspection(s);
@@ -114,6 +127,7 @@ export function extraQuote(config: PricingConfig, regionId: string, line: ExtraL
       bookingFeeFils: 0,
       addOns: [],
       vat: { ratePercent: config.tax.vatRatePercent, pricesIncludeVat: s.pricesIncludeVat ?? config.tax.pricesIncludeVat },
+      surcharge: inspection ? null : ruleInputs(config, when?.typeCode, when?.scheduledLocal).surcharge,
     });
   } catch {
     return null;

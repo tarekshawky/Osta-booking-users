@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fromPrice, hasOptions, isSingleUnit, optionsIn, unitLabel, unitPriceFor } from "./shared";
+import { fromPrice, hasOptions, isSingleUnit, optionsIn, ruleInputs, unitLabel, unitPriceFor } from "./shared";
 import type { PricingConfig } from "@/lib/api";
 
 const base = { id: "s", slug: "s", nameEn: "Gas", nameAr: "غاز", descriptionEn: null, descriptionAr: null, imageUrl: null, pricingUnit: "UNIT", minQuantity: 1, pricesIncludeVat: null, tiers: [], addOns: [] };
@@ -48,5 +48,18 @@ describe("unit labels and one-off prices", () => {
     for (const u of ["UNIT", "AC_UNIT", "AREA_SQM", "HOUR", "KG", "LINEAR_METER", "ROOM"]) expect(isSingleUnit(svc({ pricingUnit: u }))).toBe(false);
     expect(isSingleUnit(svc({ pricingUnit: "VISIT", addOns: [{ id: "a" }] }))).toBe(false);
     expect(isSingleUnit(svc({ pricingUnit: "VISIT", priceMode: "INSPECTION" }))).toBe(false);
+  });
+});
+
+describe("pricing rules in the preview", () => {
+  const config = { rules: { minimumOrderFils: 10000, offHoursPercent: 50, holidayPercent: 25, normalStart: "08:00", normalEnd: "18:00", holidays: ["2026-12-02"] } } as unknown as PricingConfig;
+  it("adds the surcharge for the chosen time and the minimum order", () => {
+    expect(ruleInputs(config, "EMERGENCY", "2026-11-03T22:30")).toEqual({ minimumOrderFils: 10000, surcharge: { percent: 50, kind: "OFF_HOURS" } });
+    expect(ruleInputs(config, "STANDARD", "2026-12-02T11:00").surcharge).toEqual({ percent: 25, kind: "HOLIDAY" });
+    expect(ruleInputs(config, "STANDARD", "2026-11-03T22:30").surcharge).toBeNull();
+    expect(ruleInputs(config, "EMERGENCY", undefined).surcharge).toBeNull();
+  });
+  it("applies nothing when the API sends no rules", () => {
+    expect(ruleInputs({} as PricingConfig, "EMERGENCY", "2026-11-03T22:30")).toEqual({ minimumOrderFils: 0, surcharge: null });
   });
 });

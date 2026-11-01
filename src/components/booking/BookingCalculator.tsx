@@ -11,7 +11,7 @@ import { saveDraft } from "@/lib/bookingDraft";
 import { track } from "@/lib/analytics";
 import { ExtraServices } from "@/components/booking/ExtraServices";
 import { ServicePicker } from "@/components/booking/ServicePicker";
-import { bookingFee, extraQuote, fromPrice, hasOptions, isInspection, type ExtraLine, optionNote, optionQuestion, optionsIn, isSingleUnit, PriceDisclaimer, PriceLines, ServiceNoteBox, serviceNote, unitLabel, unitPriceFor } from "@/components/booking/shared";
+import { bookingFee, extraQuote, fromPrice, hasOptions, isInspection, type ExtraLine, optionNote, optionQuestion, optionsIn, isSingleUnit, PriceDisclaimer, PriceLines, ruleInputs, workFils, ServiceNoteBox, serviceNote, unitLabel, unitPriceFor } from "@/components/booking/shared";
 
 // Public, no-login price calculator: emirate -> service -> quantity -> booking type -> summary -> consent -> book.
 // Prices here are a preview; the server prices the order again when it is placed.
@@ -75,12 +75,15 @@ function Calculator({ config }: { config: PricingConfig }) {
           .filter((a) => addOnIds.includes(a.id))
           .map((a) => ({ id: a.id, priceFils: a.prices.find((p) => p.regionId === regionId)!.priceFils })),
         vat: { ratePercent: config.tax.vatRatePercent, pricesIncludeVat: service.pricesIncludeVat ?? config.tax.pricesIncludeVat },
+        // The minimum order covers the whole booking; the surcharge depends on the time, which is chosen after logging in.
+        minimumOrderFils: isInspection(service) ? 0 : ruleInputs(config, type.code, undefined).minimumOrderFils,
+        otherLinesFils: extra.reduce((sum, l) => sum + workFils(extraQuote(config, regionId, l)), 0),
       });
     } catch {
       return null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [service, type, regionId, qty, addOnIds, optionId, config.tax]);
+  }, [service, type, regionId, qty, addOnIds, optionId, config.tax, extra]);
 
   const qtyLabel = service?.pricingUnit === "AC_UNIT" ? t("booking.qtyAc") : service?.pricingUnit === "ROOM" ? t("booking.qtyRoom") : t("booking.qtyUnit");
   const card = (selected: boolean, disabled = false) =>
@@ -231,6 +234,7 @@ function Calculator({ config }: { config: PricingConfig }) {
           </div>
           <PriceLines quote={quote} aed={aed} t={t as (k: TranslationKey) => string} inspection={inspection} />
           {!inspection && <PriceDisclaimer text={t("booking.priceDisclaimer")} />}
+          {!inspection && config.rules && (config.rules.offHoursPercent > 0 || config.rules.holidayPercent > 0) && <PriceDisclaimer text={t("booking.surchargeNote").replace("{off}", String(config.rules.offHoursPercent)).replace("{holiday}", String(config.rules.holidayPercent))} />}
           {extra.length > 0 && (
             <div className="osta-card mt-3 p-4 text-sm text-text">
               <p className="mb-1 font-semibold">{t("booking.yourServices")}</p>
