@@ -14,7 +14,7 @@ import { track } from "@/lib/analytics";
 import { priceQuote, QuoteError, type Quote } from "@/lib/priceQuote";
 import { ExtraServices } from "@/components/booking/ExtraServices";
 import { ServicePicker } from "@/components/booking/ServicePicker";
-import { bookingFee, extraQuote, fromPrice, hasOptions, isInspection, type ExtraLine, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
+import { bookingFee, extraQuote, fromPrice, hasOptions, isInspection, type ExtraLine, optionNote, optionQuestion, optionsIn, isSingleUnit, PriceDisclaimer, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
 import { loadDraft, clearDraft } from "@/lib/bookingDraft";
 import { availableTimes, localDateStr, withinHours } from "@/lib/slots";
 
@@ -27,8 +27,8 @@ type Service = PricingConfig["services"][number];
 const stepsFor = (s?: Service): StepKey[] => {
   const withOption = !!s && hasOptions(s) && !isInspection(s);
   const steps: StepKey[] = withOption ? ["emirate", "service", "option", "type", "details", "when", "contact", "review"] : [...BASE_STEPS];
-  // "Price after inspection" has no quantity to choose.
-  return s && isInspection(s) ? steps.filter((k) => k !== "details") : steps;
+  // "Price after inspection" and one-off prices (per visit / project / site …) have no quantity to choose.
+  return s && (isInspection(s) || isSingleUnit(s)) ? steps.filter((k) => k !== "details") : steps;
 };
 export function PricedBookingFlow({ config }: { config: PricingConfig }) {
   const { token, customer } = useAuth();
@@ -479,6 +479,7 @@ export function PricedBookingFlow({ config }: { config: PricingConfig }) {
             </div>
             <ServiceNoteBox note={serviceNote(service, ar)} />
             {quote && <PriceLines quote={quote} aed={aed} t={t} inspection={!!service && isInspection(service)} />}
+            {quote && !(service && isInspection(service)) && <PriceDisclaimer text={t("booking.priceDisclaimer")} />}
             {extra.length > 0 && (
               <div className="osta-card p-4 text-sm text-text">
                 <p className="mb-1 font-semibold">{t("booking.yourServices")}</p>

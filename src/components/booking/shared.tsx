@@ -46,6 +46,11 @@ export function PriceLines({ quote, aed, t, compact, inspection }: { quote: Quot
   );
 }
 
+// The standard price disclaimer, shown under prices.
+export function PriceDisclaimer({ text }: { text: string }) {
+  return <p className="mt-2 text-[11px] leading-relaxed text-text-faint">{text}</p>;
+}
+
 // The optional note an admin set on a service (what the price covers or leaves out). Falls back to the other language.
 export const serviceNote = (s: { noteEn?: string; noteAr?: string }, ar: boolean) => ((ar ? s.noteAr || s.noteEn : s.noteEn || s.noteAr) ?? "").trim();
 
@@ -73,6 +78,10 @@ export function optionsIn(s: PService, regionId: string) {
 export const optionQuestion = (s: PService, ar: boolean, fallback: string) => ((ar ? s.optionLabelAr || s.optionLabelEn : s.optionLabelEn || s.optionLabelAr) ?? "").trim() || fallback;
 export const optionNote = (o: { noteEn?: string; noteAr?: string }, ar: boolean) => ((ar ? o.noteAr || o.noteEn : o.noteEn || o.noteAr) ?? "").trim();
 export const hasOptions = (s: PService) => (s.options?.length ?? 0) > 0;
+// "per sqm" / "للمتر المربع": what one price covers, from the admin; empty for older services.
+export const unitLabel = (s: PService, ar: boolean) => ((ar ? s.unitLabelAr || s.unitLabelEn : s.unitLabelEn || s.unitLabelAr) ?? "").trim();
+// A price for one visit / project / site / month / year has no quantity to choose (unless it also has add-ons).
+export const isSingleUnit = (s: PService) => !isInspection(s) && ["FIXED", "VISIT", "MONTH", "YEAR"].includes(s.pricingUnit) && s.addOns.length === 0;
 // "Price after inspection": bookable in every emirate with nothing to price.
 export const isInspection = (s: PService) => s.priceMode === "INSPECTION";
 export function unitPriceFor(s: PService, regionId: string, optionId: string): number | null {

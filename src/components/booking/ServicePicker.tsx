@@ -5,7 +5,7 @@ import { ChevronLeft, Search } from "lucide-react";
 import { DynamicIcon } from "@/components/DynamicIcon";
 import { useLanguage } from "@/lib/language-context";
 import type { PricingConfig } from "@/lib/api";
-import { fromPrice, isInspection, serviceNote } from "@/components/booking/shared";
+import { fromPrice, isInspection, serviceNote, unitLabel } from "@/components/booking/shared";
 
 type Service = PricingConfig["services"][number];
 type Group = { key: string; en: string; ar: string; order: number; icon: string; items: Service[] };
@@ -45,7 +45,7 @@ export function ServicePicker({ services, regionId, selectedId, onPick, card, ae
   const label = (s: Service) => {
     const p = fromPrice(s, regionId);
     if (p === null) return t("booking.notAvailable");
-    return isInspection(s) ? t("booking.afterInspection") : `${t("booking.from")} ${aed(p)}`;
+    return isInspection(s) ? t("booking.afterInspection") : `${t("booking.from")} ${aed(p)}${unitLabel(s, ar) ? ` · ${unitLabel(s, ar)}` : ""}`;
   };
   const pick = (s: Service) => { onPick(s); setChanging(false); setQ(""); setCatKey(null); };
 

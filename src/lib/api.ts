@@ -138,6 +138,9 @@ export type PricingConfig = {
     descriptionAr: string | null;
     imageUrl: string | null;
     pricingUnit: string;
+    // What one price covers, e.g. "per sqm" / "للمتر المربع" (empty on older services).
+    unitLabelEn?: string;
+    unitLabelAr?: string;
     // "INSPECTION" = price after inspection: bookable in every emirate with no price. Older APIs don't send it (= priced).
     priceMode?: "PRICED" | "INSPECTION";
     // The service category the booking page groups it under (from the Service Catalogue).

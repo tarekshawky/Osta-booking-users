@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fromPrice, hasOptions, optionsIn, unitPriceFor } from "./shared";
+import { fromPrice, hasOptions, isSingleUnit, optionsIn, unitLabel, unitPriceFor } from "./shared";
 import type { PricingConfig } from "@/lib/api";
 
 const base = { id: "s", slug: "s", nameEn: "Gas", nameAr: "غاز", descriptionEn: null, descriptionAr: null, imageUrl: null, pricingUnit: "UNIT", minQuantity: 1, pricesIncludeVat: null, tiers: [], addOns: [] };
@@ -33,5 +33,20 @@ describe("service options on the booking pages", () => {
     expect(fromPrice(gas, "auh")).toBe(5500);
     expect(fromPrice(gas, "ajm")).toBeNull(); // not bookable where no option has a price
     expect(unitPriceFor(gas, "auh", "h")).toBeNull();
+  });
+});
+
+describe("unit labels and one-off prices", () => {
+  const svc = (over: object) => ({ ...plain, ...over }) as unknown as PricingConfig["services"][number];
+  it("shows the label in the visitor's language and falls back to the other one", () => {
+    expect(unitLabel(svc({ unitLabelEn: "per sqm", unitLabelAr: "للمتر المربع" }), true)).toBe("للمتر المربع");
+    expect(unitLabel(svc({ unitLabelEn: "per sqm", unitLabelAr: "" }), true)).toBe("per sqm");
+    expect(unitLabel(plain, false)).toBe("");
+  });
+  it("has no quantity for per-visit / project / site / month / year prices", () => {
+    for (const u of ["FIXED", "VISIT", "MONTH", "YEAR"]) expect(isSingleUnit(svc({ pricingUnit: u }))).toBe(true);
+    for (const u of ["UNIT", "AC_UNIT", "AREA_SQM", "HOUR", "KG", "LINEAR_METER", "ROOM"]) expect(isSingleUnit(svc({ pricingUnit: u }))).toBe(false);
+    expect(isSingleUnit(svc({ pricingUnit: "VISIT", addOns: [{ id: "a" }] }))).toBe(false);
+    expect(isSingleUnit(svc({ pricingUnit: "VISIT", priceMode: "INSPECTION" }))).toBe(false);
   });
 });

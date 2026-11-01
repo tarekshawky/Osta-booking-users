@@ -11,7 +11,7 @@ import { saveDraft } from "@/lib/bookingDraft";
 import { track } from "@/lib/analytics";
 import { ExtraServices } from "@/components/booking/ExtraServices";
 import { ServicePicker } from "@/components/booking/ServicePicker";
-import { bookingFee, extraQuote, fromPrice, hasOptions, isInspection, type ExtraLine, optionNote, optionQuestion, optionsIn, PriceLines, ServiceNoteBox, serviceNote, unitPriceFor } from "@/components/booking/shared";
+import { bookingFee, extraQuote, fromPrice, hasOptions, isInspection, type ExtraLine, optionNote, optionQuestion, optionsIn, isSingleUnit, PriceDisclaimer, PriceLines, ServiceNoteBox, serviceNote, unitLabel, unitPriceFor } from "@/components/booking/shared";
 
 // Public, no-login price calculator: emirate -> service -> quantity -> booking type -> summary -> consent -> book.
 // Prices here are a preview; the server prices the order again when it is placed.
@@ -51,7 +51,8 @@ function Calculator({ config }: { config: PricingConfig }) {
   // With options, nothing below the option step is shown until one is chosen.
   const ready = !!service && (!needsOption || !!option);
   const inspection = !!service && isInspection(service); // "price after inspection": no quantity step
-  const n = (needsOption ? 1 : 0) - (inspection ? 1 : 0); // later headings shift when the option step is added or the quantity step is skipped
+  const noQty = inspection || (!!service && isSingleUnit(service)); // no quantity to choose: skip that step
+  const n = (needsOption ? 1 : 0) - (noQty ? 1 : 0); // later headings shift when the option step is added or the quantity step is skipped
   const type = config.bookingTypes.find((b) => b.id === typeId);
   const policy = config.visitFeePolicy;
   const fill = (text: string) => text.replaceAll("{amount}", policy ? String(policy.amountFils / 100) : "");
@@ -160,7 +161,7 @@ function Calculator({ config }: { config: PricingConfig }) {
         </section>
       )}
 
-      {ready && service && !inspection && (
+      {ready && service && !noQty && (
         <section>
           {heading(3 + n, qtyLabel)}
           {serviceNote(service, ar) && <div className="mb-3"><ServiceNoteBox note={serviceNote(service, ar)} /></div>}
@@ -224,11 +225,12 @@ function Calculator({ config }: { config: PricingConfig }) {
         <section>
           {heading(5 + n, t("booking.summaryTitle"))}
           <div className="osta-card mb-3 p-4 text-sm text-text">
-            <p className="font-semibold">{name(service)}{option ? ` — ${name(option)}` : ""}{inspection ? "" : ` × ${qty}`}</p>
+            <p className="font-semibold">{name(service)}{option ? ` — ${name(option)}` : ""}{noQty ? "" : ` × ${qty}`}{!inspection && unitLabel(service, ar) ? <span className="font-normal text-text-muted"> ({unitLabel(service, ar)})</span> : null}</p>
             <p className="text-text-muted">{name(config.regions.find((r) => r.id === regionId)!)} · {name(type)}</p>
             {serviceNote(service, ar) && <div className="mt-3"><ServiceNoteBox note={serviceNote(service, ar)} /></div>}
           </div>
           <PriceLines quote={quote} aed={aed} t={t as (k: TranslationKey) => string} inspection={inspection} />
+          {!inspection && <PriceDisclaimer text={t("booking.priceDisclaimer")} />}
           {extra.length > 0 && (
             <div className="osta-card mt-3 p-4 text-sm text-text">
               <p className="mb-1 font-semibold">{t("booking.yourServices")}</p>

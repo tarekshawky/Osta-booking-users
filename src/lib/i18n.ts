@@ -230,6 +230,7 @@ const dict = {
     notAvailable: { en: "Not available in this emirate", ar: "غير متاحة في هذه الإمارة" },
     afterInspection: { en: "Price after inspection", ar: "السعر بعد المعاينة" },
     servicePrice: { en: "Service price", ar: "سعر الخدمة" },
+    priceDisclaimer: { en: "Prices are starting prices before VAT and may vary with the site, the quantity, the materials or parts needed and the emirate. The final price is confirmed after inspection or approval, before any work starts.", ar: "الأسعار المعروضة هي أسعار ابتدائية قبل ضريبة القيمة المضافة، وقد تختلف حسب الموقع والكمية والمواد أو قطع الغيار المطلوبة والإمارة. يتم تأكيد السعر النهائي بعد المعاينة أو الموافقة وقبل بدء أي عمل." },
     inspectionNote: { en: "Our technician inspects first and confirms the price with you before any work starts.", ar: "يعاين فنيّنا الموقع أولاً ويؤكد لك السعر قبل بدء أي عمل." },
     searchServices: { en: "Search services…", ar: "ابحث عن خدمة…" },
     noMatches: { en: "No service matches your search.", ar: "لا توجد خدمة مطابقة لبحثك." },
