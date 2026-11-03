@@ -10,6 +10,7 @@ import { RichHtml, RichInline, RichLine, isRichText } from "@/components/cms/Ric
 import { telHref, whatsappHref } from "@/lib/site";
 import { BookingCalculator } from "@/components/booking/BookingCalculator";
 import { WeatherBlock } from "@/components/cms/WeatherBlock";
+import { AiServiceFinderBlock } from "@/components/cms/AiServiceFinderBlock";
 import { DynamicIcon } from "@/components/DynamicIcon";
 import { HomeSections } from "@/app/HomeSections";
 import type { BlockData } from "@/lib/cms-data";
@@ -721,6 +722,7 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "contactCards": return <ContactCards p={p} />;
     case "bookingCalculator": return <BookingCalcBlock p={p} pricing={data.pricing} />;
     case "weather": return <WeatherBlock p={p} />;
+    case "aiServiceFinder": return <AiServiceFinderBlock p={p} />;
     default: return null;
   }
 }
