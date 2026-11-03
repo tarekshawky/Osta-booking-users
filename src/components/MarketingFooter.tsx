@@ -10,8 +10,8 @@ import { telHref, whatsappHref } from "@/lib/site";
 import { OPEN_CONSENT_EVENT } from "@/components/ConsentManager";
 import { WhatsAppPopup } from "@/components/WhatsAppPopup";
 import { BodyCodeSlot } from "@/components/CodeInjection";
+import { SOCIAL_ICONS } from "@/lib/socialIcons";
 
-const SOCIAL_BADGE: Record<string, string> = { facebook: "f", instagram: "ig", linkedin: "in", tiktok: "tt", youtube: "yt", x: "X", whatsapp: "wa" };
 
 const FOOT_LINK = "transition-colors hover:text-accent-2 hover:underline underline-offset-4";
 const FOOT_ACTIVE = "!text-accent-2 font-medium";
@@ -59,11 +59,17 @@ export function MarketingFooter() {
           {social.length > 0 && (
             <ul className="mt-4 flex flex-wrap gap-2">
               {social.map((s) => {
-                const name = s.label || s.platform;
+                const icon = SOCIAL_ICONS[s.platform];
+                const name = s.label || icon?.name || s.platform;
                 return (
                   <li key={s.url}>
-                    <a href={s.url} target="_blank" rel="noopener noreferrer" aria-label={name} title={name} className="flex h-9 min-w-9 items-center justify-center rounded-full border border-card-border px-2 text-xs font-bold uppercase text-text-muted transition-colors hover:border-accent hover:text-accent-2">
-                      {SOCIAL_BADGE[s.platform] ?? name.slice(0, 2)}
+                    {/* The same round button as before. A known platform shows its official icon (and takes its own colour on hover); anything else keeps the two-letter badge. */}
+                    <a
+                      href={s.url} target="_blank" rel="noopener noreferrer" aria-label={name} title={name}
+                      style={icon ? ({ "--brand": icon.color } as React.CSSProperties) : undefined}
+                      className={`flex h-9 min-w-9 items-center justify-center rounded-full border border-card-border px-2 text-xs font-bold uppercase text-text-muted transition-colors ${icon ? "hover:border-[var(--brand)] hover:bg-[color-mix(in_srgb,var(--brand)_14%,transparent)] hover:text-[var(--brand)] focus-visible:border-[var(--brand)] focus-visible:text-[var(--brand)]" : "hover:border-accent hover:text-accent-2"}`}
+                    >
+                      {icon ? <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0" fill="currentColor" role="img" aria-hidden="true"><path d={icon.path} /></svg> : name.slice(0, 2)}
                     </a>
                   </li>
                 );
