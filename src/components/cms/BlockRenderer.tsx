@@ -9,6 +9,7 @@ import { useSite } from "@/lib/site-context";
 import { RichHtml, RichInline, RichLine, isRichText } from "@/components/cms/RichInline";
 import { telHref, whatsappHref } from "@/lib/site";
 import { BookingCalculator } from "@/components/booking/BookingCalculator";
+import { WeatherBlock } from "@/components/cms/WeatherBlock";
 import { DynamicIcon } from "@/components/DynamicIcon";
 import { HomeSections } from "@/app/HomeSections";
 import type { BlockData } from "@/lib/cms-data";
@@ -719,6 +720,7 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "homeSections": return <HomeSections sections={data.sections} />;
     case "contactCards": return <ContactCards p={p} />;
     case "bookingCalculator": return <BookingCalcBlock p={p} pricing={data.pricing} />;
+    case "weather": return <WeatherBlock p={p} />;
     default: return null;
   }
 }
