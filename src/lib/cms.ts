@@ -5,7 +5,7 @@ export type Cta = { label: Bi; url: string };
 
 export type CmsBlock = {
   id: string;
-  type: "hero" | "servicesGrid" | "richText" | "imageText" | "image" | "columns" | "faq" | "stats" | "cta" | "form" | "blogPreview" | "jobsList" | "subPages" | "serviceCatalog" | "homeSections" | "contactCards" | "bookingCalculator" | "weather" | "aiServiceFinder";
+  type: "hero" | "servicesGrid" | "richText" | "imageText" | "image" | "columns" | "faq" | "stats" | "cta" | "form" | "blogPreview" | "jobsList" | "subPages" | "serviceCatalog" | "homeSections" | "contactCards" | "bookingCalculator" | "weather" | "aiServiceFinder" | "servicesAssistant";
   props: Record<string, unknown>;
   hidden: boolean;
   visibility: { desktop: boolean; mobile: boolean };

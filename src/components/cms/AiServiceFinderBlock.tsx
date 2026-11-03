@@ -85,7 +85,7 @@ export function AiServiceFinderBlock({ p }: { p: P }) {
             {state.answer.matches.map((m) => (
               <div key={m.bookSlug} className="osta-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  {m.category && <p className="text-[11px] text-text-faint">{m.category}</p>}
+                  {(ar ? m.categoryAr || m.category : m.category) && <p className="text-[11px] text-text-faint">{ar ? m.categoryAr || m.category : m.category}</p>}
                   <p className="text-sm font-semibold text-text">{ar ? m.nameAr : m.nameEn}</p>
                   {m.reason && <p className="mt-1 text-xs text-text-muted">{m.reason}</p>}
                 </div>

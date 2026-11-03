@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { askFinder, bookHref, parseFinder } from "./aiFinder";
 
-const m = { bookSlug: "gas-refill", nameEn: "AC Gas Refilling", nameAr: "تعبئة غاز", category: "AC Services", reason: "Low gas." };
+const m = { bookSlug: "gas-refill", nameEn: "AC Gas Refilling", nameAr: "تعبئة غاز", category: "AC Services", categoryAr: "خدمات التكييف", reason: "Low gas." };
 
 describe("bookHref", () => {
   it("opens one service, or one booking with several", () => {

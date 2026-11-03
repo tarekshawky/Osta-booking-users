@@ -1,6 +1,6 @@
 import { API_BASE } from "@/lib/cms";
 
-export type FinderMatch = { bookSlug: string; nameEn: string; nameAr: string; category: string; reason: string };
+export type FinderMatch = { bookSlug: string; nameEn: string; nameAr: string; category: string; categoryAr: string; reason: string };
 export type FinderAnswer = { matches: FinderMatch[]; note: string };
 export type FinderFailure = "rate_limited" | "unavailable" | "invalid";
 
@@ -17,7 +17,7 @@ export function parseFinder(json: unknown): FinderAnswer | null {
   const matches: FinderMatch[] = [];
   for (const m of d.matches as Record<string, unknown>[]) {
     if (typeof m?.bookSlug !== "string" || typeof m.nameEn !== "string" || typeof m.nameAr !== "string" || typeof m.reason !== "string") return null;
-    matches.push({ bookSlug: m.bookSlug, nameEn: m.nameEn, nameAr: m.nameAr, category: typeof m.category === "string" ? m.category : "", reason: m.reason });
+    matches.push({ bookSlug: m.bookSlug, nameEn: m.nameEn, nameAr: m.nameAr, category: typeof m.category === "string" ? m.category : "", categoryAr: typeof m.categoryAr === "string" ? m.categoryAr : "", reason: m.reason });
   }
   return { matches: matches.slice(0, 3), note: d.note };
 }
