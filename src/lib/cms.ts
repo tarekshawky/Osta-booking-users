@@ -5,7 +5,7 @@ export type Cta = { label: Bi; url: string };
 
 export type CmsBlock = {
   id: string;
-  type: "hero" | "servicesGrid" | "richText" | "imageText" | "image" | "columns" | "faq" | "stats" | "cta" | "form" | "blogPreview" | "jobsList" | "subPages" | "serviceCatalog" | "homeSections" | "contactCards" | "bookingCalculator" | "weather" | "aiServiceFinder" | "servicesAssistant";
+  type: "hero" | "servicesGrid" | "richText" | "imageText" | "image" | "columns" | "faq" | "stats" | "cta" | "form" | "blogPreview" | "jobsList" | "subPages" | "serviceCatalog" | "homeSections" | "contactCards" | "bookingCalculator" | "weather" | "aiServiceFinder" | "servicesAssistant" | "locations";
   props: Record<string, unknown>;
   hidden: boolean;
   visibility: { desktop: boolean; mobile: boolean };
@@ -29,6 +29,9 @@ export type CmsPage = {
   updatedAt: string;
   // Pages directly under this one (for a "Sub-pages list" block); published ones only on the live site.
   subPages?: { slug: string; titleEn: string; titleAr: string }[];
+  // Emirate pages: the real branches of that emirate (shown automatically) and the page this one sits under.
+  locations?: import("@/lib/locations").PublicBranch[];
+  parent?: { slug: string; titleEn: string; titleAr: string } | null;
   // Custom code for this page only (raw HTML), set by the owner.
   code?: { headCode: string; headCodeConsent: string; bodyCode: string; bodyCodeConsent: string };
 };

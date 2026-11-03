@@ -12,6 +12,7 @@ import { BookingCalculator } from "@/components/booking/BookingCalculator";
 import { WeatherBlock } from "@/components/cms/WeatherBlock";
 import { AiServiceFinderBlock } from "@/components/cms/AiServiceFinderBlock";
 import { AssistantBlock } from "@/components/cms/AssistantBlock";
+import { LocationsBlock } from "@/components/cms/LocationsBlock";
 import { DynamicIcon } from "@/components/DynamicIcon";
 import { HomeSections } from "@/app/HomeSections";
 import type { BlockData } from "@/lib/cms-data";
@@ -725,6 +726,7 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "weather": return <WeatherBlock p={p} />;
     case "aiServiceFinder": return <AiServiceFinderBlock p={p} />;
     case "servicesAssistant": return <AssistantBlock p={p} />;
+    case "locations": return <LocationsBlock p={p} branches={data.locations} />;
     default: return null;
   }
 }
