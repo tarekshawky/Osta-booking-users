@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Wrench, ClipboardList, Receipt, User, LogOut, ChevronRight } from "lucide-react";
+import { Plus, Wrench, ClipboardList, Receipt, User, LogOut, ChevronRight, FileText } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { TopBar } from "@/components/TopBar";
 import { FullPageSpinner } from "@/components/Spinner";
@@ -23,7 +23,7 @@ export default function MorePage() {
   const { ready } = useRequireAuth();
   const { logout } = useAuth();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   if (!ready) return <FullPageSpinner />;
 
@@ -41,6 +41,14 @@ export default function MorePage() {
             <ChevronRight size={16} className="text-text-faint osta-flip-rtl" />
           </Link>
         ))}
+
+        <Link href="/agreements" className="osta-card flex items-center justify-between p-4">
+          <span className="flex items-center gap-3 text-sm text-text">
+            <FileText size={18} className="text-accent-2" />
+            {lang === "ar" ? "اتفاقياتي" : "My Agreements"}
+          </span>
+          <ChevronRight size={16} className="text-text-faint osta-flip-rtl" />
+        </Link>
 
         <button
           onClick={() => {

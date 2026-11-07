@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowRight, Check, CheckCircle2, Sparkles, X } from "lucide-react";
-import { api, ApiError, type BuilderEvaluation, type BuilderNeeds, type MaintenanceData, type MaintenancePackage } from "@/lib/api";
+import { AlertTriangle, ArrowRight, Check, CheckCircle2, Download, FileText, Sparkles, X } from "lucide-react";
+import { agreementPdfPath, api, ApiError, downloadAgreementPdf, type AgreementTerms, type BuilderEvaluation, type BuilderNeeds, type BuilderSubmitResult, type MaintenanceData, type MaintenancePackage } from "@/lib/api";
 import { useLanguage } from "@/lib/language-context";
 
 type Lang = "en" | "ar";
@@ -35,7 +35,13 @@ export function PackageBuilder({ data, group, initialId, nameOf, onClose }: { da
   const [ev, setEv] = useState<BuilderEvaluation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<null | { quote: boolean }>(null);
+  const [done, setDone] = useState<null | { quote: boolean; contract?: BuilderSubmitResult["contract"] }>(null);
+  // The Maintenance Service Agreement: its text is fetched when the customer reaches the review step; all five statements must be ticked to confirm.
+  const [terms, setTerms] = useState<AgreementTerms | null>(null);
+  const [termsOpen, setTermsOpen] = useState(false);
+  const [checks, setChecks] = useState<boolean[]>([false, false, false, false, false]);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const allChecked = checks.every(Boolean);
   const top = useRef<HTMLDivElement>(null);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const set = (k: keyof typeof f, v: string) => setF((x) => ({ ...x, [k]: v }));
@@ -62,6 +68,11 @@ export function PackageBuilder({ data, group, initialId, nameOf, onClose }: { da
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsKey, group]);
 
+  useEffect(() => {
+    if (step !== 4 || terms) return;
+    api.agreementTerms(group).then(setTerms).catch(() => undefined);
+  }, [step, group, terms]);
+
   const goto = (n: number) => { setError(null); setStep(n); window.setTimeout(() => top.current?.scrollIntoView({ block: "start" }), 0); };
 
   function stepOneProblem(): string | null {
@@ -83,15 +94,17 @@ export function PackageBuilder({ data, group, initialId, nameOf, onClose }: { da
 
   async function submit(wantsQuote: boolean) {
     if (busy) return;
+    if (!wantsQuote && !allChecked) return setError(t("Please read the agreement and tick every statement to confirm your subscription.", "يرجى قراءة الاتفاقية والموافقة على جميع الإقرارات لتأكيد اشتراكك."));
     setBusy(true);
     setError(null);
     try {
       const res = await api.submitBuilder({
         group, selectedId, chosenId, needs, notes: f.notes, activationDate: f.activationDate, wantsQuote,
+        ...(wantsQuote ? {} : { agreement: { accepted: checks, lang } }),
         customer: { name: f.name.trim(), phone: f.phone, whatsapp: f.whatsapp, email: f.email.trim(), emirate: f.emirate, area: f.area.trim(), address: f.address.trim() },
         property: { type: f.type, bedrooms: num(f.bedrooms), bathrooms: num(f.bathrooms), floors: num(f.floors), size: Number(f.size) || 0 },
       });
-      setDone({ quote: res.quoteRequested });
+      setDone({ quote: res.quoteRequested, contract: res.contract });
     } catch (err) {
       setError(err instanceof ApiError && [400, 404, 429].includes(err.status) ? err.message : t("Something went wrong. Please try again, or contact us on WhatsApp.", "حدث خطأ ما. حاول مرة أخرى أو تواصل معنا عبر واتساب."));
     } finally {
@@ -185,7 +198,19 @@ export function PackageBuilder({ data, group, initialId, nameOf, onClose }: { da
         <div className="flex flex-col items-center gap-3 py-10 text-center" role="status">
           <CheckCircle2 size={48} className="text-emerald-500" aria-hidden />
           <p className="text-xl font-bold text-text">{t("Thank you! We received your request.", "شكراً لك! استلمنا طلبك.")}</p>
-          <p className="max-w-md text-sm text-text-muted">{done.quote ? t("Our team will review your requirements and send you a quotation.", "سيراجع فريقنا احتياجاتك ويرسل لك عرض السعر.") : t("Our team will contact you soon to confirm the details and activate your package.", "سيتواصل معك فريقنا قريباً لتأكيد التفاصيل وتفعيل باقتك.")}</p>
+          <p className="max-w-md text-sm text-text-muted">{done.quote ? t("Our team will review your requirements and send you a quotation.", "سيراجع فريقنا احتياجاتك ويرسل لك عرض السعر.") : done.contract ? t("Your agreement is pending approval. We emailed you the draft agreement. Once our team approves it, you will receive a secure payment link to activate your package.", "اتفاقيتك بانتظار الاعتماد. أرسلنا لك مسودة الاتفاقية بالبريد الإلكتروني. بعد اعتماد فريقنا لها ستصلك رسالة برابط دفع آمن لتفعيل باقتك.") : t("Our team will contact you soon to confirm the details and activate your package.", "سيتواصل معك فريقنا قريباً لتأكيد التفاصيل وتفعيل باقتك.")}</p>
+          {done.contract && (
+            <div className="osta-card w-full max-w-sm p-4 text-sm">
+              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-start">
+                <dt className="text-text-muted">{t("Agreement No.", "رقم الاتفاقية")}</dt><dd className="font-semibold text-text" dir="ltr">{done.contract.number}</dd>
+                <dt className="text-text-muted">{t("Request No.", "رقم الطلب")}</dt><dd className="font-semibold text-text" dir="ltr">{done.contract.requestNumber}</dd>
+                <dt className="text-text-muted">{t("Status", "الحالة")}</dt><dd className="text-amber-300">{t("Pending approval", "بانتظار الاعتماد")}</dd>
+              </dl>
+              <button type="button" disabled={pdfBusy} onClick={() => { setPdfBusy(true); downloadAgreementPdf(agreementPdfPath(done.contract!.url.split("/").pop() ?? ""), null, `${done.contract!.number}.pdf`).catch(() => setError(t("The PDF could not be prepared. Please try again.", "تعذر تجهيز ملف PDF. حاول مرة أخرى."))).finally(() => setPdfBusy(false)); }} className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-card-border px-4 py-2 text-xs font-semibold text-text disabled:opacity-60"><Download size={14} aria-hidden />{pdfBusy ? t("Preparing…", "جارٍ التجهيز…") : t("Download draft agreement (PDF)", "تنزيل مسودة الاتفاقية (PDF)")}</button>
+              <a href={`/agreement/${done.contract.url.split("/").pop()}`} className="mt-2 block text-center text-xs font-semibold text-accent-2 underline">{t("Track your agreement", "تابع اتفاقيتك")}</a>
+              {error && <p role="alert" className="mt-2 text-xs text-rose-300">{error}</p>}
+            </div>
+          )}
           <button type="button" onClick={onClose} className="osta-btn-primary mt-2 rounded-xl px-8 py-3 text-sm font-semibold text-white">{t("Close", "إغلاق")}</button>
         </div>
       </Shell>
@@ -283,6 +308,50 @@ export function PackageBuilder({ data, group, initialId, nameOf, onClose }: { da
               {(ev?.notices.length ?? 0) > 0 && !upgraded && (
                 <Section title={t("Upgrade Recommendations", "اقتراحات الترقية")} rows={ev!.notices.map((n, i) => [String(i + 1), lang === "ar" ? n.ar : n.en] as [string, string])} />
               )}
+              {!b?.quote && (
+                <section className="rounded-xl border border-accent/40 bg-accent/5 p-4" aria-label={t("Maintenance Service Agreement", "اتفاقية خدمات الصيانة")}>
+                  <h4 className="mb-1 flex items-center gap-2 text-base font-bold text-text"><FileText size={18} className="text-accent-2" aria-hidden />{t("Maintenance Service Agreement", "اتفاقية خدمات الصيانة")}</h4>
+                  <p className="mb-3 text-xs text-text-muted">{t("Please read the agreement before you confirm. Once our team approves it you receive a payment link, and the agreement is activated after your payment.", "يرجى قراءة الاتفاقية قبل التأكيد. بعد اعتماد فريقنا لها يصلك رابط الدفع، وتُفعَّل الاتفاقية بعد سدادك.")}</p>
+                  <dl className="mb-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+                    <dt className="text-text-muted">{t("Package", "الباقة")}</dt><dd className="text-text">{chosen ? nameOf(chosen) : ""}</dd>
+                    <dt className="text-text-muted">{t("Term", "المدة")}</dt><dd className="text-text">{t(`${terms?.durationMonths ?? 12} months from activation`, `${terms?.durationMonths ?? 12} شهراً من تاريخ التفعيل`)}</dd>
+                    {b && <><dt className="text-text-muted">{t("Total contract value", "إجمالي قيمة العقد")}</dt><dd className="font-semibold text-text">{money(b.total, lang)} <span className="font-normal text-text-muted">({b.pricesIncludeVat ? t(`includes ${b.vatPercent}% VAT`, `شامل ضريبة ${b.vatPercent}%`) : t(`plus ${b.vatPercent}% VAT`, `بالإضافة إلى ضريبة ${b.vatPercent}%`)})</span></dd></>}
+                    <dt className="text-text-muted">{t("Property", "العقار")}</dt><dd className="text-text">{[propertyName, f.area, f.address].filter(Boolean).join("، ")}</dd>
+                    <dt className="text-text-muted">{t("Services outside the package", "خدمات خارج الباقة")}</dt><dd className="text-text">{t("Charged separately, after your approval of a quotation", "تُحتسب برسوم منفصلة بعد موافقتك على عرض السعر")}</dd>
+                  </dl>
+                  <button type="button" onClick={() => setTermsOpen((v) => !v)} aria-expanded={termsOpen} className="mb-2 rounded-lg border border-card-border px-3 py-1.5 text-xs font-semibold text-text">{termsOpen ? t("Hide the agreement", "إخفاء الاتفاقية") : t("Read the full agreement", "قراءة الاتفاقية كاملة")}</button>
+                  {termsOpen && (
+                    <div className="mb-3 max-h-72 overflow-y-auto rounded-lg border border-card-border bg-bg p-3 text-xs leading-relaxed text-text-muted" tabIndex={0}>
+                      {!terms ? <p>{t("Loading…", "جارٍ التحميل…")}</p> : (
+                        <>
+                          <p className="mb-2 text-[11px] text-text-faint">{terms.company.name} · {terms.company.website} · <span dir="ltr">{terms.company.phone}</span> · {t(`Terms version ${terms.version}`, `إصدار الشروط ${terms.version}`)}</p>
+                          {terms.clauses.map((c, i) => (
+                            <div key={c.key} className="mb-3">
+                              <p className="font-bold text-text">{i + 1}. {pick(c.titleEn, c.titleAr)}</p>
+                              {pick(c.bodyEn, c.bodyAr).split(/\n{2,}/).map((blk, bi) => {
+                                const lines = blk.split("\n");
+                                const bullets = lines.filter((l) => l.startsWith("- "));
+                                const rest = lines.filter((l) => !l.startsWith("- ")).join(" ");
+                                return (<div key={bi}>{rest && <p className="mt-1">{rest}</p>}{bullets.length > 0 && <ul className="mt-1 list-disc ps-5">{bullets.map((l, li) => <li key={li}>{l.slice(2)}</li>)}</ul>}</div>);
+                              })}
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    {(terms?.checks ?? []).map((c, i) => (
+                      <label key={i} className="flex cursor-pointer items-start gap-2.5 text-xs text-text">
+                        <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-[#087bff]" checked={checks[i] ?? false} onChange={(e) => setChecks((x) => x.map((v, j) => (j === i ? e.target.checked : v)))} />
+                        <span>{pick(c.en, c.ar)}</span>
+                      </label>
+                    ))}
+                    {!terms && <p className="text-xs text-text-muted">{t("Loading the agreement…", "جارٍ تحميل الاتفاقية…")}</p>}
+                  </div>
+                </section>
+              )}
+              {b?.quote && <p className="rounded-xl border border-card-border p-3 text-xs text-text-muted">{t("A quotation request does not commit you to anything. When we send you the final price you will be asked to read and accept the agreement.", "طلب عرض السعر لا يلزمك بشيء. عند إرسال السعر النهائي إليك سيُطلب منك قراءة الاتفاقية والموافقة عليها.")}</p>}
               <div className="lg:hidden">{summary}</div>
             </div>
           )}
@@ -298,7 +367,7 @@ export function PackageBuilder({ data, group, initialId, nameOf, onClose }: { da
             {step < 4 && <button type="button" onClick={next} className="osta-btn-primary ms-auto flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white">{t("Continue", "متابعة")}<ArrowRight size={16} className="rtl:rotate-180" aria-hidden /></button>}
             {step === 4 && (
               <div className="ms-auto flex flex-wrap gap-2">
-                {!b?.quote && <button type="button" disabled={busy} aria-busy={busy} onClick={() => void submit(false)} className="osta-btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-60">{busy ? t("Sending…", "جارٍ الإرسال…") : t("Confirm Subscription", "تأكيد الاشتراك")}</button>}
+                {!b?.quote && <button type="button" disabled={busy || !allChecked || !terms} aria-busy={busy} title={!allChecked ? t("Tick every statement of the agreement first", "وافق على جميع إقرارات الاتفاقية أولاً") : undefined} onClick={() => void submit(false)} className="osta-btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{busy ? t("Sending…", "جارٍ الإرسال…") : t("Confirm Subscription", "تأكيد الاشتراك")}</button>}
                 <button type="button" disabled={busy} aria-busy={busy} onClick={() => void submit(true)} className={`rounded-xl px-6 py-2.5 text-sm font-semibold disabled:opacity-60 ${b?.quote ? "osta-btn-primary text-white" : "border border-card-border text-text"}`}>{busy ? t("Sending…", "جارٍ الإرسال…") : t("Request a Custom Quotation", "طلب عرض سعر مخصص")}</button>
               </div>
             )}

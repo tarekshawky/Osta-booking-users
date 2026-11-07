@@ -15,9 +15,9 @@ export class ApiError extends Error {
 
 async function apiFetch<T>(
   path: string,
-  options: { method?: string; body?: unknown; token?: string | null } = {}
+  options: { method?: string; body?: unknown; token?: string | null; fresh?: boolean } = {}
 ): Promise<T> {
-  const { method = "GET", body, token } = options;
+  const { method = "GET", body, token, fresh } = options;
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -28,7 +28,7 @@ async function apiFetch<T>(
     // Public lists (services, blog, homepage sections) are identical for everyone: reuse them for 60 s instead of
     // hitting the admin API and database on every page view. Anything with a login token is never cached.
     // Blog requests carry a tag so the admin can refresh them the moment an article or category changes.
-    ...(method === "GET" && !token ? { next: { revalidate: 60, ...(path.startsWith("/blog") ? { tags: ["blog"] } : {}) } } : {}),
+    ...(fresh ? { cache: "no-store" as const } : method === "GET" && !token ? { next: { revalidate: 60, ...(path.startsWith("/blog") ? { tags: ["blog"] } : {}) } } : {}),
   });
 
   const json = await res.json().catch(() => ({}));
@@ -386,7 +386,25 @@ export type BuilderSubmit = {
   customer: { name: string; phone: string; whatsapp: string; email: string; emirate: string; area: string; address: string };
   property: { type: string; bedrooms: number; bathrooms: number; floors: number; size: number };
   notes: string; activationDate: string; wantsQuote: boolean;
+  // The five statements of the Maintenance Service Agreement, all ticked (needed to confirm a subscription, not for a quotation request).
+  agreement?: { accepted: boolean[]; lang: "en" | "ar" };
 };
+export type BuilderSubmitResult = { received: boolean; quoteRequested: boolean; contract?: { number: string; requestNumber: string; url: string } | null };
+
+// The Maintenance Service Agreement.
+export type AgreementClause = { key: string; titleEn: string; titleAr: string; bodyEn: string; bodyAr: string };
+export type AgreementTerms = { version: number; clauses: AgreementClause[]; checks: { en: string; ar: string }[]; company: { name: string; website: string; phone: string }; durationMonths: number };
+export type AgreementStatus = "DRAFT" | "PENDING_APPROVAL" | "CHANGES_REQUESTED" | "AWAITING_PAYMENT" | "ACTIVE" | "EXPIRED" | "CANCELLED" | "REJECTED";
+export type AgreementView = {
+  number: string; requestNumber: string; version: number; lang: "en" | "ar"; status: AgreementStatus; createdAt: string; needsAcceptance: boolean; acceptedAt: string | null; paid: boolean; awaitingPayment: boolean;
+  customerName: string; packageEn: string; packageAr: string; property: { emirate: string; area: string; address: string; type: string };
+  pricing: { currency: string; packagePrice: number | null; additional: number; discount: number; subtotal: number; vatPercent: number; vat: number; pricesIncludeVat: boolean; total: number; quote: boolean };
+  lines: { serviceEn: string; serviceAr: string; quantityEn: string; quantityAr: string }[];
+  extras: { labelEn: string; labelAr: string; qty: number; amount: number | null; included: boolean }[];
+  termsVersion: number; note: string; rejectionReason: string; paymentInstructions: { en: string; ar: string } | null; activationDate: string | null; expiryDate: string | null;
+  checks: { en: string; ar: string }[]; clauses: AgreementClause[];
+};
+export type MyContract = { id: string; number: string; status: AgreementStatus; packageEn: string; packageAr: string; total: number; currency: string; createdAt: string; activationDate: string | null; expiryDate: string | null; paid: boolean; accessToken: string | null };
 
 export type SubscribeBody = {
   kind?: "subscribe" | "quote"; packageId: string; name: string; phone: string; email: string; emirate: string; location: string; propertyType: string; bedrooms: number; acUnits: number; activationDate: string;
@@ -396,7 +414,11 @@ export type SubscribeBody = {
 export const api = {
   maintenancePackages: (group = "") => apiFetch<MaintenanceData>(`/maintenance-packages${group ? `?group=${encodeURIComponent(group)}` : ""}`),
   evaluateBuilder: (body: { group: string; selectedId: string; chosenId?: string; needs: BuilderNeeds }) => apiFetch<BuilderEvaluation>("/maintenance-builder/evaluate", { method: "POST", body }),
-  submitBuilder: (body: BuilderSubmit) => apiFetch<{ received: boolean; quoteRequested: boolean }>("/maintenance-builder/submit", { method: "POST", body }),
+  submitBuilder: (body: BuilderSubmit) => apiFetch<BuilderSubmitResult>("/maintenance-builder/submit", { method: "POST", body }),
+  agreementTerms: (group: string) => apiFetch<AgreementTerms>(`/maintenance-builder/agreement${group ? `?group=${encodeURIComponent(group)}` : ""}`, { fresh: true }),
+  agreement: (token: string) => apiFetch<AgreementView>(`/agreements/${encodeURIComponent(token)}`, { fresh: true }),
+  acceptAgreement: (token: string, accepted: boolean[]) => apiFetch<{ accepted: boolean; number: string }>(`/agreements/${encodeURIComponent(token)}`, { method: "POST", body: { accepted } }),
+  myContracts: (token: string) => apiFetch<MyContract[]>("/me/contracts", { token, fresh: true }),
   subscribeMaintenance: (body: SubscribeBody) => apiFetch<{ received: boolean }>("/maintenance-subscriptions", { method: "POST", body }),
 
   // `identifier` is an email or a mobile number.
@@ -488,3 +510,17 @@ export const api = {
   blogPost: (slug: string) => apiFetch<BlogDetail>(`/blog/${slug}`),
   homeSections: () => apiFetch<HomeSection[]>("/home-sections"),
 };
+
+// Downloads an agreement PDF. The final file is only handed to the signed-in customer who owns it, so the request carries their token and the
+// file is saved from the response (a plain link could not send it).
+export async function downloadAgreementPdf(path: string, token: string | null, fallbackName: string) {
+  const res = await fetch(`${API_BASE}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {}, cache: "no-store" });
+  if (!res.ok) throw new ApiError(res.status === 404 ? "Not found." : "The PDF could not be prepared. Please try again.", res.status);
+  const name = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ?? fallbackName;
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+export const agreementPdfPath = (accessToken: string) => `/agreements/${encodeURIComponent(accessToken)}/pdf`;
+export const myContractPdfPath = (id: string) => `/me/contracts/${encodeURIComponent(id)}/pdf`;
