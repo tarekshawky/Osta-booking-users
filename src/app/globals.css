@@ -238,3 +238,26 @@ html[data-consent-bar] .osta-wa {
 .rich-text img { display: block; max-width: 100%; height: auto; border-radius: 0.75rem; }
 .rich-text hr { border: 0; border-top: 1px solid var(--card-border, currentColor); opacity: 0.4; }
 .rich-text mark { border-radius: 0.2em; padding: 0 0.15em; color: inherit; }
+
+/* Per-block "content size" for each device (set in the admin under Responsive). zoom scales the block's text, spacing and pictures
+   together; tablets and phones follow desktop unless set. */
+@media (min-width: 1024px) {
+  [data-fs-d="sm"] { zoom: 0.9; } [data-fs-d="lg"] { zoom: 1.1; } [data-fs-d="xl"] { zoom: 1.25; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  [data-fs-t="sm"] { zoom: 0.9; } [data-fs-t="lg"] { zoom: 1.1; } [data-fs-t="xl"] { zoom: 1.25; }
+}
+@media (max-width: 767px) {
+  [data-fs-m="sm"] { zoom: 0.9; } [data-fs-m="lg"] { zoom: 1.1; } [data-fs-m="xl"] { zoom: 1.25; }
+}
+
+/* Entrance animation (a block's Advanced tab): plays as the block scrolls into view where the browser supports it, and never for
+   people who asked for less motion. */
+@keyframes blk-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes blk-slide { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .blk-anim-fade { animation: blk-fade linear both; animation-timeline: view(); animation-range: entry 0% entry 35%; }
+    .blk-anim-slide { animation: blk-slide linear both; animation-timeline: view(); animation-range: entry 0% entry 35%; }
+  }
+}

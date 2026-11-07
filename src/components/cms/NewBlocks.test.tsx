@@ -82,6 +82,46 @@ describe("new blocks render", () => {
     expect(parseVideo("/api/media/abc123")?.kind).toBe("file"); expect(parseVideo("https://cdn.example.com/a.mp4")?.kind).toBe("file");
     expect(parseVideo("https://evil.example.com/watch?v=abcdefghijk")).toBeNull(); expect(parseVideo("javascript:alert(1)")).toBeNull(); expect(parseVideo("")).toBeNull();
   });
+  it("per-device visibility, including blocks saved before tablets existed", () => {
+    const h = (visibility: CmsBlock["visibility"]) => render("en", [{ ...mk("heading", { heading: bi("H", "ه") }), visibility }]);
+    // The classes on the block's outer wrapper, as whole names (so "lg:hidden" is not confused with "md:max-lg:hidden").
+    const has = (html: string, cls: string) => (html.match(/^<div class="([^"]*)"/)?.[1] ?? "").split(" ").includes(cls);
+    const desktopOnly = h({ desktop: true, mobile: false }); // old "desktop" meant 768px and up, so tablets keep showing it
+    expect(has(desktopOnly, "max-md:hidden")).toBe(true); expect(has(desktopOnly, "md:max-lg:hidden")).toBe(false); expect(has(desktopOnly, "lg:hidden")).toBe(false);
+    const mobileOnly = h({ desktop: false, mobile: true });
+    expect(has(mobileOnly, "md:max-lg:hidden")).toBe(true); expect(has(mobileOnly, "lg:hidden")).toBe(true); expect(has(mobileOnly, "max-md:hidden")).toBe(false);
+    const noTablet = h({ desktop: true, mobile: true, tablet: false });
+    expect(has(noTablet, "md:max-lg:hidden")).toBe(true); expect(has(noTablet, "max-md:hidden")).toBe(false); expect(has(noTablet, "lg:hidden")).toBe(false);
+    const all = h({ desktop: true, mobile: true });
+    expect(all).not.toContain("hidden");
+    expect(render("en", [{ ...mk("heading", { heading: bi("Gone", "ذهب") }), visibility: { desktop: false, mobile: false, tablet: false } }])).not.toContain("Gone");
+  });
+  it("responsive spacing and content size", () => {
+    const same = render("en", [mk("heading", { heading: bi("H", "ه"), style: { spacing: "lg" } })]);
+    expect(same).toContain('class="py-14"'); // every device the same: one plain class, as before
+    const per = render("en", [mk("heading", { heading: bi("H", "ه"), style: { spacing: "xl", spacingTablet: "md", spacingMobile: "none" } })]);
+    expect(per).toContain("lg:py-24"); expect(per).toContain("md:max-lg:py-8"); expect(per).not.toContain("max-md:py");
+    const sizes = render("en", [mk("heading", { heading: bi("H", "ه"), style: { fontSizeDesktop: "lg", fontSizeTablet: "inherit", fontSizeMobile: "sm" } })]);
+    expect(sizes).toContain('data-fs-d="lg"'); expect(sizes).toContain('data-fs-t="lg"'); expect(sizes).toContain('data-fs-m="sm"');
+    const auto = render("en", [mk("heading", { heading: bi("H", "ه"), style: { fontSizeDesktop: "xl", fontSizeMobile: "auto" } })]);
+    expect(auto).toContain('data-fs-d="xl"'); expect(auto).toContain('data-fs-t="xl"'); expect(auto).not.toContain("data-fs-m");
+  });
+  it("text and accent colours, border and animation", () => {
+    const html = render("en", [mk("heading", { heading: bi("H", "ه"), style: { textColor: "#112233", accentColor: "#ff6600", border: "accent", animation: "slideUp" } })]);
+    expect(html).toContain("--text:#112233"); expect(html).toContain("--accent:#ff6600"); expect(html).toContain("border-accent"); expect(html).toContain("blk-anim-slide");
+    const bad = render("en", [mk("heading", { heading: bi("H", "ه"), style: { textColor: "red;background:url(x)", accentColor: "#12" } })]);
+    expect(bad).not.toContain("--text"); expect(bad).not.toContain("url(x)");
+  });
+  it("owner custom CSS is drawn scoped to its block; unsafe CSS and script text are not drawn", () => {
+    const ok = render("en", [mk("heading", { heading: bi("H", "ه"), style: { customCss: "h2 { color: #ff6600; }" } })]);
+    expect(ok).toContain('data-blk="heading"'); expect(ok).toContain('<style>[data-blk="heading"]{h2 { color: #ff6600; }}</style>');
+    const bad = render("en", [mk("heading", { heading: bi("H", "ه"), style: { customCss: "</style><script>alert(1)</script>" } })]);
+    expect(bad).not.toContain("<style>"); expect(bad).not.toContain("alert(1)"); expect(bad).not.toContain("data-blk");
+    // JavaScript is never part of the server's HTML (it runs in the browser, after consent), but the block is marked for it.
+    const js = render("en", [mk("heading", { heading: bi("H", "ه"), style: { customJs: "block.dataset.x = 'secret-marker';" } })]);
+    expect(js).toContain('data-blk="heading"'); expect(js).not.toContain("secret-marker");
+    expect(render("en", [mk("heading", { heading: bi("H", "ه") })])).not.toContain("data-blk");
+  });
   it("section spacing and alignment are applied", () => {
     const html = render("en", [mk("heading", { heading: bi("H", "ه"), style: { spacing: "xl", textAlign: "end" } })]);
     expect(html).toContain("py-24"); expect(html).toContain("text-end");

@@ -71,7 +71,7 @@ function inject(html: string, where: "head" | "body", tag: string): HTMLElement[
 }
 
 // The visitor's current cookie choice, kept up to date when they change it in the banner.
-function useConsent(): { ready: boolean; consent: Consent | null } {
+export function useConsent(): { ready: boolean; consent: Consent | null } {
   const [state, setState] = useState<{ ready: boolean; consent: Consent | null }>({ ready: false, consent: null });
   useEffect(() => {
     const read = () => {
@@ -88,7 +88,7 @@ function useConsent(): { ready: boolean; consent: Consent | null } {
   return state;
 }
 
-const mayRun = (mode: string | undefined, perms: { analytics: boolean; marketing: boolean }) =>
+export const mayRun = (mode: string | undefined, perms: { analytics: boolean; marketing: boolean }) =>
   mode === "always" || (mode === "marketing" ? perms.marketing : perms.analytics);
 
 // Custom code from the admin: the global code (every page) or one page's code. Runs only after the visitor has allowed

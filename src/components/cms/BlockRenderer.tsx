@@ -21,6 +21,8 @@ import { useLanguage } from "@/lib/language-context";
 import { track } from "@/lib/analytics";
 import { API_BASE, type Bi, type CmsBlock, type Cta } from "@/lib/cms";
 import { Paragraphs, SmartLink, imgProps, oneOf, useBi } from "@/components/cms/blockShared";
+import { BlockScript } from "@/components/cms/BlockScript";
+import { blockJs, scopedCss } from "@/lib/blockCode";
 import {
   AnnouncementBlock, BeforeAfterBlock, BenefitsBlock, BgSectionBlock, CardsGridBlock, ComparisonBlock, ContactBannerBlock, CtaButtonsBlock, GalleryBlock, HeadingBlock,
   ListBlock, PricingBlock, PromoBlock, QuoteBlock, ShowcaseBlock, SliderBlock, DividerBlock, StepsBlock, TestimonialsBlock, LogosBlock, TeamBlock, VideoBlock,
@@ -673,22 +675,75 @@ function sectionBackground(style: unknown): React.CSSProperties | undefined {
   return isHex(s.bgColor) ? { backgroundColor: s.bgColor } : undefined;
 }
 
-// Extra space above/below and text alignment chosen in the admin's "Section background" group.
-const SPACING: Record<string, string> = { sm: "py-4", md: "py-8", lg: "py-14", xl: "py-24" };
+// Everything a block's settings (Design, Layout, Advanced, Responsive) change about its section. Written as whole class names so
+// Tailwind sees them.
+type Style = {
+  spacing?: string; spacingTablet?: string; spacingMobile?: string; textAlign?: string; radius?: string; shadow?: string; cssClass?: string; border?: string;
+  customCss?: string; customJs?: string; customJsConsent?: string; textColor?: string; accentColor?: string; animation?: string; fontSizeDesktop?: string; fontSizeTablet?: string; fontSizeMobile?: string; anchorId?: string; width?: string;
+};
+const PAD = {
+  all: { sm: "py-4", md: "py-8", lg: "py-14", xl: "py-24" } as Record<string, string>,
+  desktop: { sm: "lg:py-4", md: "lg:py-8", lg: "lg:py-14", xl: "lg:py-24" } as Record<string, string>,
+  tablet: { sm: "md:max-lg:py-4", md: "md:max-lg:py-8", lg: "md:max-lg:py-14", xl: "md:max-lg:py-24" } as Record<string, string>,
+  mobile: { sm: "max-md:py-4", md: "max-md:py-8", lg: "max-md:py-14", xl: "max-md:py-24" } as Record<string, string>,
+};
 const TEXT_ALIGN: Record<string, string> = { start: "text-start", center: "text-center", end: "text-end" };
 const SECTION_RADIUS: Record<string, string> = { md: "rounded-md overflow-hidden", xl: "rounded-xl overflow-hidden", "2xl": "rounded-2xl overflow-hidden" };
 const SECTION_SHADOW: Record<string, string> = { sm: "shadow-sm", md: "shadow-md", lg: "shadow-xl" };
+const SECTION_BORDER: Record<string, string> = { thin: "border border-card-border", accent: "border-2 border-accent" };
+const ANIMATION: Record<string, string> = { fade: "blk-anim-fade", slideUp: "blk-anim-slide" };
 const CONTENT_WIDTH: Record<string, string> = { medium: "mx-auto max-w-5xl", narrow: "mx-auto max-w-3xl" };
+const isHexColor = (v: unknown): v is string => typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v);
+const asStyle = (style: unknown): Style => ((style && typeof style === "object" ? style : {}) as Style);
+
+// Extra space above and below: one class when every device agrees (as before), otherwise one per device range.
+function spacingClasses(s: Style): string {
+  const d = s.spacing ?? "none";
+  const t = !s.spacingTablet || s.spacingTablet === "inherit" ? d : s.spacingTablet;
+  const m = !s.spacingMobile || s.spacingMobile === "inherit" ? d : s.spacingMobile;
+  if (d === t && t === m) return PAD.all[d] ?? "";
+  return [PAD.desktop[d], PAD.tablet[t], PAD.mobile[m]].filter(Boolean).join(" ");
+}
+
 function sectionClasses(style: unknown): string {
-  const s = (style ?? {}) as { spacing?: string; textAlign?: string; radius?: string; shadow?: string; cssClass?: string };
+  const s = asStyle(style);
   // The custom class is only ever letters, numbers, - and _ (the admin validates it; this keeps the page safe regardless).
   const custom = typeof s.cssClass === "string" && /^[A-Za-z0-9_ -]*$/.test(s.cssClass) ? s.cssClass : "";
-  return [SPACING[s.spacing ?? ""], TEXT_ALIGN[s.textAlign ?? ""], SECTION_RADIUS[s.radius ?? ""], SECTION_SHADOW[s.shadow ?? ""], custom].filter(Boolean).join(" ");
+  return [spacingClasses(s), TEXT_ALIGN[s.textAlign ?? ""], SECTION_RADIUS[s.radius ?? ""], SECTION_SHADOW[s.shadow ?? ""], SECTION_BORDER[s.border ?? ""], ANIMATION[s.animation ?? ""], custom].filter(Boolean).join(" ");
 }
+
+// Text and accent colours reuse the site's colour variables, so everything inside the block follows them.
+function sectionVars(style: unknown): React.CSSProperties | undefined {
+  const s = asStyle(style);
+  const vars: Record<string, string> = {};
+  if (isHexColor(s.textColor)) { vars["--text"] = s.textColor; vars["--text-muted"] = `color-mix(in srgb, ${s.textColor} 75%, transparent)`; }
+  if (isHexColor(s.accentColor)) { vars["--accent"] = s.accentColor; vars["--accent-2"] = s.accentColor; }
+  return Object.keys(vars).length ? (vars as React.CSSProperties) : undefined;
+}
+
+// Content size per device: tablets and phones follow desktop unless set.
+function sizeAttrs(style: unknown): Record<string, string> {
+  const s = asStyle(style);
+  const d = s.fontSizeDesktop && s.fontSizeDesktop !== "auto" ? s.fontSizeDesktop : "";
+  const pick = (v?: string) => (!v || v === "inherit" ? d : v === "auto" ? "" : v);
+  const out: Record<string, string> = {};
+  if (d) out["data-fs-d"] = d;
+  if (pick(s.fontSizeTablet)) out["data-fs-t"] = pick(s.fontSizeTablet);
+  if (pick(s.fontSizeMobile)) out["data-fs-m"] = pick(s.fontSizeMobile);
+  return out;
+}
+
 const anchorOf = (style: unknown): string | undefined => {
-  const id = (style as { anchorId?: unknown } | undefined)?.anchorId;
+  const id = asStyle(style).anchorId;
   return typeof id === "string" && /^[A-Za-z][A-Za-z0-9_-]*$/.test(id) ? id : undefined;
 };
+
+// Phones are under 768px, tablets 768-1023px, desktops 1024px and up. A block saved before tablets existed follows its desktop
+// setting on tablets, exactly as it did when "desktop" meant 768px and up.
+function visibilityClasses(v: CmsBlock["visibility"]): string {
+  const tablet = v.tablet ?? v.desktop;
+  return [!v.mobile && "max-md:hidden", !tablet && "md:max-lg:hidden", !v.desktop && "lg:hidden"].filter(Boolean).join(" ");
+}
 
 function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
   const p = block.props;
@@ -740,22 +795,24 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
   }
 }
 
-// Per-device visibility is CSS-only (md breakpoint), so it works with static/ISR rendering.
+// Per-device visibility is CSS-only (breakpoints), so it works with static/ISR rendering.
 export function BlockRenderer({ blocks, data }: { blocks: CmsBlock[]; data: BlockData }) {
   return (
     <>
       {blocks
-        .filter((b) => !b.hidden && (b.visibility.desktop || b.visibility.mobile))
+        .filter((b) => !b.hidden && (b.visibility.desktop || b.visibility.mobile || b.visibility.tablet))
         .map((b) => {
-          const vis = b.visibility.desktop && b.visibility.mobile ? "" : b.visibility.mobile ? "md:hidden" : "hidden md:block";
-          const cls = `${vis} ${b.type === "hero" ? "" : sectionClasses(b.props.style)}`.trim();
+          const style = b.type === "hero" ? undefined : b.props.style;
+          const cls = [visibilityClasses(b.visibility), sectionClasses(style)].filter(Boolean).join(" ");
+          const width = CONTENT_WIDTH[asStyle(style).width ?? ""];
+          // Owner-only custom code: CSS is drawn right here (so it is in the server's HTML), JavaScript runs after consent.
+          const css = b.type === "hero" ? null : scopedCss(b.id, asStyle(style).customCss);
+          const js = b.type === "hero" ? null : blockJs(b.id, asStyle(style).customJs);
           return (
-            <div key={b.id} id={b.type === "hero" ? undefined : anchorOf(b.props.style)} className={cls} style={b.type === "hero" ? undefined : sectionBackground(b.props.style)}>
-              {CONTENT_WIDTH[(b.props.style as { width?: string } | undefined)?.width ?? ""] && b.type !== "hero" ? (
-                <div className={CONTENT_WIDTH[(b.props.style as { width?: string }).width ?? ""]}><Block block={b} data={data} /></div>
-              ) : (
-                <Block block={b} data={data} />
-              )}
+            <div key={b.id} id={anchorOf(style)} className={cls || undefined} style={{ ...sectionBackground(style), ...sectionVars(style) }} {...sizeAttrs(style)} {...(css || js ? { "data-blk": b.id } : {})}>
+              {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
+              {js && <BlockScript id={b.id} js={js} consent={asStyle(style).customJsConsent} />}
+              {width ? <div className={width}><Block block={b} data={data} /></div> : <Block block={b} data={data} />}
             </div>
           );
         })}

@@ -10,7 +10,7 @@ export type CmsBlock = {
     | "divider" | "steps" | "testimonials" | "logos" | "team" | "video";
   props: Record<string, unknown>;
   hidden: boolean;
-  visibility: { desktop: boolean; mobile: boolean };
+  visibility: { desktop: boolean; mobile: boolean; tablet?: boolean };
 };
 
 export type CmsSeo = {
