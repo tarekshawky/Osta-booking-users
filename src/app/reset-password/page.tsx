@@ -3,75 +3,97 @@
 import { Suspense, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Logo } from "@/components/Logo";
+import { CheckCircle2 } from "lucide-react";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { Alert, Field, PasswordInput, Rules, SubmitButton } from "@/components/auth/AuthFields";
 import { api, ApiError } from "@/lib/api";
+import { authErrorKey } from "@/lib/authErrors";
+import { isValidPassword, passwordRules } from "@/lib/authRules";
 import { useLanguage } from "@/lib/language-context";
+import type { TranslationKey } from "@/lib/i18n";
 
-// The page behind the one-time link OSTA sends to a customer who forgot their password.
+// The page behind the one-time link that is e-mailed to a customer who forgot their password (or sent by OSTA).
 function ResetForm() {
   const token = useSearchParams().get("token") ?? "";
   const { t } = useLanguage();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [show, setShow] = useState(false);
+  const [errors, setErrors] = useState<{ password?: TranslationKey; confirm?: TranslationKey }>({});
+  const [formError, setFormError] = useState<TranslationKey | null>(null);
+  const [badLink, setBadLink] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const rules = passwordRules(password);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
-    if (password !== confirm) return setError(t("reset.mismatch"));
+    if (busy) return;
+    setFormError(null);
+    const next: typeof errors = {};
+    if (!isValidPassword(password)) next.password = "auth.errPasswordRule";
+    if (confirm !== password) next.confirm = "auth.errMismatch";
+    setErrors(next);
+    if (next.password || next.confirm) return;
     setBusy(true);
     try {
       await api.resetPassword(token, password);
       setDone(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t("login.genericError"));
+      if (err instanceof ApiError && err.code === "invalid_token") setBadLink(true);
+      else setFormError(authErrorKey(err));
     } finally {
       setBusy(false);
     }
   }
 
-  if (!token) return <p className="text-sm text-text-muted">{t("reset.noToken")}</p>;
+  if (!token || badLink) {
+    return (
+      <div className="auth-glass flex flex-col items-center gap-4 p-7 text-center">
+        <Alert>{badLink ? t("auth.resetBadLink") : t("auth.resetNoToken")}</Alert>
+        <Link href="/forgot-password" className="auth-btn text-base">{t("auth.requestNewLink")}</Link>
+        <Link href="/login" className="auth-link text-sm">{t("auth.backToLogin")}</Link>
+      </div>
+    );
+  }
   if (done) {
     return (
-      <div className="flex flex-col items-center gap-4 text-center">
-        <p className="text-base font-semibold text-text">{t("reset.done")}</p>
-        <Link href="/login" className="osta-btn-primary rounded-xl px-6 py-3 text-sm font-semibold text-white">{t("login.submit")}</Link>
+      <div className="auth-glass flex flex-col items-center gap-4 p-7 text-center" role="status">
+        <span className="auth-icon !h-14 !w-14"><CheckCircle2 size={28} aria-hidden /></span>
+        <h1 className="text-2xl font-extrabold">{t("auth.resetDoneTitle")}</h1>
+        <p className="text-sm text-[#b9c9e4]">{t("auth.resetDoneText")}</p>
+        <Link href="/login" className="auth-btn text-base">{t("auth.login")}</Link>
       </div>
     );
   }
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-text-muted">{t("reset.newPassword")}</span>
-        <input type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} className="osta-input rounded-xl px-3 py-3 text-sm" dir="ltr" />
-        <span className="text-[11px] text-text-faint">{t("login.passwordHint")}</span>
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-text-muted">{t("reset.confirm")}</span>
-        <input type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="osta-input rounded-xl px-3 py-3 text-sm" dir="ltr" />
-      </label>
-      {error && <p role="alert" className="rounded-xl border border-rose-400/30 bg-rose-400/10 p-3 text-xs text-rose-300">{error}</p>}
-      <button type="submit" disabled={busy || !password || !confirm} className="osta-btn-primary rounded-xl px-6 py-3 text-sm font-semibold text-white disabled:opacity-60">
-        {busy ? t("reset.saving") : t("reset.submit")}
-      </button>
-    </form>
+    <>
+      <div className="mb-6 text-center">
+        <h1 className="text-3xl font-extrabold tracking-tight">{t("auth.resetTitle")}</h1>
+        <p className="mt-2 text-sm leading-relaxed text-[#91a5c7]">{t("auth.resetSub")}</p>
+      </div>
+      <form onSubmit={submit} noValidate className="auth-glass flex flex-col gap-4 p-5 sm:p-7">
+        <Field label={t("auth.newPassword")} htmlFor="rp-password" error={errors.password ? t(errors.password) : null}>
+          <PasswordInput id="rp-password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} show={show} onToggle={() => setShow((v) => !v)} invalid={!!errors.password} />
+        </Field>
+        <Field label={t("auth.confirmPassword")} htmlFor="rp-confirm" error={errors.confirm ? t(errors.confirm) : null}>
+          <PasswordInput id="rp-confirm" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} show={show} onToggle={() => setShow((v) => !v)} invalid={!!errors.confirm} />
+        </Field>
+        <Rules items={[{ ok: rules.length, label: t("auth.ruleLength") }, { ok: rules.capital, label: t("auth.ruleCapital") }, { ok: rules.number, label: t("auth.ruleNumber") }, { ok: confirm.length > 0 && confirm === password, label: t("auth.ruleMatch") }]} />
+        {formError && <Alert>{t(formError)}</Alert>}
+        <SubmitButton busy={busy} label={t("auth.resetSubmit")} busyLabel={t("auth.resetSaving")} />
+        <Link href="/login" className="auth-link text-center text-sm">{t("auth.backToLogin")}</Link>
+      </form>
+    </>
   );
 }
 
 export default function ResetPasswordPage() {
-  const { t } = useLanguage();
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-6 py-10">
-      <Logo size="lg" />
-      <div>
-        <h1 className="text-2xl font-bold text-text">{t("reset.title")}</h1>
-        <p className="mt-1 text-sm text-text-muted">{t("reset.subtitle")}</p>
-      </div>
+    <AuthShell>
       <Suspense fallback={null}>
         <ResetForm />
       </Suspense>
-    </main>
+    </AuthShell>
   );
 }

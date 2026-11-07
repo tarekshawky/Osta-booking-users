@@ -3,31 +3,32 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, Eye, EyeOff, ShieldCheck, Clock, Wrench, BadgeCheck } from "lucide-react";
-import { Logo, LogoMark } from "@/components/Logo";
-import { LanguageToggle } from "@/components/LanguageToggle";
-import { api, ApiError } from "@/lib/api";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { Alert, Checkbox, Field, PasswordInput, PhoneInput, SubmitButton, TextInput } from "@/components/auth/AuthFields";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { authErrorKey } from "@/lib/authErrors";
+import { isEmail, mobileDigits } from "@/lib/authRules";
 import { hasDraft } from "@/lib/bookingDraft";
 import { useLanguage } from "@/lib/language-context";
 import type { TranslationKey } from "@/lib/i18n";
 
-const FEATURES: { icon: typeof ShieldCheck; key: TranslationKey }[] = [
-  { icon: ShieldCheck, key: "login.featureTrusted" },
-  { icon: Clock, key: "login.featureSameDay" },
-  { icon: BadgeCheck, key: "login.featureWarranty" },
-  { icon: Wrench, key: "login.featurePricing" },
-];
+type Method = "email" | "mobile";
 
 export default function LoginPage() {
   const router = useRouter();
   const { token, loading, login } = useAuth();
   const { t } = useLanguage();
 
+  const [method, setMethod] = useState<Method>("email");
   const [email, setEmail] = useState("");
+  const [dial, setDial] = useState("971");
+  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [show, setShow] = useState(false);
+  const [remember, setRemember] = useState(true);
+  const [errors, setErrors] = useState<{ identifier?: TranslationKey; password?: TranslationKey }>({});
+  const [formError, setFormError] = useState<TranslationKey | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -36,148 +37,91 @@ export default function LoginPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    if (busy) return; // one request at a time
+    setFormError(null);
 
-    if (!email.trim() || !password) {
-      setError(t("login.fillRequired"));
-      return;
+    const next: typeof errors = {};
+    let identifier = "";
+    if (method === "email") {
+      if (!email.trim()) next.identifier = "auth.errEmailRequired";
+      else if (!isEmail(email)) next.identifier = "auth.errEmailInvalid";
+      else identifier = email.trim();
+    } else {
+      if (!mobile.trim()) next.identifier = "auth.errMobileRequired";
+      else {
+        const m = mobileDigits(dial, mobile);
+        if (!m.ok) next.identifier = "auth.errMobileInvalid";
+        else identifier = m.full;
+      }
     }
+    if (!password) next.password = "auth.errPasswordRequired";
+    setErrors(next);
+    if (next.identifier || next.password) return;
 
     setBusy(true);
     try {
-      const res = await api.login(email.trim(), password);
-      login(res.accessToken, res.customer);
+      const res = await api.login(identifier, password);
+      login(res.accessToken, res.customer, remember);
       router.replace(hasDraft() ? "/orders/new" : "/dashboard");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t("login.genericError"));
-    } finally {
+      setFormError(authErrorKey(err));
       setBusy(false);
     }
   }
 
+  const tab = (m: Method, label: TranslationKey) => (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={method === m}
+      onClick={() => { setMethod(m); setErrors({}); setFormError(null); }}
+      className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${method === m ? "bg-[#087bff] text-white shadow-[0_0_18px_rgba(8,123,255,0.5)]" : "text-[#91a5c7] hover:text-white"}`}
+    >
+      {t(label)}
+    </button>
+  );
+
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
-      {/* Branding panel — desktop only */}
-      <div className="relative hidden flex-col items-center justify-center overflow-hidden bg-bg px-12 py-16 lg:flex lg:w-1/2">
-        <div
-          className="pointer-events-none absolute -left-40 -top-40 h-96 w-96 rounded-full opacity-30 blur-3xl"
-          style={{ background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)" }}
-        />
-        <div
-          className="pointer-events-none absolute -bottom-40 -right-24 h-96 w-96 rounded-full opacity-20 blur-3xl"
-          style={{ background: "radial-gradient(circle, var(--accent-2) 0%, transparent 70%)" }}
-        />
-
-        <div className="relative z-10 flex max-w-md flex-col items-center text-center">
-          <LogoMark diameter={120} />
-          <p className="mt-8 text-4xl font-extrabold leading-tight text-text">
-            {t("login.heroTitleLine1")}
-            <br />
-            <span className="bg-gradient-to-b from-accent-2 to-accent bg-clip-text text-transparent">
-              {t("login.heroTitleLine2")}
-            </span>
-          </p>
-          <p className="mt-4 text-sm leading-relaxed text-text-muted">{t("login.heroSubtitle")}</p>
-
-          <div className="mt-10 grid w-full grid-cols-2 gap-4">
-            {FEATURES.map(({ icon: Icon, key }) => (
-              <div key={key} className="osta-card flex flex-col items-center gap-2 px-4 py-4">
-                <Icon size={20} className="text-accent-2" />
-                <span className="text-xs text-text-muted">{t(key)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+    <AuthShell>
+      <div className="mb-6 text-center">
+        <h1 className="text-3xl font-extrabold tracking-tight">{t("auth.welcome")}</h1>
+        <p className="mt-2 text-sm leading-relaxed text-[#91a5c7]">{t("auth.welcomeSub")}</p>
       </div>
 
-      {/* Form panel */}
-      <div className="flex flex-1 flex-col justify-center px-6 py-10 lg:w-1/2 lg:px-20">
-        <div className="mx-auto w-full max-w-md">
-          <div className="mb-6 flex items-center justify-between lg:hidden">
-            <div className="w-16" />
-            <LanguageToggle />
-          </div>
-
-          <div className="mb-8 flex flex-col items-center gap-4 lg:hidden">
-            <LogoMark diameter={92} />
-          </div>
-
-          <div className="mb-8 hidden items-center justify-between lg:flex">
-            <Logo size="md" />
-            <LanguageToggle />
-          </div>
-
-          <div className="mb-6 text-center lg:text-start">
-            <h1 className="text-xl font-bold text-text lg:text-2xl">{t("login.welcomeBack")}</h1>
-            <p className="mt-1 text-sm text-text-muted">{t("login.subtitle")}</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="osta-card osta-glow-border flex flex-col gap-4 p-5">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-text-muted">{t("login.email")}</span>
-              <div className="flex items-center gap-2 rounded-xl osta-input px-3 py-3">
-                <Mail size={18} className="text-text-faint" />
-                <input
-                  autoFocus
-                  type="email"
-                  autoComplete="email"
-                  placeholder={t("login.emailPlaceholder")}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 bg-transparent text-sm text-text outline-none placeholder:text-text-faint"
-                />
-              </div>
-            </label>
-
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-text-muted">{t("login.password")}</span>
-              <div className="flex items-center gap-2 rounded-xl osta-input px-3 py-3">
-                <Lock size={18} className="text-text-faint" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  placeholder={t("login.passwordPlaceholder")}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="flex-1 bg-transparent text-sm text-text outline-none placeholder:text-text-faint"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? t("login.hidePassword") : t("login.showPassword")}
-                  className="text-text-faint"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              <span className="text-[11px] text-text-faint">{t("login.passwordHint")}</span>
-            </label>
-
-            {error && <p className="text-xs text-rose-400">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={busy}
-              className="osta-btn-primary mt-1 rounded-xl py-3 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {busy ? t("login.submitting") : t("login.submit")}
-            </button>
-
-            <p className="text-center text-xs text-text-muted">
-              {t("login.noAccount")}{" "}
-              <Link href="/signup" className="font-medium text-accent-2">
-                {t("login.signUpLink")}
-              </Link>
-            </p>
-
-            <p className="text-center text-[11px] leading-relaxed text-text-faint">{t("login.forgot")}</p>
-          </form>
-
-          <p className="mt-6 text-center text-[11px] leading-relaxed text-text-faint lg:text-start">
-            {t("login.terms")}
-          </p>
+      <form onSubmit={handleSubmit} noValidate className="auth-glass flex flex-col gap-5 p-5 sm:p-7">
+        <div role="tablist" aria-label={t("auth.loginMethod")} className="flex gap-1 rounded-xl bg-[rgba(6,19,43,0.8)] p-1">
+          {tab("email", "auth.tabEmail")}
+          {tab("mobile", "auth.tabMobile")}
         </div>
-      </div>
-    </div>
+
+        {method === "email" ? (
+          <Field label={t("auth.email")} htmlFor="login-email" error={errors.identifier ? t(errors.identifier) : null}>
+            <TextInput id="login-email" icon="mail" ltr type="email" autoComplete="username" inputMode="email" placeholder={t("auth.emailPh")} value={email} onChange={(e) => setEmail(e.target.value)} invalid={!!errors.identifier} />
+          </Field>
+        ) : (
+          <Field label={t("auth.mobile")} htmlFor="login-mobile" error={errors.identifier ? t(errors.identifier) : null}>
+            <PhoneInput id="login-mobile" autoComplete="tel-national" placeholder={t("auth.mobilePh")} value={mobile} onChange={(e) => setMobile(e.target.value)} dial={dial} onDial={setDial} invalid={!!errors.identifier} />
+          </Field>
+        )}
+
+        <Field label={t("auth.password")} htmlFor="login-password" error={errors.password ? t(errors.password) : null}>
+          <PasswordInput id="login-password" autoComplete="current-password" placeholder={t("auth.passwordPh")} value={password} onChange={(e) => setPassword(e.target.value)} show={show} onToggle={() => setShow((v) => !v)} invalid={!!errors.password} />
+        </Field>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Checkbox id="login-remember" checked={remember} onChange={setRemember}>{t("auth.remember")}</Checkbox>
+          <Link href="/forgot-password" className="auth-link text-sm">{t("auth.forgot")}</Link>
+        </div>
+
+        {formError && <Alert>{t(formError)}</Alert>}
+
+        <SubmitButton busy={busy} label={t("auth.login")} busyLabel={t("auth.loggingIn")} />
+
+        <p className="text-center text-sm text-[#91a5c7]">
+          {t("auth.noAccount")}{" "}
+          <Link href="/signup" className="auth-link">{t("auth.createAccount")}</Link>
+        </p>
+      </form>
+    </AuthShell>
   );
 }

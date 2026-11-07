@@ -9,10 +9,28 @@ type AuthState = {
   token: string | null;
   customer: Customer | CustomerSummary | null;
   loading: boolean;
-  login: (token: string, customer: CustomerSummary) => void;
+  // remember (default true): keep the login after the browser is closed; false keeps it for this tab only.
+  login: (token: string, customer: CustomerSummary, remember?: boolean) => void;
   logout: () => void;
   refreshMe: () => Promise<void>;
 };
+
+// The login lives in localStorage ("Remember me") or, when that is not chosen, in sessionStorage (until the tab is closed).
+function readStoredToken(): string | null {
+  try {
+    return window.localStorage.getItem(TOKEN_KEY) ?? window.sessionStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+function clearStoredToken() {
+  try {
+    window.localStorage.removeItem(TOKEN_KEY);
+    window.sessionStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 const AuthContext = createContext<AuthState | null>(null);
 
@@ -23,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     Promise.resolve().then(async () => {
-      const stored = typeof window !== "undefined" ? window.localStorage.getItem(TOKEN_KEY) : null;
+      const stored = typeof window !== "undefined" ? readStoredToken() : null;
       if (!stored) {
         setLoading(false);
         return;
@@ -33,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const me = await api.me(stored);
         setCustomer(me);
       } catch {
-        window.localStorage.removeItem(TOKEN_KEY);
+        clearStoredToken();
         setToken(null);
       } finally {
         setLoading(false);
@@ -41,14 +59,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const login = useCallback((newToken: string, newCustomer: CustomerSummary) => {
-    window.localStorage.setItem(TOKEN_KEY, newToken);
+  const login = useCallback((newToken: string, newCustomer: CustomerSummary, remember = true) => {
+    clearStoredToken();
+    try {
+      (remember ? window.localStorage : window.sessionStorage).setItem(TOKEN_KEY, newToken);
+    } catch {
+      // Storage blocked: the visitor stays logged in until the page is closed.
+    }
     setToken(newToken);
     setCustomer(newCustomer);
   }, []);
 
   const logout = useCallback(() => {
-    window.localStorage.removeItem(TOKEN_KEY);
+    clearStoredToken();
     setToken(null);
     setCustomer(null);
   }, []);

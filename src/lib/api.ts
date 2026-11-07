@@ -344,11 +344,15 @@ async function apiFetchPage<T>(
 }
 
 export const api = {
-  login: (email: string, password: string) =>
+  // `identifier` is an email or a mobile number.
+  login: (identifier: string, password: string) =>
     apiFetch<{ accessToken: string; customer: CustomerSummary }>("/auth/login", {
       method: "POST",
-      body: { email, password },
+      body: { identifier, password },
     }),
+
+  // Asks for a password-reset link by email. The answer is always the same, whether or not an account exists.
+  forgotPassword: (identifier: string) => apiFetch<{ requested: boolean }>("/auth/forgot-password", { method: "POST", body: { identifier } }),
 
   signup: (body: { name: string; phone: string; email: string; password: string; emirate?: string }) =>
     apiFetch<{ accessToken: string; customer: CustomerSummary }>("/auth/signup", {
