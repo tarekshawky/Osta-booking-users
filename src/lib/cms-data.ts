@@ -17,7 +17,7 @@ export async function loadBlockData(blocks: CmsBlock[]): Promise<BlockData> {
   const jobLimit = Math.max(0, ...jobBlocks.map((b) => Number(b.props.limit) || 6));
   const jobTypes = new Set(jobBlocks.map((b) => String(b.props.jobType ?? "all")));
   // A Services grid set to "All services from the Service Catalogue" needs the catalogue.
-  const wantsCatalog = blocks.some((b) => !b.hidden && ((b.type === "servicesGrid" && b.props.source === "catalogue") || b.type === "serviceCatalog"));
+  const wantsCatalog = blocks.some((b) => !b.hidden && ((b.type === "servicesGrid" && b.props.source === "catalogue") || b.type === "serviceCatalog" || (b.type === "showcase" && b.props.source === "catalogue")));
   const [services, posts, sections, pricing, jobs, catalog, locations] = await Promise.all([
     has("servicesGrid") ? api.services().catch(() => [] as ServiceSummary[]) : Promise.resolve([] as ServiceSummary[]),
     has("blogPreview") ? api.blogPosts({ pageSize: 12 }).then((r) => slimPosts(r.data)).catch(() => [] as BlogSummary[]) : Promise.resolve([] as BlogSummary[]),

@@ -20,42 +20,13 @@ import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/lib/language-context";
 import { track } from "@/lib/analytics";
 import { API_BASE, type Bi, type CmsBlock, type Cta } from "@/lib/cms";
+import { Paragraphs, SmartLink, imgProps, oneOf, useBi } from "@/components/cms/blockShared";
+import {
+  AnnouncementBlock, BeforeAfterBlock, BenefitsBlock, BgSectionBlock, CardsGridBlock, ComparisonBlock, ContactBannerBlock, CtaButtonsBlock, GalleryBlock, HeadingBlock,
+  ListBlock, PricingBlock, PromoBlock, QuoteBlock, ShowcaseBlock, SliderBlock,
+} from "@/components/cms/NewBlocks";
 
 type P = Record<string, unknown>;
-
-// Images from the admin media library come in several WebP widths; let the browser pick the smallest that fits.
-function imgProps(url: string, sizes: string) {
-  if (/\/api\/media\/[^/?]+$/.test(url)) {
-    return { src: url, srcSet: `${url}?w=480 480w, ${url}?w=960 960w, ${url}?w=1600 1600w`, sizes, width: 1200, height: 800, loading: "lazy" as const, decoding: "async" as const };
-  }
-  return { src: url, width: 1200, height: 800, loading: "lazy" as const, decoding: "async" as const };
-}
-
-function SmartLink({ href, className, children }: { href: string; className?: string; children: React.ReactNode }) {
-  if (href.startsWith("/")) return <Link href={href} className={className}>{children}</Link>;
-  return (
-    <a href={href} className={className} {...(href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
-      {children}
-    </a>
-  );
-}
-
-function useBi() {
-  const { lang } = useLanguage();
-  // Falls back to the other language so a half-translated block never renders empty.
-  return (v: Bi | undefined) => (v ? (lang === "ar" ? v.ar || v.en : v.en || v.ar) : "");
-}
-
-function Paragraphs({ text, className }: { text: string; className?: string }) {
-  if (isRichText(text)) return <RichHtml html={text} className={className} />;
-  return (
-    <>
-      {text.split(/\n\s*\n/).filter(Boolean).map((para, i) => (
-        <p key={i} className={className}><RichInline text={para} /></p>
-      ))}
-    </>
-  );
-}
 
 function Buttons({ ctas }: { ctas: Cta[] }) {
   const bi = useBi();
@@ -254,7 +225,6 @@ function ImageText({ p }: { p: P }) {
 }
 
 const RATIO: Record<string, string> = { "16:9": "aspect-video", "3:2": "aspect-[3/2]", "1:1": "aspect-square", "21:9": "aspect-[21/9]" };
-const oneOf = <T extends string>(v: unknown, allowed: readonly T[], fallback: T): T => (allowed.includes(v as T) ? (v as T) : fallback);
 
 // A picture on its own, with an optional caption and link.
 function ImageBlock({ p }: { p: P }) {
@@ -703,6 +673,14 @@ function sectionBackground(style: unknown): React.CSSProperties | undefined {
   return isHex(s.bgColor) ? { backgroundColor: s.bgColor } : undefined;
 }
 
+// Extra space above/below and text alignment chosen in the admin's "Section background" group.
+const SPACING: Record<string, string> = { sm: "py-4", md: "py-8", lg: "py-14", xl: "py-24" };
+const TEXT_ALIGN: Record<string, string> = { start: "text-start", center: "text-center", end: "text-end" };
+function sectionClasses(style: unknown): string {
+  const s = (style ?? {}) as { spacing?: string; textAlign?: string };
+  return `${SPACING[s.spacing ?? ""] ?? ""} ${TEXT_ALIGN[s.textAlign ?? ""] ?? ""}`.trim();
+}
+
 function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
   const p = block.props;
   switch (block.type) {
@@ -727,6 +705,22 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "aiServiceFinder": return <AiServiceFinderBlock p={p} />;
     case "servicesAssistant": return <AssistantBlock p={p} />;
     case "locations": return <LocationsBlock p={p} branches={data.locations} />;
+    case "heading": return <HeadingBlock p={p} />;
+    case "list": return <ListBlock p={p} />;
+    case "quote": return <QuoteBlock p={p} />;
+    case "announcement": return <AnnouncementBlock p={p} />;
+    case "gallery": return <GalleryBlock p={p} />;
+    case "slider": return <SliderBlock p={p} />;
+    case "bgSection": return <BgSectionBlock p={p} />;
+    case "showcase": return <ShowcaseBlock p={p} catalog={data.catalog} />;
+    case "cardsGrid": return <CardsGridBlock p={p} />;
+    case "benefits": return <BenefitsBlock p={p} />;
+    case "pricing": return <PricingBlock p={p} />;
+    case "comparison": return <ComparisonBlock p={p} />;
+    case "beforeAfter": return <BeforeAfterBlock p={p} />;
+    case "promo": return <PromoBlock p={p} />;
+    case "ctaButtons": return <CtaButtonsBlock p={p} />;
+    case "contactBanner": return <ContactBannerBlock p={p} />;
     default: return null;
   }
 }
@@ -738,7 +732,8 @@ export function BlockRenderer({ blocks, data }: { blocks: CmsBlock[]; data: Bloc
       {blocks
         .filter((b) => !b.hidden && (b.visibility.desktop || b.visibility.mobile))
         .map((b) => {
-          const cls = b.visibility.desktop && b.visibility.mobile ? "" : b.visibility.mobile ? "md:hidden" : "hidden md:block";
+          const vis = b.visibility.desktop && b.visibility.mobile ? "" : b.visibility.mobile ? "md:hidden" : "hidden md:block";
+          const cls = `${vis} ${b.type === "hero" ? "" : sectionClasses(b.props.style)}`.trim();
           return (
             <div key={b.id} className={cls} style={b.type === "hero" ? undefined : sectionBackground(b.props.style)}>
               <Block block={b} data={data} />
