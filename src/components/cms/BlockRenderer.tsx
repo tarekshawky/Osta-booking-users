@@ -25,7 +25,7 @@ import { BlockScript } from "@/components/cms/BlockScript";
 import { blockJs, scopedCss } from "@/lib/blockCode";
 import {
   AnnouncementBlock, BeforeAfterBlock, BenefitsBlock, BgSectionBlock, CardsGridBlock, ComparisonBlock, ContactBannerBlock, CtaButtonsBlock, GalleryBlock, HeadingBlock,
-  ListBlock, PricingBlock, PromoBlock, QuoteBlock, ShowcaseBlock, SliderBlock, DividerBlock, StepsBlock, TestimonialsBlock, LogosBlock, TeamBlock, VideoBlock,
+  ListBlock, PricingBlock, PromoBlock, QuoteBlock, ShowcaseBlock, SliderBlock, DividerBlock, StepsBlock, TestimonialsBlock, LogosBlock, TeamBlock, VideoBlock, GoogleReviewsBlock,
 } from "@/components/cms/NewBlocks";
 
 type P = Record<string, unknown>;
@@ -679,6 +679,7 @@ function sectionBackground(style: unknown): React.CSSProperties | undefined {
 // Tailwind sees them.
 type Style = {
   spacing?: string; spacingTablet?: string; spacingMobile?: string; textAlign?: string; radius?: string; shadow?: string; cssClass?: string; border?: string;
+  headingSize?: string; headingSizeMobile?: string; textSize?: string; textSizeMobile?: string; headingWeight?: string; lineHeight?: string;
   customCss?: string; customJs?: string; customJsConsent?: string; textColor?: string; accentColor?: string; animation?: string; fontSizeDesktop?: string; fontSizeTablet?: string; fontSizeMobile?: string; anchorId?: string; width?: string;
 };
 const PAD = {
@@ -730,6 +731,17 @@ function sizeAttrs(style: unknown): Record<string, string> {
   if (d) out["data-fs-d"] = d;
   if (pick(s.fontSizeTablet)) out["data-fs-t"] = pick(s.fontSizeTablet);
   if (pick(s.fontSizeMobile)) out["data-fs-m"] = pick(s.fontSizeMobile);
+  // Heading and text size: phones follow the main value unless they have their own ("auto" there means no change).
+  const sized = (main: string | undefined, mobile: string | undefined, key: "hs" | "ts") => {
+    const m = main && main !== "auto" ? main : "";
+    const phone = !mobile || mobile === "inherit" ? m : mobile === "auto" ? "" : mobile;
+    if (m) out[`data-${key}`] = m;
+    if (phone) out[`data-${key}-m`] = phone;
+  };
+  sized(s.headingSize, s.headingSizeMobile, "hs");
+  sized(s.textSize, s.textSizeMobile, "ts");
+  if (s.headingWeight && s.headingWeight !== "auto") out["data-hw"] = s.headingWeight;
+  if (s.lineHeight && s.lineHeight !== "auto") out["data-lh"] = s.lineHeight;
   return out;
 }
 
@@ -791,6 +803,7 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "logos": return <LogosBlock p={p} />;
     case "team": return <TeamBlock p={p} />;
     case "video": return <VideoBlock p={p} />;
+    case "googleReviews": return <GoogleReviewsBlock p={p} />;
     default: return null;
   }
 }

@@ -76,6 +76,21 @@ describe("new blocks render", () => {
     expect(html).toContain("Omar"); expect(html).toContain('role="separator"'); expect(html).toContain("youtube-nocookie.com/embed/dQw4w9WgXcQ");
     expect(render("ar", [mk("steps", { heading: bi("", ""), variant: "cards", items: [{ title: bi("Step", "خطوة"), text: bi("", ""), imageUrl: "" }] })])).toContain("خطوة");
   });
+  it("google reviews: summary, chosen reviews and links, in both languages", () => {
+    const props = { heading: bi("Rated on Google", "تقييمنا"), subtitle: bi("", ""), layout: "grid", rating: 4.8, total: 1234, googleUrl: "https://www.google.com/maps?cid=1", writeReviewUrl: "https://search.google.com/local/writereview?placeid=X", reviews: [{ author: "Sara", rating: 5, text: bi("Great service", "خدمة رائعة"), date: "2 weeks ago", imageUrl: "" }] };
+    const en = render("en", [mk("googleReviews", props)]);
+    expect(en).toContain("4.8"); expect(en).toContain("Based on 1,234 reviews on Google"); expect(en).toContain("Great service"); expect(en).toContain("Sara");
+    expect(en).toContain('href="https://www.google.com/maps?cid=1"'); expect(en).toContain("Write a review");
+    const ar = render("ar", [mk("googleReviews", props)]);
+    expect(ar).toContain("بناءً على 1,234 مراجعة على Google"); expect(ar).toContain("خدمة رائعة"); expect(ar).toContain("اكتب مراجعة");
+    // No write-review link: no button. No rating and no reviews: nothing is drawn.
+    expect(render("en", [mk("googleReviews", { ...props, writeReviewUrl: "" })])).not.toContain("Write a review");
+    expect(render("en", [mk("googleReviews", { ...props, rating: 0, reviews: [] })])).not.toContain("Rated on Google");
+    // Rating only (the "star rating display" preset).
+    const rated = render("en", [mk("googleReviews", { ...props, reviews: [] })]);
+    expect(rated).toContain("4.8"); expect(rated).not.toContain("Sara");
+    expect(render("en", [mk("googleReviews", { ...props, layout: "carousel" })])).toContain('aria-roledescription="carousel"');
+  });
   it("only safe video addresses are embedded", () => {
     expect(parseVideo("https://vimeo.com/123456789")?.src).toBe("https://player.vimeo.com/video/123456789");
     expect(parseVideo("https://www.youtube.com/watch?v=abcdefghijk&t=3")?.src).toContain("/embed/abcdefghijk");
@@ -105,6 +120,15 @@ describe("new blocks render", () => {
     expect(sizes).toContain('data-fs-d="lg"'); expect(sizes).toContain('data-fs-t="lg"'); expect(sizes).toContain('data-fs-m="sm"');
     const auto = render("en", [mk("heading", { heading: bi("H", "ه"), style: { fontSizeDesktop: "xl", fontSizeMobile: "auto" } })]);
     expect(auto).toContain('data-fs-d="xl"'); expect(auto).toContain('data-fs-t="xl"'); expect(auto).not.toContain("data-fs-m");
+  });
+  it("typography: heading and text size, weight and line height, with phone overrides", () => {
+    const html = render("en", [mk("heading", { heading: bi("H", "ه"), style: { headingSize: "lg", headingSizeMobile: "sm", textSize: "xl", headingWeight: "extrabold", lineHeight: "relaxed" } })]);
+    expect(html).toContain('data-hs="lg"'); expect(html).toContain('data-hs-m="sm"'); expect(html).toContain('data-ts="xl"'); expect(html).toContain('data-ts-m="xl"');
+    expect(html).toContain('data-hw="extrabold"'); expect(html).toContain('data-lh="relaxed"');
+    const cleared = render("en", [mk("heading", { heading: bi("H", "ه"), style: { headingSize: "lg", headingSizeMobile: "auto", textSize: "auto", headingWeight: "auto", lineHeight: "auto" } })]);
+    expect(cleared).toContain('data-hs="lg"'); expect(cleared).not.toContain("data-hs-m"); expect(cleared).not.toContain("data-ts"); expect(cleared).not.toContain("data-hw"); expect(cleared).not.toContain("data-lh");
+    const onlyPhone = render("en", [mk("heading", { heading: bi("H", "ه"), style: { textSizeMobile: "lg" } })]);
+    expect(onlyPhone).toContain('data-ts-m="lg"'); expect(onlyPhone).not.toContain('data-ts="');
   });
   it("text and accent colours, border and animation", () => {
     const html = render("en", [mk("heading", { heading: bi("H", "ه"), style: { textColor: "#112233", accentColor: "#ff6600", border: "accent", animation: "slideUp" } })]);

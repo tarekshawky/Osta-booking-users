@@ -869,3 +869,69 @@ export function VideoBlock({ p }: { p: P }) {
     </section>
   );
 }
+
+// Google reviews: the rating, the number of reviews and the chosen reviews are typed in by the owner (there is no automatic
+// sync), so they are shown exactly as entered, with links to the Google listing.
+export function GoogleReviewsBlock({ p }: { p: P }) {
+  const bi = useBi();
+  const { lang } = useLanguage();
+  const rating = Math.min(5, Math.max(0, Number(p.rating) || 0));
+  const total = Math.max(0, Math.floor(Number(p.total) || 0));
+  const reviews = list<{ author: string; rating: number; text: Bi; date: string; imageUrl: string }>(p.reviews).filter((r) => bi(r.text));
+  const [n, setN] = useState(0);
+  const googleUrl = str(p.googleUrl);
+  const writeUrl = str(p.writeReviewUrl);
+  const t = (en: string, ar: string) => (lang === "ar" ? ar : en);
+  if (!(rating > 0) && reviews.length === 0) return null;
+  const carousel = p.layout === "carousel";
+  const card = (r: (typeof reviews)[number], key?: number) => (
+    <figure key={key} className="osta-card flex h-full flex-col gap-3 p-6">
+      <Stars rating={Number(r.rating) || 0} reviews={0} />
+      <blockquote className="flex-1 text-sm leading-relaxed text-text"><Paragraphs text={bi(r.text)} /></blockquote>
+      <figcaption className="flex items-center gap-3 text-sm">
+        {r.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={/\/api\/media\/[^/?]+$/.test(r.imageUrl) ? `${r.imageUrl}?w=480` : r.imageUrl} alt="" loading="lazy" decoding="async" className="h-9 w-9 rounded-full object-cover" />
+        )}
+        <span><span className="block font-semibold text-text">{r.author}</span>{r.date && <span className="text-xs text-text-muted">{r.date}</span>}</span>
+      </figcaption>
+    </figure>
+  );
+  const cur = reviews[Math.min(n, Math.max(0, reviews.length - 1))];
+  const Prev = lang === "ar" ? ChevronRight : ChevronLeft;
+  const Next = lang === "ar" ? ChevronLeft : ChevronRight;
+  return (
+    <section className="mx-auto w-full max-w-6xl px-5 py-12">
+      <Heading heading={bi(p.heading as Bi)} subtitle={bi(p.subtitle as Bi)} />
+      {rating > 0 && (
+        <div className="mx-auto mb-8 flex max-w-xl flex-col items-center gap-3 text-center">
+          <div className="flex items-center gap-3">
+            <span className="text-5xl font-extrabold text-text">{rating.toFixed(1)}</span>
+            <Stars rating={rating} reviews={0} />
+          </div>
+          <p className="text-sm text-text-muted">
+            {total > 0 ? t(`Based on ${total.toLocaleString("en-US")} reviews on Google`, `بناءً على ${total.toLocaleString("en-US")} مراجعة على Google`) : t("Rated on Google", "التقييم على Google")}
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            {googleUrl && <SmartLink href={googleUrl} className="osta-btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold text-white">{t("See all reviews on Google", "شاهد كل المراجعات على Google")}</SmartLink>}
+            {writeUrl && <SmartLink href={writeUrl} className="rounded-xl border border-card-border px-6 py-2.5 text-sm font-semibold text-text hover:border-accent">{t("Write a review", "اكتب مراجعة")}</SmartLink>}
+          </div>
+        </div>
+      )}
+      {reviews.length > 0 && (carousel ? (
+        <div className="mx-auto max-w-2xl" aria-roledescription="carousel">
+          {card(cur)}
+          {reviews.length > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-4">
+              <button type="button" onClick={() => setN((n - 1 + reviews.length) % reviews.length)} aria-label={t("Previous", "السابق")} className="rounded-full border border-card-border p-2 text-text hover:border-accent"><Prev size={18} aria-hidden /></button>
+              <span className="text-xs text-text-muted" aria-live="polite">{Math.min(n, reviews.length - 1) + 1} / {reviews.length}</span>
+              <button type="button" onClick={() => setN((n + 1) % reviews.length)} aria-label={t("Next", "التالي")} className="rounded-full border border-card-border p-2 text-text hover:border-accent"><Next size={18} aria-hidden /></button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">{reviews.map((r, i) => card(r, i))}</div>
+      ))}
+    </section>
+  );
+}
