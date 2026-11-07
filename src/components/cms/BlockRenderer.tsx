@@ -805,7 +805,7 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "team": return <TeamBlock p={p} />;
     case "video": return <VideoBlock p={p} />;
     case "googleReviews": return <GoogleReviewsBlock p={p} />;
-    case "maintenancePackages": return <MaintenancePackagesBlock p={p} data={data.maintenance} />;
+    case "maintenancePackages": return <MaintenancePackagesBlock p={p} data={data.maintenance?.[String(p.group ?? "")] ?? null} />;
     default: return null;
   }
 }

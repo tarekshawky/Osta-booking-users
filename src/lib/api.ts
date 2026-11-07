@@ -346,10 +346,16 @@ async function apiFetchPage<T>(
 // Annual home maintenance packages (Website → Maintenance Packages in the admin). The comparison table and the numbered terms are
 // worked out by the admin API, so the website only draws them.
 export type MaintenancePackage = {
-  id: string; nameEn: string; nameAr: string; descriptionEn: string; descriptionAr: string; suitableEn: string; suitableAr: string; price: number;
-  maxAcUnits: number | null; badgeEn: string; badgeAr: string; highlighted: boolean; lines: { serviceId: string; quantityEn: string; quantityAr: string }[];
+  id: string; nameEn: string; nameAr: string; descriptionEn: string; descriptionAr: string; suitableEn: string; suitableAr: string;
+  // null = "Custom Quotation" (priceText says so). pricePrefix is for "Starting from".
+  price: number | null; pricePrefixEn?: string; pricePrefixAr?: string; priceTextEn?: string; priceTextAr?: string;
+  maxAcUnits: number | null; badgeEn: string; badgeAr: string; highlighted: boolean; bullets?: { en: string; ar: string }[];
+  lines: { serviceId: string; quantityEn: string; quantityAr: string }[];
 };
 export type MaintenanceData = {
+  key?: string;
+  // "subscribe" = Subscribe Now (a household's property form); "quote" = Request a Quote (a business enquiry)
+  ctaMode?: "subscribe" | "quote";
   settings: { headingEn: string; headingAr: string; subtitleEn: string; subtitleAr: string; noteEn: string; noteAr: string } | null;
   services: { id: string; nameEn: string; nameAr: string }[];
   packages: MaintenancePackage[];
@@ -357,11 +363,12 @@ export type MaintenanceData = {
   terms: { en: string[]; ar: string[] };
 };
 export type SubscribeBody = {
-  packageId: string; name: string; phone: string; email: string; emirate: string; location: string; propertyType: string; bedrooms: number; acUnits: number; activationDate: string;
+  kind?: "subscribe" | "quote"; packageId: string; name: string; phone: string; email: string; emirate: string; location: string; propertyType: string; bedrooms: number; acUnits: number; activationDate: string;
+  company?: string; message?: string;
 };
 
 export const api = {
-  maintenancePackages: () => apiFetch<MaintenanceData>("/maintenance-packages"),
+  maintenancePackages: (group = "") => apiFetch<MaintenanceData>(`/maintenance-packages${group ? `?group=${encodeURIComponent(group)}` : ""}`),
   subscribeMaintenance: (body: SubscribeBody) => apiFetch<{ received: boolean }>("/maintenance-subscriptions", { method: "POST", body }),
 
   // `identifier` is an email or a mobile number.

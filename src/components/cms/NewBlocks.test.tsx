@@ -167,7 +167,7 @@ describe("maintenance packages block", () => {
     terms: { en: ["Covers one property.", "Valid 12 months."], ar: ["تغطي عقاراً واحداً.", "صالح 12 شهراً."] },
   };
   const renderWith = (lang: "en" | "ar", props: Record<string, unknown>, m: MaintenanceData | null = maintenance) =>
-    renderToString(<LanguageProvider initialLang={lang}><SiteProvider site={site}><BlockRenderer blocks={[mk("maintenancePackages", props)]} data={{ ...(data as object), maintenance: m } as never} /></SiteProvider></LanguageProvider>);
+    renderToString(<LanguageProvider initialLang={lang}><SiteProvider site={site}><BlockRenderer blocks={[mk("maintenancePackages", props)]} data={{ ...(data as object), maintenance: { [String(props.group ?? "")]: m } } as never} /></SiteProvider></LanguageProvider>);
   const on = { heading: bi("", ""), subtitle: bi("", ""), showComparison: "yes", showTerms: "yes" };
 
   it("shows the cards with prices, services and the recommended badge, in English", () => {
@@ -178,9 +178,10 @@ describe("maintenance packages block", () => {
   });
   it("shows the comparison table, the note and numbered terms, and respects the block's switches", () => {
     const html = renderWith("en", on);
-    expect(html).toContain("Package Comparison"); expect(html).toContain("Annual Price"); expect(html).toContain("All prices are in AED per year."); expect(html).toContain("Covers one property.");
+    expect(html).toContain("Package Comparison"); expect(html).toContain("Annual Price"); expect(html).toContain("All prices are in AED per year."); expect(html).toContain("Covers one property."); expect(html).toContain("Terms, Conditions &amp; Exclusions");
     const off = renderWith("en", { ...on, showComparison: "no", showTerms: "no" });
     expect(off).not.toContain("Package Comparison"); expect(off).not.toContain("Covers one property.");
+    expect(renderWith("en", { ...on, showForm: "no" })).not.toContain("request-form");
   });
   it("is fully Arabic in Arabic", () => {
     const html = renderWith("ar", on);
@@ -191,5 +192,47 @@ describe("maintenance packages block", () => {
     expect(renderWith("en", { ...on, heading: bi("Our plans", "خططنا") })).toContain("Our plans");
     expect(renderWith("en", on, null)).not.toContain("Subscribe Now");
     expect(renderWith("en", on, { ...maintenance, packages: [] })).not.toContain("Subscribe Now");
+  });
+
+  it("shows the page in the required order: cards, comparison right after them, terms, then the request form", () => {
+    const html = renderWith("en", on);
+    const at = (k: string) => html.indexOf(k);
+    expect(at("Essential Package")).toBeGreaterThan(-1);
+    expect(at("Package Comparison")).toBeGreaterThan(at("Gold Package"));
+    expect(at("Terms, Conditions")).toBeGreaterThan(at("Package Comparison"));
+    expect(at('id="request-form"')).toBeGreaterThan(at("Terms, Conditions"));
+    expect(at("Package Comparison")).toBeLessThan(at('id="request-form"'));
+  });
+  it("every package has View Details and the group's call to action: Subscribe Now, or Request a Quote for a quotation group", () => {
+    const sub = renderWith("en", on);
+    expect((sub.match(/View Details/g) ?? []).length).toBe(2); expect((sub.match(/Subscribe Now/g) ?? []).length).toBe(2);
+    const quote = renderWith("en", on, { ...maintenance, ctaMode: "quote" });
+    expect((quote.match(/Request a Quote/g) ?? []).length).toBeGreaterThanOrEqual(3); // two buttons and the form heading
+    expect(quote).not.toContain("Subscribe Now"); expect(quote).toContain("Company / Business Name");
+    expect(renderWith("ar", on, { ...maintenance, ctaMode: "quote" })).toContain("اطلب عرض سعر");
+    expect(renderWith("ar", on)).toContain("عرض التفاصيل");
+  });
+  it("shows 'starting from' and custom-quotation prices, and bullets instead of services when a package has them", () => {
+    const m: MaintenanceData = {
+      ...maintenance,
+      packages: [
+        { ...maintenance.packages[0], price: 399, pricePrefixEn: "Starting from", pricePrefixAr: "ابتداءً من", bullets: [{ en: "Filter cleaning", ar: "تنظيف الفلاتر" }] },
+        { ...maintenance.packages[1], price: null, priceTextEn: "Custom Quotation", priceTextAr: "عرض سعر مخصص", bullets: [] },
+      ],
+    };
+    const en = renderWith("en", on, m);
+    expect(en).toContain("Starting from"); expect(en).toContain("AED 399"); expect(en).toContain("Custom Quotation");
+    expect(en).toContain("Filter cleaning"); expect(en.match(/2 visits\/year/g)?.length).toBe(1); // package 1 uses its bullets; only package 2 lists services
+    expect(en).toContain("Preventive AC Maintenance"); // package 2 has no bullets, so it lists its services
+    expect(en.match(/\/ Year/g)?.length).toBe(1); // a custom quotation has no "/ Year"
+    const ar = renderWith("ar", on, m);
+    expect(ar).toContain("ابتداءً من"); expect(ar).toContain("عرض سعر مخصص"); expect(ar).toContain("تنظيف الفلاتر");
+  });
+  it("picks the set of packages by the block's group key", () => {
+    const other: MaintenanceData = { ...maintenance, key: "hvac-amc", packages: [{ ...maintenance.packages[0], nameEn: "HVAC Basic" }] };
+    const html = renderToString(<LanguageProvider initialLang="en"><SiteProvider site={site}><BlockRenderer blocks={[mk("maintenancePackages", { ...on, group: "hvac-amc" })]} data={{ ...(data as object), maintenance: { "": maintenance, "hvac-amc": other } } as never} /></SiteProvider></LanguageProvider>);
+    expect(html).toContain("HVAC Basic"); expect(html).not.toContain("Gold Package");
+    const none = renderToString(<LanguageProvider initialLang="en"><SiteProvider site={site}><BlockRenderer blocks={[mk("maintenancePackages", { ...on, group: "missing" })]} data={{ ...(data as object), maintenance: { "": maintenance } } as never} /></SiteProvider></LanguageProvider>);
+    expect(none).not.toContain("Subscribe Now"); // an unknown group draws nothing
   });
 });

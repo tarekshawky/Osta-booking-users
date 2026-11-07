@@ -7,7 +7,7 @@ import { fetchLocations, type PublicBranch } from "@/lib/locations";
 export const slimPosts = (posts: BlogSummary[]): BlogSummary[] =>
   posts.map((p) => ({ ...p, coverImageUrl: p.coverImageUrl?.startsWith("data:") ? null : p.coverImageUrl }));
 
-export type BlockData = { services: ServiceSummary[]; posts: BlogSummary[]; sections: HomeSection[]; pricing: PricingConfig | null; jobs: OpenJobs; subPages: { slug: string; titleEn: string; titleAr: string }[]; catalog: CatalogCategory[]; locations: PublicBranch[]; maintenance: MaintenanceData | null };
+export type BlockData = { services: ServiceSummary[]; posts: BlogSummary[]; sections: HomeSection[]; pricing: PricingConfig | null; jobs: OpenJobs; subPages: { slug: string; titleEn: string; titleAr: string }[]; catalog: CatalogCategory[]; locations: PublicBranch[]; maintenance: Record<string, MaintenanceData | null> };
 
 // Loads only the data the page's blocks actually need, and never lets a briefly unavailable API break the page.
 export async function loadBlockData(blocks: CmsBlock[]): Promise<BlockData> {
@@ -28,6 +28,9 @@ export async function loadBlockData(blocks: CmsBlock[]): Promise<BlockData> {
     has("locations") ? fetchLocations() : Promise.resolve([] as PublicBranch[]),
   ]);
   // The maintenance packages block draws the packages, prices, table and terms the admin keeps up to date.
-  const maintenance = has("maintenancePackages") ? await api.maintenancePackages().catch(() => null) : null;
+  // Each block names its set of packages (its group key; empty = the original home packages); every set is fetched once.
+  const groups = [...new Set(blocks.filter((b) => b.type === "maintenancePackages" && !b.hidden).map((b) => String(b.props.group ?? "")))];
+  const maintenance: Record<string, MaintenanceData | null> = {};
+  await Promise.all(groups.map(async (g) => { maintenance[g] = await api.maintenancePackages(g).catch(() => null); }));
   return { services, posts, sections, pricing, jobs, subPages: [], catalog, locations, maintenance };
 }
