@@ -35,8 +35,16 @@ function Price({ price, oldPrice, currency, big, color }: { price: string; oldPr
   );
 }
 
+// "-25%" from an old and a current price typed as numbers ("1,200", "150.5"); null when they cannot be compared.
+function discountPercent(price: string, oldPrice: string): number | null {
+  const n = (v: string) => Number(v.replace(/,/g, "").trim());
+  const a = n(price), b = n(oldPrice);
+  if (!(a > 0) || !(b > a)) return null;
+  return Math.round((1 - a / b) * 100);
+}
+
 const BADGE: Record<string, Bi> = {
-  featured: { en: "Featured", ar: "مميز" }, popular: { en: "Popular", ar: "الأكثر طلباً" }, new: { en: "New", ar: "جديد" }, offer: { en: "Offer", ar: "عرض" },
+  featured: { en: "Featured", ar: "مميز" }, popular: { en: "Popular", ar: "الأكثر طلباً" }, bestSeller: { en: "Best seller", ar: "الأكثر مبيعاً" }, new: { en: "New", ar: "جديد" }, offer: { en: "Special offer", ar: "عرض خاص" }, limited: { en: "Limited time", ar: "لفترة محدودة" },
 };
 function BadgePill({ kind }: { kind: unknown }) {
   const bi = useBi();
@@ -269,6 +277,9 @@ function useContactLinks() {
   };
 }
 
+const SHADOW: Record<string, string> = { none: "", sm: "shadow-sm", md: "shadow-md", lg: "shadow-xl" };
+const RADIUS: Record<string, string> = { none: "rounded-none", md: "rounded-md", xl: "rounded-xl", "2xl": "rounded-2xl" };
+
 export function ShowcaseBlock({ p, catalog }: { p: P; catalog: BlockData["catalog"] }) {
   const bi = useBi();
   const { lang } = useLanguage();
@@ -281,52 +292,96 @@ export function ShowcaseBlock({ p, catalog }: { p: P; catalog: BlockData["catalo
   const features = list<{ icon?: string; text: Bi }>(p.features).filter((f) => bi(f.text));
   const bg = isHex(p.bgColor) ? p.bgColor : undefined;
   const ink = isHex(p.textColor) ? p.textColor : undefined;
-  const img = str(p.imageUrl);
+  const priceInk = isHex(p.priceColor) ? p.priceColor : ink;
+  const pictures = [str(p.imageUrl), ...list<{ imageUrl: string }>(p.gallery).map((g) => str(g.imageUrl))].filter(Boolean);
+  const [active, setActive] = useState(0);
+  const img = pictures[Math.min(active, Math.max(0, pictures.length - 1))] ?? "";
   const position = oneOf(p.imagePosition, ["start", "end", "top"] as const, "end");
   const card = p.layout === "card" || position === "top";
+  const dark = p.buttonStyle === "dark";
   const sec = str(p.secondaryType);
-  const secUrl = sec === "call" ? links.call : sec === "whatsapp" ? links.whatsapp : sec === "learn" ? str(p.secondaryUrl) || (svc?.slug ? `/${svc.slug}` : "") : "";
-  const secLabel = sec === "call" ? (lang === "ar" ? "اتصل الآن" : "Call now") : sec === "whatsapp" ? (lang === "ar" ? "واتساب" : "WhatsApp") : bi(p.secondaryLabel as Bi) || (lang === "ar" ? "اعرف المزيد" : "Learn more");
+  const t = (en: string, ar: string) => (lang === "ar" ? ar : en);
+  const secUrl =
+    sec === "call" ? links.call : sec === "whatsapp" ? links.whatsapp : sec === "quote" ? str(p.secondaryUrl) || "/contact"
+    : sec === "learn" ? str(p.secondaryUrl) || (svc?.slug ? `/${svc.slug}` : "") : sec === "buy" || sec === "custom" ? str(p.secondaryUrl) : "";
+  const secDefault = { call: t("Call now", "اتصل الآن"), whatsapp: t("WhatsApp", "واتساب"), quote: t("Request a quote", "اطلب عرض سعر"), learn: t("Learn more", "اعرف المزيد"), buy: t("Buy now", "اشترِ الآن"), custom: "" }[sec] ?? "";
+  const secLabel = sec === "call" || sec === "whatsapp" ? secDefault : bi(p.secondaryLabel as Bi) || secDefault;
   if (!name && !img) return null;
   const muted = ink ? { color: ink, opacity: 0.75 } : undefined;
+  const priceLabel = bi(p.priceLabel as Bi) || (p.startingFrom === "yes" ? t("Starting price", "السعر يبدأ من") : "");
+  const priceNote = [priceLabel, bi(p.priceUnit as Bi)].filter(Boolean).join(" · ");
+  const off = p.showDiscount === "yes" ? discountPercent(str(p.price), str(p.oldPrice)) : null;
+  const radius = RADIUS[str(p.radius)] ?? RADIUS["2xl"];
 
   const picture = img ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img {...imgProps(img, card ? "(min-width: 768px) 480px, 100vw" : "(min-width: 768px) 45vw, 100vw")} alt={bi(p.imageAlt as Bi) || name} className="aspect-[4/3] h-auto w-full rounded-xl object-cover" />
+    <div className="flex flex-col gap-3">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img {...imgProps(img, card ? "(min-width: 768px) 480px, 100vw" : "(min-width: 768px) 45vw, 100vw")} alt={bi(p.imageAlt as Bi) || name} className="aspect-[4/3] h-auto w-full rounded-xl bg-white object-cover" />
+      {pictures.length > 1 && (
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+          {pictures.map((u, n) => (
+            <button key={n} type="button" onClick={() => setActive(n)} aria-label={`${n + 1} / ${pictures.length}`} aria-pressed={n === active} className={`overflow-hidden rounded-lg border-2 ${n === active ? "border-accent" : "border-transparent opacity-70 hover:opacity-100"}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={/\/api\/media\/[^/?]+$/.test(u) ? `${u}?w=480` : u} alt="" loading="lazy" decoding="async" className="aspect-square h-auto w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   ) : null;
   const body = (
     <div className="flex min-w-0 flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
         <BadgePill kind={p.badge} />
+        {off !== null && <span className="inline-block rounded-full bg-emerald-600 px-2.5 py-0.5 text-[11px] font-semibold text-white">{`-${off}%`}</span>}
         <Stars rating={Number(p.rating) || 0} reviews={Number(p.reviews) || 0} color={ink} />
       </div>
       <div>
         <h2 className={`text-2xl font-bold sm:text-3xl ${ink ? "" : "text-text"}`} style={ink ? { color: ink } : undefined}>{name}</h2>
         {bi(p.subtitle as Bi) && <p className={`mt-1 text-sm ${ink ? "" : "text-text-muted"}`} style={muted}>{bi(p.subtitle as Bi)}</p>}
       </div>
+      <div>
+        <Price price={str(p.price)} oldPrice={str(p.oldPrice)} currency={p.currency} big color={priceInk} />
+        {priceNote && <p className={`mt-1 text-xs ${ink ? "" : "text-text-muted"}`} style={muted}>{priceNote}</p>}
+      </div>
       {bi(p.description as Bi) && <div className={`flex flex-col gap-2 text-sm ${ink ? "" : "text-text-muted"}`} style={muted}><Paragraphs text={bi(p.description as Bi)} /></div>}
       {features.length > 0 && (
-        <ul className="flex flex-col gap-2">
-          {features.map((f, i) => (
-            <li key={i} className={`flex items-start gap-2.5 text-sm ${ink ? "" : "text-text"}`} style={ink ? { color: ink } : undefined}>
-              <span className="mt-0.5 shrink-0 text-emerald-500"><FeatureIcon name={f.icon} /></span>
-              {bi(f.text)}
-            </li>
-          ))}
-        </ul>
+        <div className="border-t pt-4" style={{ borderColor: ink ? `${ink}33` : "var(--card-border)" }}>
+          {bi(p.featuresHeading as Bi) && <h3 className={`mb-3 text-base font-bold ${ink ? "" : "text-text"}`} style={ink ? { color: ink } : undefined}>{bi(p.featuresHeading as Bi)}</h3>}
+          <ul className="flex flex-col gap-2.5">
+            {features.map((f, i) => (
+              <li key={i} className={`flex items-start gap-2.5 text-sm ${ink ? "" : "text-text"}`} style={ink ? { color: ink } : undefined}>
+                <span className="mt-0.5 shrink-0 text-emerald-500"><FeatureIcon name={f.icon} /></span>
+                {bi(f.text)}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
-      <Price price={str(p.price)} oldPrice={str(p.oldPrice)} currency={p.currency} big color={ink} />
-      {((primaryUrl && primaryLabel) || (secUrl && sec !== "none")) && (
-        <div className="mt-1 flex flex-wrap gap-3">
-          {primaryUrl && primaryLabel && <SmartLink href={primaryUrl} className="osta-btn-primary rounded-xl px-6 py-3 text-sm font-semibold text-white">{primaryLabel}</SmartLink>}
-          {sec !== "none" && secUrl && <SmartLink href={secUrl} className="rounded-xl border px-6 py-3 text-sm font-semibold hover:opacity-80" style={{ borderColor: ink ?? "var(--card-border)", color: ink ?? "var(--text)" }}>{secLabel}</SmartLink>}
+      {((primaryUrl && primaryLabel) || (secUrl && sec !== "none" && secLabel)) && (
+        <div className="mt-1 grid gap-3 sm:grid-cols-2 [&>*:only-child]:sm:col-span-2">
+          {sec !== "none" && secUrl && secLabel && dark && (
+            <SmartLink href={secUrl} className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 hover:bg-emerald-500/10">
+              {(sec === "call" || sec === "whatsapp") && <DynamicIcon name={sec === "call" ? "Phone" : "MessageCircle"} size={16} aria-hidden />}
+              {secLabel}
+            </SmartLink>
+          )}
+          {primaryUrl && primaryLabel && (
+            <SmartLink href={primaryUrl} className={`inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold text-white ${dark ? "bg-slate-900 hover:bg-black" : "osta-btn-primary"}`}>{primaryLabel}</SmartLink>
+          )}
+          {sec !== "none" && secUrl && secLabel && !dark && (
+            <SmartLink href={secUrl} className="inline-flex items-center justify-center gap-2 rounded-xl border px-6 py-3 text-sm font-semibold hover:opacity-80" style={{ borderColor: ink ?? "var(--card-border)", color: ink ?? "var(--text)" }}>
+              {(sec === "call" || sec === "whatsapp") && <DynamicIcon name={sec === "call" ? "Phone" : "MessageCircle"} size={16} aria-hidden />}
+              {secLabel}
+            </SmartLink>
+          )}
         </div>
       )}
     </div>
   );
   return (
     <section className={`mx-auto w-full px-5 py-12 ${card ? "max-w-xl" : "max-w-6xl"}`}>
-      <div className={`${bg ? "" : "osta-card"} overflow-hidden rounded-2xl p-5 sm:p-8 ${card || !img ? "flex flex-col gap-6" : "grid items-center gap-8 md:grid-cols-2"}`} style={bg ? { backgroundColor: bg } : undefined}>
+      <div className={`${bg ? "" : "osta-card"} ${radius} ${SHADOW[str(p.shadow)] ?? ""} overflow-hidden p-5 sm:p-8 ${card || !img ? "flex flex-col gap-6" : "grid items-center gap-8 md:grid-cols-2"}`} style={bg ? { backgroundColor: bg } : undefined}>
         {card ? <>{picture}{body}</> : position === "start" ? <>{picture}{body}</> : <>{body}{picture}</>}
       </div>
     </section>
@@ -621,6 +676,196 @@ export function ContactBannerBlock({ p }: { p: P }) {
           ))}
         </div>
       </div>
+    </section>
+  );
+}
+
+// ---- Trust, process and extras ----
+export function DividerBlock({ p }: { p: P }) {
+  const size = oneOf(p.size, ["sm", "md", "lg"] as const, "md");
+  const pad = size === "sm" ? "py-3" : size === "lg" ? "py-12" : "py-6";
+  const variant = oneOf(p.variant, ["line", "dots", "space"] as const, "line");
+  if (variant === "space") return <div className={pad} aria-hidden />;
+  return (
+    <div className={`mx-auto w-full max-w-6xl px-5 ${pad}`} role="separator">
+      {variant === "dots" ? <div className="flex justify-center gap-2" aria-hidden>{[0, 1, 2].map((i) => <span key={i} className="h-1.5 w-1.5 rounded-full bg-accent-2" />)}</div> : <hr className="border-card-border" />}
+    </div>
+  );
+}
+
+export function StepsBlock({ p }: { p: P }) {
+  const bi = useBi();
+  const items = list<{ icon?: string; title: Bi; text: Bi; imageUrl: string }>(p.items).filter((i) => bi(i.title) || bi(i.text));
+  if (!items.length) return null;
+  const timeline = p.variant === "timeline";
+  return (
+    <section className={`mx-auto w-full px-5 py-12 ${timeline ? "max-w-3xl" : "max-w-6xl"}`}>
+      <Heading eyebrow={bi(p.eyebrow as Bi)} heading={bi(p.heading as Bi)} subtitle={bi(p.subtitle as Bi)} />
+      {timeline ? (
+        <ol className="relative flex flex-col gap-8 border-s-2 border-card-border ps-8">
+          {items.map((it, i) => (
+            <li key={i} className="relative">
+              <span className="absolute -start-[2.9rem] top-0 flex h-9 w-9 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">{i + 1}</span>
+              <div className="flex flex-col gap-2">
+                <h3 className="flex items-center gap-2 text-lg font-bold text-text">{it.icon && <DynamicIcon name={it.icon} size={18} className="text-accent-2" aria-hidden />}{bi(it.title)}</h3>
+                {bi(it.text) && <p className="text-sm text-text-muted">{bi(it.text)}</p>}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {it.imageUrl && <img {...imgProps(it.imageUrl, "(min-width: 768px) 640px, 100vw")} alt="" className="mt-1 aspect-[3/2] h-auto w-full max-w-md rounded-xl object-cover" />}
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <ol className={`grid grid-cols-1 gap-5 sm:grid-cols-2 ${items.length >= 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+          {items.map((it, i) => (
+            <li key={i} className="osta-card flex flex-col gap-3 p-6">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">{i + 1}</span>
+                {it.icon && <DynamicIcon name={it.icon} size={22} className="text-accent-2" aria-hidden />}
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {it.imageUrl && <img {...imgProps(it.imageUrl, "(min-width: 1024px) 25vw, 100vw")} alt="" className="aspect-[3/2] h-auto w-full rounded-lg object-cover" />}
+              <h3 className="text-base font-bold text-text">{bi(it.title)}</h3>
+              {bi(it.text) && <p className="text-sm text-text-muted">{bi(it.text)}</p>}
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+export function TestimonialsBlock({ p }: { p: P }) {
+  const bi = useBi();
+  const { lang } = useLanguage();
+  const items = list<{ name: Bi; role: Bi; text: Bi; rating?: number; imageUrl: string }>(p.items).filter((i) => bi(i.text));
+  const [n, setN] = useState(0);
+  if (!items.length) return null;
+  const carousel = p.layout === "carousel";
+  const card = (it: (typeof items)[number], key?: number) => (
+    <figure key={key} className="osta-card flex h-full flex-col gap-4 p-6">
+      <Stars rating={Number(it.rating) || 0} reviews={0} />
+      <blockquote className="flex-1 text-sm leading-relaxed text-text"><Paragraphs text={bi(it.text)} /></blockquote>
+      <figcaption className="flex items-center gap-3">
+        {it.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={/\/api\/media\/[^/?]+$/.test(it.imageUrl) ? `${it.imageUrl}?w=480` : it.imageUrl} alt="" loading="lazy" decoding="async" className="h-10 w-10 rounded-full object-cover" />
+        )}
+        <span className="text-sm"><span className="block font-semibold text-text">{bi(it.name)}</span>{bi(it.role) && <span className="text-text-muted">{bi(it.role)}</span>}</span>
+      </figcaption>
+    </figure>
+  );
+  const cur = items[Math.min(n, items.length - 1)];
+  const Prev = lang === "ar" ? ChevronRight : ChevronLeft;
+  const Next = lang === "ar" ? ChevronLeft : ChevronRight;
+  return (
+    <section className="mx-auto w-full max-w-6xl px-5 py-12">
+      <Heading heading={bi(p.heading as Bi)} subtitle={bi(p.subtitle as Bi)} />
+      {carousel ? (
+        <div className="mx-auto max-w-2xl" aria-roledescription="carousel">
+          {card(cur)}
+          {items.length > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-4">
+              <button type="button" onClick={() => setN((n - 1 + items.length) % items.length)} aria-label={lang === "ar" ? "السابق" : "Previous"} className="rounded-full border border-card-border p-2 text-text hover:border-accent"><Prev size={18} aria-hidden /></button>
+              <span className="text-xs text-text-muted" aria-live="polite">{Math.min(n, items.length - 1) + 1} / {items.length}</span>
+              <button type="button" onClick={() => setN((n + 1) % items.length)} aria-label={lang === "ar" ? "التالي" : "Next"} className="rounded-full border border-card-border p-2 text-text hover:border-accent"><Next size={18} aria-hidden /></button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">{items.map((it, i) => card(it, i))}</div>
+      )}
+    </section>
+  );
+}
+
+export function LogosBlock({ p }: { p: P }) {
+  const bi = useBi();
+  const items = list<{ imageUrl: string; name: Bi; icon?: string; url: string }>(p.items).filter((i) => i.imageUrl || bi(i.name));
+  if (!items.length) return null;
+  const gray = p.grayscale === "yes";
+  return (
+    <section className="mx-auto w-full max-w-6xl px-5 py-12">
+      <Heading heading={bi(p.heading as Bi)} subtitle={bi(p.subtitle as Bi)} />
+      <ul className="grid grid-cols-2 items-stretch gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        {items.map((it, i) => {
+          const inner = it.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img {...imgProps(it.imageUrl, "200px")} alt={bi(it.name)} className={`mx-auto h-14 w-auto max-w-full object-contain transition ${gray ? "opacity-70 grayscale hover:opacity-100 hover:grayscale-0" : ""}`} />
+          ) : (
+            <span className="flex flex-col items-center gap-2 text-center">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent-2"><DynamicIcon name={it.icon || "BadgeCheck"} size={22} aria-hidden /></span>
+              <span className="text-sm font-semibold text-text">{bi(it.name)}</span>
+            </span>
+          );
+          return (
+            <li key={i} className="osta-card flex items-center justify-center p-5">
+              {it.url ? <SmartLink href={it.url} className="block w-full">{inner}</SmartLink> : inner}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+export function TeamBlock({ p }: { p: P }) {
+  const bi = useBi();
+  const members = list<{ imageUrl: string; name: Bi; role: Bi; bio: Bi }>(p.members).filter((m) => bi(m.name));
+  if (!members.length) return null;
+  return (
+    <section className="mx-auto w-full max-w-6xl px-5 py-12">
+      <Heading heading={bi(p.heading as Bi)} subtitle={bi(p.subtitle as Bi)} />
+      <div className={`grid grid-cols-1 gap-5 ${COLS[str(p.columns)] ?? COLS["3"]}`}>
+        {members.map((m, i) => (
+          <article key={i} className="osta-card flex flex-col items-center gap-3 p-6 text-center">
+            {m.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img {...imgProps(m.imageUrl, "160px")} alt={bi(m.name)} className="h-28 w-28 rounded-full object-cover" />
+            ) : (
+              <span className="flex h-28 w-28 items-center justify-center rounded-full bg-accent/15 text-3xl font-bold text-accent-2" aria-hidden>{bi(m.name).slice(0, 1)}</span>
+            )}
+            <h3 className="text-base font-bold text-text">{bi(m.name)}</h3>
+            {bi(m.role) && <p className="text-sm font-medium text-accent-2">{bi(m.role)}</p>}
+            {bi(m.bio) && <p className="text-sm text-text-muted">{bi(m.bio)}</p>}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// YouTube / Vimeo page addresses become privacy-friendly embeds; .mp4 / .webm files play in a native player.
+export function parseVideo(url: string): { kind: "embed" | "file"; src: string } | null {
+  const u = url.trim();
+  if (!u) return null;
+  const yt = u.match(/^https:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,20})/);
+  if (yt) return { kind: "embed", src: `https://www.youtube-nocookie.com/embed/${yt[1]}` };
+  const vm = u.match(/^https:\/\/(?:www\.)?vimeo\.com\/(?:video\/)?(\d{5,12})/);
+  if (vm) return { kind: "embed", src: `https://player.vimeo.com/video/${vm[1]}` };
+  if (/^(https:\/\/\S+|\/api\/media\/\S+)\.(mp4|webm)(\?\S*)?$/.test(u) || /^\/api\/media\/[^/?\s]+$/.test(u)) return { kind: "file", src: u };
+  return null;
+}
+
+export function VideoBlock({ p }: { p: P }) {
+  const bi = useBi();
+  const v = parseVideo(str(p.url));
+  if (!v) return null;
+  const ratio = p.ratio === "4:3" ? "aspect-[4/3]" : p.ratio === "1:1" ? "aspect-square" : "aspect-video";
+  const title = bi(p.heading as Bi) || bi(p.caption as Bi) || "Video";
+  return (
+    <section className="mx-auto w-full max-w-4xl px-5 py-12">
+      <Heading heading={bi(p.heading as Bi)} />
+      <figure>
+        <div className={`overflow-hidden rounded-2xl border border-card-border bg-black ${ratio}`}>
+          {v.kind === "embed" ? (
+            <iframe src={v.src} title={title} loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" className="h-full w-full" />
+          ) : (
+            <video src={v.src} controls preload="none" playsInline poster={str(p.poster) || undefined} className="h-full w-full" />
+          )}
+        </div>
+        {bi(p.caption as Bi) && <figcaption className="mt-2 text-center text-xs text-text-muted">{bi(p.caption as Bi)}</figcaption>}
+      </figure>
     </section>
   );
 }

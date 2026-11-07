@@ -23,7 +23,7 @@ import { API_BASE, type Bi, type CmsBlock, type Cta } from "@/lib/cms";
 import { Paragraphs, SmartLink, imgProps, oneOf, useBi } from "@/components/cms/blockShared";
 import {
   AnnouncementBlock, BeforeAfterBlock, BenefitsBlock, BgSectionBlock, CardsGridBlock, ComparisonBlock, ContactBannerBlock, CtaButtonsBlock, GalleryBlock, HeadingBlock,
-  ListBlock, PricingBlock, PromoBlock, QuoteBlock, ShowcaseBlock, SliderBlock,
+  ListBlock, PricingBlock, PromoBlock, QuoteBlock, ShowcaseBlock, SliderBlock, DividerBlock, StepsBlock, TestimonialsBlock, LogosBlock, TeamBlock, VideoBlock,
 } from "@/components/cms/NewBlocks";
 
 type P = Record<string, unknown>;
@@ -676,10 +676,19 @@ function sectionBackground(style: unknown): React.CSSProperties | undefined {
 // Extra space above/below and text alignment chosen in the admin's "Section background" group.
 const SPACING: Record<string, string> = { sm: "py-4", md: "py-8", lg: "py-14", xl: "py-24" };
 const TEXT_ALIGN: Record<string, string> = { start: "text-start", center: "text-center", end: "text-end" };
+const SECTION_RADIUS: Record<string, string> = { md: "rounded-md overflow-hidden", xl: "rounded-xl overflow-hidden", "2xl": "rounded-2xl overflow-hidden" };
+const SECTION_SHADOW: Record<string, string> = { sm: "shadow-sm", md: "shadow-md", lg: "shadow-xl" };
+const CONTENT_WIDTH: Record<string, string> = { medium: "mx-auto max-w-5xl", narrow: "mx-auto max-w-3xl" };
 function sectionClasses(style: unknown): string {
-  const s = (style ?? {}) as { spacing?: string; textAlign?: string };
-  return `${SPACING[s.spacing ?? ""] ?? ""} ${TEXT_ALIGN[s.textAlign ?? ""] ?? ""}`.trim();
+  const s = (style ?? {}) as { spacing?: string; textAlign?: string; radius?: string; shadow?: string; cssClass?: string };
+  // The custom class is only ever letters, numbers, - and _ (the admin validates it; this keeps the page safe regardless).
+  const custom = typeof s.cssClass === "string" && /^[A-Za-z0-9_ -]*$/.test(s.cssClass) ? s.cssClass : "";
+  return [SPACING[s.spacing ?? ""], TEXT_ALIGN[s.textAlign ?? ""], SECTION_RADIUS[s.radius ?? ""], SECTION_SHADOW[s.shadow ?? ""], custom].filter(Boolean).join(" ");
 }
+const anchorOf = (style: unknown): string | undefined => {
+  const id = (style as { anchorId?: unknown } | undefined)?.anchorId;
+  return typeof id === "string" && /^[A-Za-z][A-Za-z0-9_-]*$/.test(id) ? id : undefined;
+};
 
 function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
   const p = block.props;
@@ -721,6 +730,12 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "promo": return <PromoBlock p={p} />;
     case "ctaButtons": return <CtaButtonsBlock p={p} />;
     case "contactBanner": return <ContactBannerBlock p={p} />;
+    case "divider": return <DividerBlock p={p} />;
+    case "steps": return <StepsBlock p={p} />;
+    case "testimonials": return <TestimonialsBlock p={p} />;
+    case "logos": return <LogosBlock p={p} />;
+    case "team": return <TeamBlock p={p} />;
+    case "video": return <VideoBlock p={p} />;
     default: return null;
   }
 }
@@ -735,8 +750,12 @@ export function BlockRenderer({ blocks, data }: { blocks: CmsBlock[]; data: Bloc
           const vis = b.visibility.desktop && b.visibility.mobile ? "" : b.visibility.mobile ? "md:hidden" : "hidden md:block";
           const cls = `${vis} ${b.type === "hero" ? "" : sectionClasses(b.props.style)}`.trim();
           return (
-            <div key={b.id} className={cls} style={b.type === "hero" ? undefined : sectionBackground(b.props.style)}>
-              <Block block={b} data={data} />
+            <div key={b.id} id={b.type === "hero" ? undefined : anchorOf(b.props.style)} className={cls} style={b.type === "hero" ? undefined : sectionBackground(b.props.style)}>
+              {CONTENT_WIDTH[(b.props.style as { width?: string } | undefined)?.width ?? ""] && b.type !== "hero" ? (
+                <div className={CONTENT_WIDTH[(b.props.style as { width?: string }).width ?? ""]}><Block block={b} data={data} /></div>
+              ) : (
+                <Block block={b} data={data} />
+              )}
             </div>
           );
         })}

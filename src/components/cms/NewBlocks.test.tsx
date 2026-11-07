@@ -4,6 +4,7 @@ import { LanguageProvider } from "@/lib/language-context";
 import { SiteProvider } from "@/lib/site-context";
 import { DEFAULT_SITE } from "@/lib/site";
 import { BlockRenderer } from "@/components/cms/BlockRenderer";
+import { parseVideo } from "@/components/cms/NewBlocks";
 import type { CmsBlock } from "@/lib/cms";
 
 const bi = (en: string, ar: string) => ({ en, ar });
@@ -47,6 +48,39 @@ describe("new blocks render", () => {
   it("an expired promo disappears and empty blocks render nothing", () => {
     expect(render("en", [mk("promo", { ...blocks.find((x) => x.type === "promo")!.props, endDate: "2000-01-01" })])).not.toContain("Promo");
     for (const t of ["gallery", "slider", "cardsGrid", "benefits", "pricing", "comparison", "beforeAfter", "list", "quote", "announcement"] as const) expect(render("en", [mk(t, {})]), t).not.toContain("undefined");
+  });
+  it("showcase price note, discount, features heading, extra pictures and button styles", () => {
+    const base = blocks.find((x) => x.type === "showcase")!.props;
+    const html = render("en", [mk("showcase", { ...base, price: "100", oldPrice: "200", startingFrom: "yes", priceUnit: bi("Per AC unit", "للوحدة"), showDiscount: "yes", featuresHeading: bi("What's included?", "ماذا يشمل؟"), gallery: [{ imageUrl: "/g1.jpg", alt: bi("", "") }], secondaryType: "call", buttonStyle: "dark", badge: "bestSeller", shadow: "lg", radius: "md" })]);
+    expect(html).toContain("Starting price · Per AC unit"); expect(html).toContain("-50%"); expect(html).toContain("What&#x27;s included?"); expect(html).toContain("/g1.jpg");
+    expect(html).toContain("tel:+971501234567"); expect(html).toContain("bg-slate-900"); expect(html).toContain("Best seller"); expect(html).toContain("shadow-xl"); expect(html).toContain("rounded-md");
+    expect(render("ar", [mk("showcase", { ...base, price: "100", startingFrom: "yes" })])).toContain("السعر يبدأ من");
+    expect(render("en", [mk("showcase", { ...base, secondaryType: "quote" })])).toContain('href="/contact"');
+  });
+  it("section width, corners, shadow, anchor and class are applied (and unsafe values are not)", () => {
+    const html = render("en", [mk("heading", { heading: bi("H", "ه"), style: { width: "narrow", radius: "2xl", shadow: "lg", anchorId: "offers", cssClass: "my-band dark" } })]);
+    expect(html).toContain('id="offers"'); expect(html).toContain("max-w-3xl"); expect(html).toContain("rounded-2xl"); expect(html).toContain("shadow-xl"); expect(html).toContain("my-band dark");
+    const bad = render("en", [mk("heading", { heading: bi("H", "ه"), style: { anchorId: "1 bad\"x", cssClass: "a\"><script>" } })]);
+    expect(bad).not.toContain("<script>"); expect(bad).not.toContain("bad");
+  });
+  it("steps, testimonials, logos, team, divider and video", () => {
+    const html = render("en", [
+      mk("steps", { heading: bi("How", "كيف"), variant: "timeline", items: [{ icon: "Clock", title: bi("Step A", "أ"), text: bi("", ""), imageUrl: "" }, { icon: "", title: bi("Step B", "ب"), text: bi("", ""), imageUrl: "" }] }),
+      mk("testimonials", { heading: bi("T", "ت"), layout: "carousel", items: [{ name: bi("Sara", "سارة"), role: bi("", ""), text: bi("Great job", "عمل رائع"), rating: 5, imageUrl: "" }] }),
+      mk("logos", { heading: bi("", ""), grayscale: "yes", items: [{ imageUrl: "/l.png", name: bi("Brand", "ب"), icon: "", url: "https://example.com" }, { imageUrl: "", name: bi("Licensed", "مرخص"), icon: "BadgeCheck", url: "" }] }),
+      mk("team", { heading: bi("", ""), columns: "3", members: [{ imageUrl: "", name: bi("Omar", "عمر"), role: bi("Lead", "قائد"), bio: bi("", "") }] }),
+      mk("divider", { variant: "dots", size: "md" }),
+      mk("video", { heading: bi("", ""), url: "https://youtu.be/dQw4w9WgXcQ", poster: "", caption: bi("", ""), ratio: "16:9" }),
+    ]);
+    expect(html).toContain("Step A"); expect(html).toContain("Great job"); expect(html).toContain("Sara"); expect(html).toContain("/l.png"); expect(html).toContain("Licensed");
+    expect(html).toContain("Omar"); expect(html).toContain('role="separator"'); expect(html).toContain("youtube-nocookie.com/embed/dQw4w9WgXcQ");
+    expect(render("ar", [mk("steps", { heading: bi("", ""), variant: "cards", items: [{ title: bi("Step", "خطوة"), text: bi("", ""), imageUrl: "" }] })])).toContain("خطوة");
+  });
+  it("only safe video addresses are embedded", () => {
+    expect(parseVideo("https://vimeo.com/123456789")?.src).toBe("https://player.vimeo.com/video/123456789");
+    expect(parseVideo("https://www.youtube.com/watch?v=abcdefghijk&t=3")?.src).toContain("/embed/abcdefghijk");
+    expect(parseVideo("/api/media/abc123")?.kind).toBe("file"); expect(parseVideo("https://cdn.example.com/a.mp4")?.kind).toBe("file");
+    expect(parseVideo("https://evil.example.com/watch?v=abcdefghijk")).toBeNull(); expect(parseVideo("javascript:alert(1)")).toBeNull(); expect(parseVideo("")).toBeNull();
   });
   it("section spacing and alignment are applied", () => {
     const html = render("en", [mk("heading", { heading: bi("H", "ه"), style: { spacing: "xl", textAlign: "end" } })]);
