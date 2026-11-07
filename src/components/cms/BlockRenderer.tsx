@@ -22,6 +22,7 @@ import { track } from "@/lib/analytics";
 import { API_BASE, type Bi, type CmsBlock, type Cta } from "@/lib/cms";
 import { Paragraphs, SmartLink, imgProps, oneOf, useBi } from "@/components/cms/blockShared";
 import { BlockScript } from "@/components/cms/BlockScript";
+import { MaintenancePackagesBlock } from "@/components/cms/MaintenancePackages";
 import { blockJs, scopedCss } from "@/lib/blockCode";
 import {
   AnnouncementBlock, BeforeAfterBlock, BenefitsBlock, BgSectionBlock, CardsGridBlock, ComparisonBlock, ContactBannerBlock, CtaButtonsBlock, GalleryBlock, HeadingBlock,
@@ -804,6 +805,7 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "team": return <TeamBlock p={p} />;
     case "video": return <VideoBlock p={p} />;
     case "googleReviews": return <GoogleReviewsBlock p={p} />;
+    case "maintenancePackages": return <MaintenancePackagesBlock p={p} data={data.maintenance} />;
     default: return null;
   }
 }

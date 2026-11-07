@@ -151,3 +151,45 @@ describe("new blocks render", () => {
     expect(html).toContain("py-24"); expect(html).toContain("text-end");
   });
 });
+
+import type { MaintenanceData } from "@/lib/api";
+
+describe("maintenance packages block", () => {
+  const cell = (en: string, ar = en) => ({ en, ar });
+  const maintenance: MaintenanceData = {
+    settings: { headingEn: "Choose a plan", headingAr: "اختر باقة", subtitleEn: "Peace of mind", subtitleAr: "راحة البال", noteEn: "All prices are in AED per year.", noteAr: "الأسعار بالدرهم سنوياً." },
+    services: [{ id: "s1", nameEn: "Preventive AC Maintenance", nameAr: "الصيانة الوقائية للمكيفات" }, { id: "s2", nameEn: "24/7 Emergency", nameAr: "الطوارئ" }],
+    packages: [
+      { id: "p1", nameEn: "Essential Package", nameAr: "الباقة الأساسية", descriptionEn: "", descriptionAr: "", suitableEn: "Studios", suitableAr: "استوديوهات", price: 699, maxAcUnits: 2, badgeEn: "", badgeAr: "", highlighted: false, lines: [{ serviceId: "s1", quantityEn: "2 visits/year", quantityAr: "زيارتان في السنة" }] },
+      { id: "p2", nameEn: "Gold Package", nameAr: "الباقة الذهبية", descriptionEn: "", descriptionAr: "", suitableEn: "", suitableAr: "", price: 1499, maxAcUnits: 5, badgeEn: "Most Recommended", badgeAr: "الأكثر ترشيحاً", highlighted: true, lines: [{ serviceId: "s1", quantityEn: "2 visits/year", quantityAr: "زيارتان في السنة" }, { serviceId: "s2", quantityEn: "Included", quantityAr: "مشمول" }] },
+    ],
+    comparison: [{ key: "price", labelEn: "Annual Price", labelAr: "السعر السنوي", cells: [cell("699"), cell("1,499")] }, { key: "s2", labelEn: "24/7 Emergency", labelAr: "الطوارئ", cells: [cell("—"), cell("✓")] }],
+    terms: { en: ["Covers one property.", "Valid 12 months."], ar: ["تغطي عقاراً واحداً.", "صالح 12 شهراً."] },
+  };
+  const renderWith = (lang: "en" | "ar", props: Record<string, unknown>, m: MaintenanceData | null = maintenance) =>
+    renderToString(<LanguageProvider initialLang={lang}><SiteProvider site={site}><BlockRenderer blocks={[mk("maintenancePackages", props)]} data={{ ...(data as object), maintenance: m } as never} /></SiteProvider></LanguageProvider>);
+  const on = { heading: bi("", ""), subtitle: bi("", ""), showComparison: "yes", showTerms: "yes" };
+
+  it("shows the cards with prices, services and the recommended badge, in English", () => {
+    const html = renderWith("en", on);
+    expect(html).toContain("Choose a plan"); expect(html).toContain("AED 699"); expect(html).toContain("AED 1,499"); expect(html).toContain("/ Year");
+    expect(html).toContain("Preventive AC Maintenance"); expect(html).toContain("2 visits/year"); expect(html).toContain("Most Recommended"); expect(html).toContain("Subscribe Now");
+    expect(html).toContain("ring-accent/70"); // the highlighted package stands out
+  });
+  it("shows the comparison table, the note and numbered terms, and respects the block's switches", () => {
+    const html = renderWith("en", on);
+    expect(html).toContain("Package Comparison"); expect(html).toContain("Annual Price"); expect(html).toContain("All prices are in AED per year."); expect(html).toContain("Covers one property.");
+    const off = renderWith("en", { ...on, showComparison: "no", showTerms: "no" });
+    expect(off).not.toContain("Package Comparison"); expect(off).not.toContain("Covers one property.");
+  });
+  it("is fully Arabic in Arabic", () => {
+    const html = renderWith("ar", on);
+    expect(html).toContain("اختر باقة"); expect(html).toContain("699 د.إ"); expect(html).toContain("/ سنوياً"); expect(html).toContain("اشترك الآن"); expect(html).toContain("الأكثر ترشيحاً");
+    expect(html).toContain("زيارتان في السنة"); expect(html).toContain("مقارنة الباقات"); expect(html).toContain("الشروط والأحكام"); expect(html).toContain("تغطي عقاراً واحداً.");
+  });
+  it("a heading typed in the block replaces the one from the packages screen; nothing is drawn without packages", () => {
+    expect(renderWith("en", { ...on, heading: bi("Our plans", "خططنا") })).toContain("Our plans");
+    expect(renderWith("en", on, null)).not.toContain("Subscribe Now");
+    expect(renderWith("en", on, { ...maintenance, packages: [] })).not.toContain("Subscribe Now");
+  });
+});

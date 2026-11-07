@@ -1,4 +1,4 @@
-import { api, type BlogSummary, type CatalogCategory, type HomeSection, type OpenJobs, type PricingConfig, type ServiceSummary } from "@/lib/api";
+import { api, type BlogSummary, type CatalogCategory, type HomeSection, type MaintenanceData, type OpenJobs, type PricingConfig, type ServiceSummary } from "@/lib/api";
 import type { CmsBlock } from "@/lib/cms";
 import { fetchLocations, type PublicBranch } from "@/lib/locations";
 
@@ -7,7 +7,7 @@ import { fetchLocations, type PublicBranch } from "@/lib/locations";
 export const slimPosts = (posts: BlogSummary[]): BlogSummary[] =>
   posts.map((p) => ({ ...p, coverImageUrl: p.coverImageUrl?.startsWith("data:") ? null : p.coverImageUrl }));
 
-export type BlockData = { services: ServiceSummary[]; posts: BlogSummary[]; sections: HomeSection[]; pricing: PricingConfig | null; jobs: OpenJobs; subPages: { slug: string; titleEn: string; titleAr: string }[]; catalog: CatalogCategory[]; locations: PublicBranch[] };
+export type BlockData = { services: ServiceSummary[]; posts: BlogSummary[]; sections: HomeSection[]; pricing: PricingConfig | null; jobs: OpenJobs; subPages: { slug: string; titleEn: string; titleAr: string }[]; catalog: CatalogCategory[]; locations: PublicBranch[]; maintenance: MaintenanceData | null };
 
 // Loads only the data the page's blocks actually need, and never lets a briefly unavailable API break the page.
 export async function loadBlockData(blocks: CmsBlock[]): Promise<BlockData> {
@@ -27,5 +27,7 @@ export async function loadBlockData(blocks: CmsBlock[]): Promise<BlockData> {
     wantsCatalog ? api.catalog().then((r) => r.categories).catch(() => [] as CatalogCategory[]) : Promise.resolve([] as CatalogCategory[]),
     has("locations") ? fetchLocations() : Promise.resolve([] as PublicBranch[]),
   ]);
-  return { services, posts, sections, pricing, jobs, subPages: [], catalog, locations };
+  // The maintenance packages block draws the packages, prices, table and terms the admin keeps up to date.
+  const maintenance = has("maintenancePackages") ? await api.maintenancePackages().catch(() => null) : null;
+  return { services, posts, sections, pricing, jobs, subPages: [], catalog, locations, maintenance };
 }
