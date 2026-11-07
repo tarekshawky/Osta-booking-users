@@ -235,4 +235,14 @@ describe("maintenance packages block", () => {
     const none = renderToString(<LanguageProvider initialLang="en"><SiteProvider site={site}><BlockRenderer blocks={[mk("maintenancePackages", { ...on, group: "missing" })]} data={{ ...(data as object), maintenance: { "": maintenance } } as never} /></SiteProvider></LanguageProvider>);
     expect(none).not.toContain("Subscribe Now"); // an unknown group draws nothing
   });
+  it("with the Smart Package Builder on, the cards say Choose Package and the simple form gives way to a guided-form call to action", () => {
+    const smart = { ...maintenance, builder: { config: {}, options: [] } } as unknown as MaintenanceData;
+    const en = renderWith("en", on, smart);
+    expect((en.match(/Choose Package/g) ?? []).length).toBe(3); // one per package and the bottom card
+    expect(en).not.toContain("Subscribe Now"); expect(en).not.toContain("Subscription Request"); expect(en).toContain("Not sure which package fits your property?");
+    const ar = renderWith("ar", on, smart);
+    expect(ar).toContain("اختر الباقة"); expect(ar).not.toContain("اشترك الآن");
+    expect(renderWith("en", { ...on, showForm: "no" }, smart)).not.toContain("Not sure which package fits");
+    expect(renderWith("en", on)).not.toContain("Choose Package"); // a group without the builder is unchanged
+  });
 });

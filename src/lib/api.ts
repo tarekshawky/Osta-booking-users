@@ -361,7 +361,33 @@ export type MaintenanceData = {
   packages: MaintenancePackage[];
   comparison: { key: string; labelEn: string; labelAr: string; cells: { en: string; ar: string }[] }[];
   terms: { en: string[]; ar: string[] };
+  builder?: { config: BuilderConfigPublic; options: { id: string; category: string; nameEn: string; nameAr: string }[] } | null;
 };
+// The Smart Package Builder (sent only for a group where the admin switched it on).
+export type BuilderField = "off" | "optional" | "required";
+export type BuilderConfigPublic = {
+  calculator: boolean;
+  propertyTypes: { key: string; en: string; ar: string }[];
+  categories: { key: string; en: string; ar: string }[];
+  fields: Record<"whatsapp" | "area" | "address" | "bedrooms" | "bathrooms" | "floors" | "size" | "acUnits", BuilderField>;
+  extras: { key: string; nameEn: string; nameAr: string; unitEn: string; unitAr: string; unitPrice: number | null; enabled: boolean }[];
+};
+export type BuilderNeeds = { acUnits: number; handymanHours: number; optionIds: string[]; extras: Record<string, number>; otherText: string };
+export type BuilderLine = { key: string; labelEn: string; labelAr: string; qty: number; unitPrice: number | null; amount: number | null; note: "base" | "included" | "extra" | "quote" };
+export type BuilderEvaluation = {
+  selectedId: string; selectedFits: boolean; recommendedId: string | null; exceedsAll: boolean;
+  notices: { kind: string; en: string; ar: string; upgradeTo: string | null; optionId?: string }[];
+  best: { en: string; ar: string } | null; exceeds: { en: string; ar: string } | null;
+  recommendation: { packageId: string; priceDiff: number | null; addedServices: { en: string; ar: string }[]; acCovers: number | null; custom: boolean } | null;
+  breakdown: { packageId: string; lines: BuilderLine[]; subtotal: number; vat: number; total: number; vatPercent: number; pricesIncludeVat: boolean; quote: boolean; quoteReasons: string[] };
+};
+export type BuilderSubmit = {
+  group: string; selectedId: string; chosenId?: string; needs: BuilderNeeds;
+  customer: { name: string; phone: string; whatsapp: string; email: string; emirate: string; area: string; address: string };
+  property: { type: string; bedrooms: number; bathrooms: number; floors: number; size: number };
+  notes: string; activationDate: string; wantsQuote: boolean;
+};
+
 export type SubscribeBody = {
   kind?: "subscribe" | "quote"; packageId: string; name: string; phone: string; email: string; emirate: string; location: string; propertyType: string; bedrooms: number; acUnits: number; activationDate: string;
   company?: string; message?: string;
@@ -369,6 +395,8 @@ export type SubscribeBody = {
 
 export const api = {
   maintenancePackages: (group = "") => apiFetch<MaintenanceData>(`/maintenance-packages${group ? `?group=${encodeURIComponent(group)}` : ""}`),
+  evaluateBuilder: (body: { group: string; selectedId: string; chosenId?: string; needs: BuilderNeeds }) => apiFetch<BuilderEvaluation>("/maintenance-builder/evaluate", { method: "POST", body }),
+  submitBuilder: (body: BuilderSubmit) => apiFetch<{ received: boolean; quoteRequested: boolean }>("/maintenance-builder/submit", { method: "POST", body }),
   subscribeMaintenance: (body: SubscribeBody) => apiFetch<{ received: boolean }>("/maintenance-subscriptions", { method: "POST", body }),
 
   // `identifier` is an email or a mobile number.

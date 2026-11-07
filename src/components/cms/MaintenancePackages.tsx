@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Check, CheckCircle2, X } from "lucide-react";
 import { Paragraphs, useBi } from "@/components/cms/blockShared";
+import { PackageBuilder } from "@/components/cms/PackageBuilder";
 import { api, ApiError, type MaintenanceData, type MaintenancePackage } from "@/lib/api";
 import { useLanguage } from "@/lib/language-context";
 import type { Bi } from "@/lib/cms";
@@ -41,7 +42,9 @@ export function MaintenancePackagesBlock({ p, data }: { p: P; data: MaintenanceD
   const terms = lang === "ar" && data.terms.ar.length ? data.terms.ar : data.terms.en.length ? data.terms.en : data.terms.ar;
   const name = (pk: MaintenancePackage) => (lang === "ar" ? pk.nameAr || pk.nameEn : pk.nameEn || pk.nameAr);
   const cols = packages.length >= 4 ? "xl:grid-cols-4" : packages.length === 3 ? "lg:grid-cols-3" : "";
-  const cta = quote ? t("Request a Quote", "اطلب عرض سعر") : t("Subscribe Now", "اشترك الآن");
+  // With the Smart Package Builder on, the button says "Choose Package" and opens the guided form instead of the simple one.
+  const smart = !!data.builder;
+  const cta = smart ? t("Choose Package", "اختر الباقة") : quote ? t("Request a Quote", "اطلب عرض سعر") : t("Subscribe Now", "اشترك الآن");
 
   return (
     <section className="mx-auto w-full max-w-7xl px-5 py-12">
@@ -122,7 +125,14 @@ export function MaintenancePackagesBlock({ p, data }: { p: P; data: MaintenanceD
         </details>
       )}
 
-      {p.showForm !== "no" && (
+      {p.showForm !== "no" && smart && (
+        <div id="request-form" className="osta-card mx-auto mt-10 max-w-3xl scroll-mt-24 p-6 text-center sm:p-8">
+          <h3 className="mb-1 text-xl font-bold text-text">{t("Not sure which package fits your property?", "لست متأكداً أي باقة تناسب عقارك؟")}</h3>
+          <p className="mb-5 text-sm text-text-muted">{t("Tell us about your property and what you need. We will compare it with every package, suggest the best one and show you the price.", "أخبرنا عن عقارك واحتياجاتك، وسنقارنها بكل الباقات ونقترح الأنسب ونعرض لك السعر.")}</p>
+          <button type="button" onClick={() => setView({ id: (packages.find((x) => x.highlighted) ?? packages[0]).id, mode: "request" })} className="osta-btn-primary rounded-xl px-8 py-3 text-sm font-semibold text-white">{cta}</button>
+        </div>
+      )}
+      {p.showForm !== "no" && !smart && (
         <div id="request-form" className="osta-card mx-auto mt-10 max-w-3xl scroll-mt-24 p-5 sm:p-7">
           <h3 className="mb-1 text-xl font-bold text-text">{quote ? t("Request a Quote", "اطلب عرض سعر") : t("Subscription Request", "طلب الاشتراك")}</h3>
           <p className="mb-5 text-sm text-text-muted">{quote ? t("Tell us about your business and we will send you a quotation.", "أخبرنا عن نشاطك وسنرسل لك عرض السعر.") : t("Send your details and our team will contact you to activate your package.", "أرسل بياناتك وسيتواصل معك فريقنا لتفعيل باقتك.")}</p>
@@ -133,6 +143,7 @@ export function MaintenancePackagesBlock({ p, data }: { p: P; data: MaintenanceD
       {view && (() => {
         const pk = packages.find((x) => x.id === view.id);
         if (!pk) return null;
+        if (view.mode === "request" && smart) return <PackageBuilder data={data} group={data.key ?? ""} initialId={pk.id} nameOf={name} onClose={() => setView(null)} />;
         return view.mode === "details" ? (
           <DetailsModal pk={pk} data={data} nameOf={name} cta={cta} onClose={() => setView(null)} onRequest={() => setView({ id: pk.id, mode: "request" })} />
         ) : (
