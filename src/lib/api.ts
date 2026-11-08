@@ -394,7 +394,7 @@ export type BuilderSubmitResult = { received: boolean; quoteRequested: boolean; 
 // The Maintenance Service Agreement.
 export type AgreementClause = { key: string; titleEn: string; titleAr: string; bodyEn: string; bodyAr: string };
 export type AgreementTerms = { version: number; clauses: AgreementClause[]; checks: { en: string; ar: string }[]; company: { name: string; website: string; phone: string }; durationMonths: number };
-export type AgreementStatus = "DRAFT" | "PENDING_APPROVAL" | "CHANGES_REQUESTED" | "AWAITING_PAYMENT" | "ACTIVE" | "EXPIRED" | "CANCELLED" | "REJECTED";
+export type AgreementStatus = "DRAFT" | "PENDING_APPROVAL" | "CHANGES_REQUESTED" | "AWAITING_PAYMENT" | "ACTIVE" | "SUSPENDED" | "EXPIRED" | "CANCELLED" | "REJECTED";
 export type AgreementView = {
   number: string; requestNumber: string; version: number; lang: "en" | "ar"; status: AgreementStatus; createdAt: string; needsAcceptance: boolean; acceptedAt: string | null; paid: boolean; awaitingPayment: boolean;
   customerName: string; packageEn: string; packageAr: string; property: { emirate: string; area: string; address: string; type: string };

@@ -6,6 +6,7 @@ export const STATUS_TEXT: Record<AgreementStatus, { en: string; ar: string }> = 
   CHANGES_REQUESTED: { en: "Changes requested", ar: "مطلوب تعديل" },
   AWAITING_PAYMENT: { en: "Approved – awaiting payment", ar: "معتمدة – بانتظار الدفع" },
   ACTIVE: { en: "Active", ar: "مفعّلة" },
+  SUSPENDED: { en: "Suspended (not active)", ar: "موقوفة (غير مفعّلة)" },
   EXPIRED: { en: "Expired", ar: "منتهية" },
   CANCELLED: { en: "Cancelled", ar: "ملغاة" },
   REJECTED: { en: "Rejected", ar: "مرفوضة" },
@@ -13,7 +14,7 @@ export const STATUS_TEXT: Record<AgreementStatus, { en: string; ar: string }> = 
 
 export const STATUS_TONE: Record<AgreementStatus, string> = {
   DRAFT: "bg-slate-500/20 text-slate-200", PENDING_APPROVAL: "bg-amber-400/20 text-amber-200", CHANGES_REQUESTED: "bg-orange-400/20 text-orange-200",
-  AWAITING_PAYMENT: "bg-sky-400/20 text-sky-200", ACTIVE: "bg-emerald-400/20 text-emerald-200", EXPIRED: "bg-zinc-500/20 text-zinc-300", CANCELLED: "bg-zinc-500/20 text-zinc-300", REJECTED: "bg-rose-400/20 text-rose-200",
+  AWAITING_PAYMENT: "bg-sky-400/20 text-sky-200", ACTIVE: "bg-emerald-400/20 text-emerald-200", SUSPENDED: "bg-orange-400/20 text-orange-200", EXPIRED: "bg-zinc-500/20 text-zinc-300", CANCELLED: "bg-zinc-500/20 text-zinc-300", REJECTED: "bg-rose-400/20 text-rose-200",
 };
 
 export const money = (n: number | null | undefined, lang: "en" | "ar") => {

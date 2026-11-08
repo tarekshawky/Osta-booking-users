@@ -100,6 +100,14 @@ export function AgreementClient({ token }: { token: string }) {
                 <Link href="/agreements" className="mt-2 inline-block text-xs font-semibold text-accent-2 underline">{t("Sign in to download your final agreement (PDF)", "سجّل الدخول لتنزيل اتفاقيتك النهائية (PDF)")}</Link>
               </div>
             )}
+            {v.status === "SUSPENDED" && (
+              <div className="osta-card border-orange-400/40 p-5 text-sm text-text">
+                <p className="font-bold">{t("This agreement is on hold (not active)", "هذه الاتفاقية موقوفة مؤقتاً (غير مفعّلة)")}</p>
+                {v.note && <p className="mt-1 text-text-muted">{v.note}</p>}
+                <p className="mt-1 text-text-muted">{t("Services not yet carried out are on hold until it is reactivated. Please contact us to resolve it.", "الخدمات التي لم تُنفَّذ بعد معلّقة إلى حين إعادة تفعيلها. يرجى التواصل معنا لحل الأمر.")}</p>
+                {wa && <a href={wa} className="mt-2 inline-block text-xs font-semibold text-accent-2 underline">{t("Contact us on WhatsApp", "تواصل معنا عبر واتساب")}</a>}
+              </div>
+            )}
             {(v.status === "REJECTED" || v.status === "CANCELLED") && <p className="osta-card p-4 text-sm text-text">{v.status === "REJECTED" ? t("We could not approve this request.", "لم نتمكن من اعتماد هذا الطلب.") : t("This agreement was cancelled.", "تم إلغاء هذه الاتفاقية.")}{v.rejectionReason ? ` ${v.rejectionReason}` : ""}</p>}
 
             <div className="osta-card p-5 text-sm">

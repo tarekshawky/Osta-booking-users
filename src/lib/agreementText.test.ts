@@ -3,7 +3,7 @@ import { STATUS_TEXT, STATUS_TONE, clauseBlocks, dateText, money } from "./agree
 
 describe("agreement text helpers", () => {
   it("has a label and a colour for every agreement status, in both languages", () => {
-    for (const s of ["DRAFT", "PENDING_APPROVAL", "CHANGES_REQUESTED", "AWAITING_PAYMENT", "ACTIVE", "EXPIRED", "CANCELLED", "REJECTED"] as const) {
+    for (const s of ["DRAFT", "PENDING_APPROVAL", "CHANGES_REQUESTED", "AWAITING_PAYMENT", "ACTIVE", "SUSPENDED", "EXPIRED", "CANCELLED", "REJECTED"] as const) {
       expect(STATUS_TEXT[s].en && STATUS_TEXT[s].ar, s).toBeTruthy(); expect(STATUS_TONE[s], s).toBeTruthy();
     }
   });
