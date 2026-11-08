@@ -25,6 +25,7 @@ import { BlockScript } from "@/components/cms/BlockScript";
 import { MaintenancePackagesBlock } from "@/components/cms/MaintenancePackages";
 import { DuctedCalculatorBlock } from "@/components/cms/DuctedCalculator";
 import { DuctQuoteCalculatorBlock } from "@/components/cms/DuctCalculator";
+import { SplitQuoteCalculatorBlock } from "@/components/cms/SplitCalculator";
 import { blockJs, scopedCss } from "@/lib/blockCode";
 import {
   AnnouncementBlock, BeforeAfterBlock, BenefitsBlock, BgSectionBlock, CardsGridBlock, ComparisonBlock, ContactBannerBlock, CtaButtonsBlock, GalleryBlock, HeadingBlock,
@@ -814,6 +815,7 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "maintenancePackages": return <MaintenancePackagesBlock p={p} data={data.maintenance?.[String(p.group ?? "")] ?? null} />;
     case "ductedCalculator": return <DuctedCalculatorBlock p={p} config={data.acQuote ?? null} />;
     case "ductQuoteCalculator": return <DuctQuoteCalculatorBlock p={p} config={data.ductQuote ?? null} />;
+    case "splitQuoteCalculator": return <SplitQuoteCalculatorBlock p={p} config={data.splitQuote ?? null} />;
     default: return null;
   }
 }

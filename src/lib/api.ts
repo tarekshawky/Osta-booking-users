@@ -486,6 +486,38 @@ export type DuctQuoteView = {
   canEdit: boolean; canSubmit: boolean; files: { id: string; name: string; size: number; category: string }[]; rejectionReason: string;
 };
 
+// The Split AC installation calculator: packages with prices by AC capacity, optional extras and a quotation PDF. The server holds the price
+// list and does every calculation; the website only draws what it answers.
+export type SplitPackage = {
+  key: string; nameEn: string; nameAr: string; subtitleEn: string; subtitleAr: string; descriptionEn: string; descriptionAr: string; copperMeters: number;
+  icon: string; imageUrl: string; imageAltEn: string; imageAltAr: string; highlighted: boolean; materials: AcBiList; services: AcBiList; notIncluded: AcBiList; prices: Record<string, number>; active: boolean;
+};
+export type SplitExtraUnit = "meter" | "unit" | "lot";
+export type SplitConfig = {
+  vatPercent: number; validityDays: number;
+  capacities: { key: string; labelEn: string; labelAr: string; active: boolean }[];
+  packages: SplitPackage[];
+  extras: { key: string; nameEn: string; nameAr: string; descriptionEn: string; descriptionAr: string; unit: SplitExtraUnit; price: number | null; rfq: boolean; active: boolean }[];
+  discount: { enabled: boolean; type: "percent" | "fixed"; value: number; labelEn: string; labelAr: string };
+  conditions: AcBiList; technicalNote: Bi; disclaimer: Bi; footer: Bi;
+  propertyTypes: { key: string; en: string; ar: string }[]; emirates: { key: string; en: string; ar: string }[];
+};
+export type SplitLine = {
+  id: string; kind: "unit" | "service" | "custom" | "discount"; unitIndex: number | null; labelEn: string; labelAr: string; detailEn: string; detailAr: string;
+  packageKey: string; packageEn: string; packageAr: string; capacityEn: string; capacityAr: string; qty: number; unitPrice: number | null; amount: number | null; rfq: boolean;
+};
+export type SplitTotals = { unitCount: number; unitsTotal: number; servicesTotal: number; discount: number; subtotal: number; vatPercent: number; vat: number; total: number; rfq: boolean; rfqItems: Bi[] };
+export type SplitInput = { units: { capacity: string; packageKey: string; qty: number }[]; services: { key: string; qty: number; note?: string }[] };
+export type SplitCustomer = { name: string; phone: string; email: string };
+export type SplitProject = { propertyType: string; emirate: string; location: string; address: string; notes: string };
+export type SplitQuoteBody = { lang: "en" | "ar"; input: SplitInput; customer: SplitCustomer; project: SplitProject };
+export type SplitQuoteView = {
+  kind: "split-ac"; number: string; version: number; status: DuctQuoteStatus; lang: "en" | "ar"; createdAt: string; expiresAt: string; bookRequested: boolean;
+  customer: SplitCustomer; project: SplitProject; input: SplitInput; manual: boolean; lines: SplitLine[]; totals: SplitTotals;
+  packages: { key: string; nameEn: string; nameAr: string; copperMeters: number }[]; conditions: AcBiList; technicalNote: Bi; disclaimer: Bi; validityDays: number;
+  canEdit: boolean; canBook: boolean; rejectionReason: string;
+};
+
 export const api = {
   acQuoteConfig: () => apiFetch<AcConfig>("/ac-quote/config"),
   acQuoteCalculate: (input: AcInput) => apiFetch<{ lines: AcLine[]; totals: AcTotals }>("/ac-quote/calculate", { method: "POST", body: input }),
@@ -493,6 +525,12 @@ export const api = {
   acQuoteView: (token: string) => apiFetch<AcQuoteView>(`/ac-quote/${encodeURIComponent(token)}`, { fresh: true }),
   acQuoteEdit: (token: string, body: AcQuoteBody) => apiFetch<{ number: string; version: number }>(`/ac-quote/${encodeURIComponent(token)}/edit`, { method: "POST", body }),
   acQuoteSubmit: (token: string, book: boolean) => apiFetch<{ received: boolean; number: string; booking: boolean }>(`/ac-quote/${encodeURIComponent(token)}/submit`, { method: "POST", body: { book } }),
+  splitQuoteConfig: () => apiFetch<SplitConfig>("/split-quote/config"),
+  splitQuoteCalculate: (input: SplitInput) => apiFetch<{ lines: SplitLine[]; totals: SplitTotals }>("/split-quote/calculate", { method: "POST", body: input }),
+  splitQuoteCreate: (body: SplitQuoteBody) => apiFetch<{ number: string; token: string; url: string; total: number; expiresAt: string }>("/split-quote", { method: "POST", body }),
+  splitQuoteView: (token: string) => apiFetch<SplitQuoteView>(`/split-quote/${encodeURIComponent(token)}`, { fresh: true }),
+  splitQuoteEdit: (token: string, body: SplitQuoteBody) => apiFetch<{ number: string; version: number }>(`/split-quote/${encodeURIComponent(token)}/edit`, { method: "POST", body }),
+  splitQuoteBook: (token: string) => apiFetch<{ received: boolean; number: string }>(`/split-quote/${encodeURIComponent(token)}/book`, { method: "POST", body: {} }),
   ductQuoteConfig: () => apiFetch<DuctConfig>("/duct-quote/config"),
   ductQuoteCalculate: (input: DuctInput) => apiFetch<{ lines: DuctLine[]; sections: DuctComputedSection[]; totals: DuctTotals }>("/duct-quote/calculate", { method: "POST", body: input }),
   ductQuoteCreate: (body: DuctQuoteBody) => apiFetch<{ number: string; token: string; url: string; total: number; expiresAt: string }>("/duct-quote", { method: "POST", body }),
@@ -642,3 +680,5 @@ export async function uploadDuctFile(file: File, uploadKey: string, category: "d
   if (!res.ok) throw new ApiError(json?.error?.message || "The upload failed.", res.status, json?.error?.code);
   return json.data;
 }
+
+export const splitQuotePdfPath = (token: string, lang: "en" | "ar" | "both") => `/split-quote/${encodeURIComponent(token)}/pdf?lang=${lang}`;

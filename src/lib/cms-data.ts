@@ -1,4 +1,4 @@
-import { api, type AcConfig, type DuctConfig, type BlogSummary, type CatalogCategory, type HomeSection, type MaintenanceData, type OpenJobs, type PricingConfig, type ServiceSummary } from "@/lib/api";
+import { api, type AcConfig, type DuctConfig, type SplitConfig, type BlogSummary, type CatalogCategory, type HomeSection, type MaintenanceData, type OpenJobs, type PricingConfig, type ServiceSummary } from "@/lib/api";
 import type { CmsBlock } from "@/lib/cms";
 import { fetchLocations, type PublicBranch } from "@/lib/locations";
 
@@ -7,7 +7,7 @@ import { fetchLocations, type PublicBranch } from "@/lib/locations";
 export const slimPosts = (posts: BlogSummary[]): BlogSummary[] =>
   posts.map((p) => ({ ...p, coverImageUrl: p.coverImageUrl?.startsWith("data:") ? null : p.coverImageUrl }));
 
-export type BlockData = { services: ServiceSummary[]; posts: BlogSummary[]; sections: HomeSection[]; pricing: PricingConfig | null; jobs: OpenJobs; subPages: { slug: string; titleEn: string; titleAr: string }[]; catalog: CatalogCategory[]; locations: PublicBranch[]; maintenance: Record<string, MaintenanceData | null> ; acQuote?: AcConfig | null; ductQuote?: DuctConfig | null };
+export type BlockData = { services: ServiceSummary[]; posts: BlogSummary[]; sections: HomeSection[]; pricing: PricingConfig | null; jobs: OpenJobs; subPages: { slug: string; titleEn: string; titleAr: string }[]; catalog: CatalogCategory[]; locations: PublicBranch[]; maintenance: Record<string, MaintenanceData | null> ; acQuote?: AcConfig | null; ductQuote?: DuctConfig | null; splitQuote?: SplitConfig | null };
 
 // Loads only the data the page's blocks actually need, and never lets a briefly unavailable API break the page.
 export async function loadBlockData(blocks: CmsBlock[]): Promise<BlockData> {
@@ -36,5 +36,7 @@ export async function loadBlockData(blocks: CmsBlock[]): Promise<BlockData> {
   const acQuote: AcConfig | null = has("ductedCalculator") ? await api.acQuoteConfig().catch(() => null) : null;
   // The ductwork quotation calculator draws the systems, rates and options the administrator keeps up to date.
   const ductQuote: DuctConfig | null = has("ductQuoteCalculator") ? await api.ductQuoteConfig().catch(() => null) : null;
-  return { services, posts, sections, pricing, jobs, subPages: [], catalog, locations, maintenance, acQuote, ductQuote };
+  // The Split AC installation block draws the packages, prices, extras and conditions the administrator keeps up to date.
+  const splitQuote: SplitConfig | null = has("splitQuoteCalculator") ? await api.splitQuoteConfig().catch(() => null) : null;
+  return { services, posts, sections, pricing, jobs, subPages: [], catalog, locations, maintenance, acQuote, ductQuote, splitQuote };
 }
