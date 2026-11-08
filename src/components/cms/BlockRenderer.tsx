@@ -26,6 +26,7 @@ import { MaintenancePackagesBlock } from "@/components/cms/MaintenancePackages";
 import { DuctedCalculatorBlock } from "@/components/cms/DuctedCalculator";
 import { DuctQuoteCalculatorBlock } from "@/components/cms/DuctCalculator";
 import { SplitQuoteCalculatorBlock } from "@/components/cms/SplitCalculator";
+import { ImageProBlock } from "@/components/cms/ImagePro";
 import { blockJs, scopedCss } from "@/lib/blockCode";
 import {
   AnnouncementBlock, BeforeAfterBlock, BenefitsBlock, BgSectionBlock, CardsGridBlock, ComparisonBlock, ContactBannerBlock, CtaButtonsBlock, GalleryBlock, HeadingBlock,
@@ -773,6 +774,7 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "richText": return <RichText p={p} />;
     case "imageText": return <ImageText p={p} />;
     case "image": return <ImageBlock p={p} />;
+    case "imagePro": return <ImageProBlock p={p} />;
     case "columns": return <Columns p={p} />;
     case "faq": return <Faq p={p} />;
     case "stats": return <Stats p={p} />;
