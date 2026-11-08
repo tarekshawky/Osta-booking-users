@@ -187,7 +187,7 @@ export function ImageProBlock({ p }: { p: P }) {
   );
   const schema = description || credit || title ? { "@context": "https://schema.org", "@type": "ImageObject", contentUrl: url, ...(title ? { name: title } : {}), ...(caption ? { caption } : {}), ...(description ? { description } : {}), ...(credit ? { creditText: credit } : {}) } : null;
   const figure = (
-    <figure className={cls} style={{ margin: 0 }}>
+    <figure className={cls}>
       <style dangerouslySetInnerHTML={{ __html: `${css}${stretched ? `.${cls} .ip-cta::after{content:"";position:absolute;inset:0;}` : ""}` }} />
       {framed}
       {(caption || credit) && <figcaption className="mt-2 text-center text-xs text-text-muted">{caption}{caption && credit ? " · " : ""}{credit && <span className="opacity-80">{credit}</span>}</figcaption>}

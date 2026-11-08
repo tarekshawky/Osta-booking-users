@@ -94,6 +94,9 @@ describe("advanced image: rendering", () => {
     const h = render({ caption: bi("Summer offer"), credit: bi("Photo: Osta"), description: bi("A technician cleaning a split AC"), title: bi("AC cleaning") });
     expect(h).toContain("Summer offer"); expect(h).toContain("Photo: Osta"); expect(h).toContain('"@type":"ImageObject"'); expect(h).toContain("A technician cleaning a split AC");
   });
+  it("never forces its own margin inline, which would cancel left / centre / right alignment and the margins", () => {
+    const h = render({ position: { align: "end", marginTop: 40 } }); expect(h).not.toMatch(/<figure[^>]*style=/); expect(h).toContain("margin-inline-start:auto"); expect(h).toContain("margin-top:40px");
+  });
   it("wraps text around a floated picture", () => {
     const h = render({ position: { wrap: "start" }, body: bi("Text that wraps beside the picture.") }); expect(h).toContain("Text that wraps beside the picture."); expect(h).toContain("float:inline-start");
   });
