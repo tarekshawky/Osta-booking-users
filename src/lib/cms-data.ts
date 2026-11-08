@@ -1,4 +1,4 @@
-import { api, type BlogSummary, type CatalogCategory, type HomeSection, type MaintenanceData, type OpenJobs, type PricingConfig, type ServiceSummary } from "@/lib/api";
+import { api, type AcConfig, type DuctConfig, type BlogSummary, type CatalogCategory, type HomeSection, type MaintenanceData, type OpenJobs, type PricingConfig, type ServiceSummary } from "@/lib/api";
 import type { CmsBlock } from "@/lib/cms";
 import { fetchLocations, type PublicBranch } from "@/lib/locations";
 
@@ -7,7 +7,7 @@ import { fetchLocations, type PublicBranch } from "@/lib/locations";
 export const slimPosts = (posts: BlogSummary[]): BlogSummary[] =>
   posts.map((p) => ({ ...p, coverImageUrl: p.coverImageUrl?.startsWith("data:") ? null : p.coverImageUrl }));
 
-export type BlockData = { services: ServiceSummary[]; posts: BlogSummary[]; sections: HomeSection[]; pricing: PricingConfig | null; jobs: OpenJobs; subPages: { slug: string; titleEn: string; titleAr: string }[]; catalog: CatalogCategory[]; locations: PublicBranch[]; maintenance: Record<string, MaintenanceData | null> };
+export type BlockData = { services: ServiceSummary[]; posts: BlogSummary[]; sections: HomeSection[]; pricing: PricingConfig | null; jobs: OpenJobs; subPages: { slug: string; titleEn: string; titleAr: string }[]; catalog: CatalogCategory[]; locations: PublicBranch[]; maintenance: Record<string, MaintenanceData | null> ; acQuote?: AcConfig | null; ductQuote?: DuctConfig | null };
 
 // Loads only the data the page's blocks actually need, and never lets a briefly unavailable API break the page.
 export async function loadBlockData(blocks: CmsBlock[]): Promise<BlockData> {
@@ -32,5 +32,9 @@ export async function loadBlockData(blocks: CmsBlock[]): Promise<BlockData> {
   const groups = [...new Set(blocks.filter((b) => b.type === "maintenancePackages" && !b.hidden).map((b) => String(b.props.group ?? "")))];
   const maintenance: Record<string, MaintenanceData | null> = {};
   await Promise.all(groups.map(async (g) => { maintenance[g] = await api.maintenancePackages(g).catch(() => null); }));
-  return { services, posts, sections, pricing, jobs, subPages: [], catalog, locations, maintenance };
+  // The AC installation calculator block draws the price list the administrator keeps up to date.
+  const acQuote: AcConfig | null = has("ductedCalculator") ? await api.acQuoteConfig().catch(() => null) : null;
+  // The ductwork quotation calculator draws the systems, rates and options the administrator keeps up to date.
+  const ductQuote: DuctConfig | null = has("ductQuoteCalculator") ? await api.ductQuoteConfig().catch(() => null) : null;
+  return { services, posts, sections, pricing, jobs, subPages: [], catalog, locations, maintenance, acQuote, ductQuote };
 }

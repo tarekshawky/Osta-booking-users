@@ -23,6 +23,8 @@ import { API_BASE, type Bi, type CmsBlock, type Cta } from "@/lib/cms";
 import { Paragraphs, SmartLink, imgProps, oneOf, useBi } from "@/components/cms/blockShared";
 import { BlockScript } from "@/components/cms/BlockScript";
 import { MaintenancePackagesBlock } from "@/components/cms/MaintenancePackages";
+import { DuctedCalculatorBlock } from "@/components/cms/DuctedCalculator";
+import { DuctQuoteCalculatorBlock } from "@/components/cms/DuctCalculator";
 import { blockJs, scopedCss } from "@/lib/blockCode";
 import {
   AnnouncementBlock, BeforeAfterBlock, BenefitsBlock, BgSectionBlock, CardsGridBlock, ComparisonBlock, ContactBannerBlock, CtaButtonsBlock, GalleryBlock, HeadingBlock,
@@ -290,8 +292,12 @@ function Faq({ p }: { p: P }) {
   const bi = useBi();
   const items = (p.items as { question: Bi; answer: Bi }[]) ?? [];
   if (!items.length) return null;
+  // The same questions and answers as structured data, so search and answer engines can read them (plain text only).
+  const plain = (v: string) => v.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const ld = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: items.filter((it) => bi(it.question) && plain(bi(it.answer))).map((it) => ({ "@type": "Question", name: plain(bi(it.question)), acceptedAnswer: { "@type": "Answer", text: plain(bi(it.answer)) } })) };
   return (
     <section className="mx-auto w-full max-w-3xl px-5 py-12">
+      {ld.mainEntity.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />}
       {bi(p.heading as Bi) && <h2 className="mb-6 text-center text-2xl font-bold text-text sm:text-3xl">{bi(p.heading as Bi)}</h2>}
       <div className="flex flex-col gap-3">
         {items.map((it, i) => (
@@ -806,6 +812,8 @@ function Block({ block, data }: { block: CmsBlock; data: BlockData }) {
     case "video": return <VideoBlock p={p} />;
     case "googleReviews": return <GoogleReviewsBlock p={p} />;
     case "maintenancePackages": return <MaintenancePackagesBlock p={p} data={data.maintenance?.[String(p.group ?? "")] ?? null} />;
+    case "ductedCalculator": return <DuctedCalculatorBlock p={p} config={data.acQuote ?? null} />;
+    case "ductQuoteCalculator": return <DuctQuoteCalculatorBlock p={p} config={data.ductQuote ?? null} />;
     default: return null;
   }
 }

@@ -1,4 +1,4 @@
-import type { CmsBlock } from "@/lib/cms";
+import type { Bi, CmsBlock } from "@/lib/cms";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "https://osta-invoices.vercel.app/api/v1";
 // The ERP itself (the job application form posts straight to it).
 export const ERP_ORIGIN = API_BASE.replace(/\/api\/v1\/?$/, "");
@@ -411,7 +411,94 @@ export type SubscribeBody = {
   company?: string; message?: string;
 };
 
+// The ducted / concealed / semi-central AC installation calculator. The server holds the price list and does every calculation; the website
+// only draws what it answers.
+export type AcBiList = { en: string[]; ar: string[] };
+export type AcPackageKey = "standard" | "complete" | "premium";
+export type AcConfig = {
+  vatPercent: number; validityDays: number;
+  plenum: { nameEn: string; nameAr: string; price: number; descriptionEn: string; descriptionAr: string; included: AcBiList; notIncluded: AcBiList };
+  acTypes: { key: string; nameEn: string; nameAr: string; descriptionEn: string; descriptionAr: string; active: boolean }[];
+  capacities: { key: string; labelEn: string; labelAr: string; active: boolean; prices: Record<AcPackageKey, number> }[];
+  packages: { key: AcPackageKey; nameEn: string; nameAr: string; subtitleEn: string; subtitleAr: string; included: AcBiList; notIncluded: AcBiList; copperMeters: number; active: boolean }[];
+  services: { key: string; nameEn: string; nameAr: string; unit: "meter" | "unit" | "lot"; price: number | null; rfq: boolean; active: boolean }[];
+  exclusions: AcBiList; disclaimer: Bi;
+  propertyTypes: { key: string; en: string; ar: string }[]; emirates: { key: string; en: string; ar: string }[];
+  uploads: { maxFiles: number; maxMb: number };
+};
+export type AcLine = { id: string; kind: "unit" | "plenum" | "service" | "custom"; unitIndex: number | null; labelEn: string; labelAr: string; detailEn: string; detailAr: string; qty: number; unitPrice: number | null; amount: number | null; rfq: boolean };
+export type AcTotals = { baseTotal: number; plenumTotal: number; servicesTotal: number; subtotal: number; vatPercent: number; vat: number; total: number; rfq: boolean; rfqItems: Bi[] };
+export type AcInput = { units: { acType: string; capacity: string; packageKey: AcPackageKey; qty: number }[]; services: { key: string; qty: number; note?: string }[] };
+export type AcCustomer = { name: string; phone: string; whatsapp: string; email: string; contactMethod: "phone" | "whatsapp" | "email"; preferredDate: string };
+export type AcProject = { propertyType: string; emirate: string; location: string; floors: number; existingDuct: string; existingCopper: string; ceilingType: string; notes: string };
+export type AcQuoteBody = { lang: "en" | "ar"; input: AcInput; customer: AcCustomer; project: AcProject; uploadKey?: string };
+export type AcQuoteStatus = "Draft" | "Generated" | "Submitted" | "Under Review" | "Site Inspection Required" | "Revised" | "Sent" | "Accepted" | "Rejected" | "Expired" | "Converted to Order";
+export type AcQuoteView = {
+  number: string; version: number; status: AcQuoteStatus; lang: "en" | "ar"; createdAt: string; expiresAt: string; bookRequested: boolean;
+  customer: AcCustomer; project: AcProject & { propertyType: string; emirate: string; location: string }; input: AcInput; manual: boolean; lines: AcLine[]; totals: AcTotals;
+  packages: { key: string; nameEn: string; nameAr: string; subtitleEn: string; subtitleAr: string; included: AcBiList; notIncluded: AcBiList }[];
+  disclaimer: Bi; exclusions: AcBiList; validityDays: number; canEdit: boolean; canSubmit: boolean; canBook: boolean; files: { id: string; name: string; size: number }[]; rejectionReason: string;
+};
+
+// The HVAC ductwork quotation calculator. As with the AC calculator, the server holds the price list and does every area and price
+// calculation; the website only draws what it answers.
+export type DuctUnit = "PCS" | "LM" | "m2" | "SET" | "LOT";
+export type DuctMode = "supply-fabricate-install" | "fabricate-supply" | "install-only" | "custom";
+export type DuctSpecKey = "gauge" | "fiberglass" | "pir" | "pressure" | "application";
+export type DuctOption = { key: string; en: string; ar: string };
+export type DuctConfig = {
+  vatPercent: number; validityDays: number;
+  systems: {
+    key: string; nameEn: string; nameAr: string; shortEn: string; shortAr: string; descriptionEn: string; descriptionAr: string;
+    included: AcBiList; notIncluded: AcBiList; technical: AcBiList; specFields: DuctSpecKey[]; modes: Record<DuctMode, { enabled: boolean; rate: number | null }>; active: boolean;
+  }[];
+  accessories: { key: string; nameEn: string; nameAr: string; units: DuctUnit[]; prices: Partial<Record<DuctUnit, number | null>>; active: boolean }[];
+  services: { key: string; nameEn: string; nameAr: string; unit: DuctUnit; price: number | null; rfq: boolean; active: boolean }[];
+  discount: { enabled: boolean; type: "percent" | "fixed"; value: number; labelEn: string; labelAr: string };
+  minAreaM2: number;
+  specs: Record<DuctSpecKey, DuctOption[]>;
+  estimateNotice: Bi; straightDuctNote: Bi; reviewNote: Bi; terms: AcBiList;
+  projectTypes: DuctOption[]; emirates: { key: string; en: string; ar: string }[];
+  uploads: { maxFiles: number; maxMb: number };
+};
+export type DuctSectionInput = {
+  id: string; method: "area" | "rect" | "round"; system: string; mode: DuctMode; description?: string;
+  area?: number; sections?: number; widthMm?: number; heightMm?: number; diameterMm?: number; lengthM?: number; qty?: number;
+};
+export type DuctInput = { sections: DuctSectionInput[]; accessories: { key: string; unit: DuctUnit; qty: number; note?: string }[]; services: { key: string; qty: number; note?: string }[] };
+export type DuctSpec = Partial<Record<DuctSpecKey, string>> & { indoorOutdoor?: string; drawingsAvailable?: string; completionDate?: string; special?: string; otherSpec?: string };
+export type DuctLine = { id: string; kind: "duct" | "accessory" | "service" | "custom" | "discount"; system: string | null; mode: DuctMode | null; labelEn: string; labelAr: string; detailEn: string; detailAr: string; qty: number; unit: DuctUnit; unitPrice: number | null; amount: number | null; rfq: boolean };
+export type DuctTotals = {
+  areas: { system: string; mode: DuctMode; nameEn: string; nameAr: string; area: number }[]; totalArea: number;
+  ductSubtotal: number; accessoriesSubtotal: number; servicesSubtotal: number; discount: number; subtotal: number; vatPercent: number; vat: number; total: number; rfq: boolean; rfqItems: Bi[];
+};
+export type DuctComputedSection = DuctSectionInput & { areaM2: number };
+export type DuctCustomer = { name: string; company: string; phone: string; email: string };
+export type DuctProject = { projectType: string; emirate: string; location: string; projectName: string; siteAddress: string; description: string };
+export type DuctQuoteBody = { lang: "en" | "ar"; input: DuctInput; spec: DuctSpec; customer: DuctCustomer; project: DuctProject; uploadKey?: string };
+export type DuctRequestType = "inspection" | "final" | "inquiry";
+export type DuctQuoteStatus = AcQuoteStatus | "Under Technical Review" | "Converted to Project";
+export type DuctQuoteView = {
+  kind: "ductwork"; number: string; version: number; status: DuctQuoteStatus; lang: "en" | "ar"; createdAt: string; expiresAt: string; requestType: string;
+  customer: DuctCustomer; project: DuctProject; input: DuctInput; spec: DuctSpec; manual: boolean; lines: DuctLine[]; sections: DuctComputedSection[]; totals: DuctTotals;
+  specRows: { labelEn: string; labelAr: string; valueEn: string; valueAr: string; confirmed: boolean }[]; review: { key: string; en: string; ar: string }[];
+  systems: { key: string; nameEn: string; nameAr: string }[]; estimateNotice: Bi; straightDuctNote: Bi; terms: AcBiList; validityDays: number;
+  canEdit: boolean; canSubmit: boolean; files: { id: string; name: string; size: number; category: string }[]; rejectionReason: string;
+};
+
 export const api = {
+  acQuoteConfig: () => apiFetch<AcConfig>("/ac-quote/config"),
+  acQuoteCalculate: (input: AcInput) => apiFetch<{ lines: AcLine[]; totals: AcTotals }>("/ac-quote/calculate", { method: "POST", body: input }),
+  acQuoteCreate: (body: AcQuoteBody) => apiFetch<{ number: string; token: string; url: string; total: number; expiresAt: string }>("/ac-quote", { method: "POST", body }),
+  acQuoteView: (token: string) => apiFetch<AcQuoteView>(`/ac-quote/${encodeURIComponent(token)}`, { fresh: true }),
+  acQuoteEdit: (token: string, body: AcQuoteBody) => apiFetch<{ number: string; version: number }>(`/ac-quote/${encodeURIComponent(token)}/edit`, { method: "POST", body }),
+  acQuoteSubmit: (token: string, book: boolean) => apiFetch<{ received: boolean; number: string; booking: boolean }>(`/ac-quote/${encodeURIComponent(token)}/submit`, { method: "POST", body: { book } }),
+  ductQuoteConfig: () => apiFetch<DuctConfig>("/duct-quote/config"),
+  ductQuoteCalculate: (input: DuctInput) => apiFetch<{ lines: DuctLine[]; sections: DuctComputedSection[]; totals: DuctTotals }>("/duct-quote/calculate", { method: "POST", body: input }),
+  ductQuoteCreate: (body: DuctQuoteBody) => apiFetch<{ number: string; token: string; url: string; total: number; expiresAt: string }>("/duct-quote", { method: "POST", body }),
+  ductQuoteView: (token: string) => apiFetch<DuctQuoteView>(`/duct-quote/${encodeURIComponent(token)}`, { fresh: true }),
+  ductQuoteEdit: (token: string, body: DuctQuoteBody) => apiFetch<{ number: string; version: number }>(`/duct-quote/${encodeURIComponent(token)}/edit`, { method: "POST", body }),
+  ductQuoteSubmit: (token: string, type: DuctRequestType) => apiFetch<{ received: boolean; number: string; type: DuctRequestType }>(`/duct-quote/${encodeURIComponent(token)}/submit`, { method: "POST", body: { type } }),
   maintenancePackages: (group = "") => apiFetch<MaintenanceData>(`/maintenance-packages${group ? `?group=${encodeURIComponent(group)}` : ""}`),
   evaluateBuilder: (body: { group: string; selectedId: string; chosenId?: string; needs: BuilderNeeds }) => apiFetch<BuilderEvaluation>("/maintenance-builder/evaluate", { method: "POST", body }),
   submitBuilder: (body: BuilderSubmit) => apiFetch<BuilderSubmitResult>("/maintenance-builder/submit", { method: "POST", body }),
@@ -524,3 +611,34 @@ export async function downloadAgreementPdf(path: string, token: string | null, f
 }
 export const agreementPdfPath = (accessToken: string) => `/agreements/${encodeURIComponent(accessToken)}/pdf`;
 export const myContractPdfPath = (id: string) => `/me/contracts/${encodeURIComponent(id)}/pdf`;
+
+export const acQuotePdfPath = (token: string, lang: "en" | "ar") => `/ac-quote/${encodeURIComponent(token)}/pdf?lang=${lang}`;
+
+// One drawing, BOQ or site photo, sent before the quotation exists (it is attached when the quotation is created).
+export async function uploadAcFile(file: File, uploadKey: string): Promise<{ id: string; name: string; size: number }> {
+  const form = new FormData();
+  form.append("file", file); form.append("uploadKey", uploadKey);
+  const res = await fetch(`${API_BASE}/ac-quote/uploads`, { method: "POST", body: form });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(json?.error?.message || "The upload failed.", res.status, json?.error?.code);
+  return json.data;
+}
+
+export const ductQuotePdfPath = (token: string, lang: "en" | "ar" | "both") => `/duct-quote/${encodeURIComponent(token)}/pdf?lang=${lang}`;
+
+// A downloaded PDF as a blob URL (for printing or opening), from the same private link.
+export async function fetchPdfBlobUrl(path: string): Promise<string> {
+  const res = await fetch(`${API_BASE}${path}`, { cache: "no-store" });
+  if (!res.ok) throw new ApiError("The PDF could not be prepared. Please try again.", res.status);
+  return URL.createObjectURL(await res.blob());
+}
+
+// One drawing or BOQ, sent before the quotation exists (it is attached when the quotation is created).
+export async function uploadDuctFile(file: File, uploadKey: string, category: "drawing" | "boq"): Promise<{ id: string; name: string; size: number; category: string }> {
+  const form = new FormData();
+  form.append("file", file); form.append("uploadKey", uploadKey); form.append("category", category);
+  const res = await fetch(`${API_BASE}/duct-quote/uploads`, { method: "POST", body: form });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(json?.error?.message || "The upload failed.", res.status, json?.error?.code);
+  return json.data;
+}
