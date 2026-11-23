@@ -36,7 +36,7 @@ export function HomeSections({ sections }: { sections: HomeSection[] }) {
                 alt={lang === "ar" ? sustainability.headingAr : sustainability.headingEn}
                 width={1200}
                 height={800}
-                className="aspect-[3/2] h-auto w-full rounded-xl object-cover"
+                className="h-auto w-full rounded-xl"
               />
             )}
             <div>
@@ -127,7 +127,7 @@ export function HomeSections({ sections }: { sections: HomeSection[] }) {
                 alt={lang === "ar" ? whyChoose.headingAr : whyChoose.headingEn}
                 width={1200}
                 height={800}
-                className="aspect-[3/2] h-auto w-full rounded-xl object-cover sm:order-1"
+                className="h-auto w-full rounded-xl sm:order-1"
               />
             )}
           </div>

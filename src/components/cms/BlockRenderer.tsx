@@ -126,7 +126,7 @@ function Hero({ p }: { p: P }) {
         </div>
         {sideImg && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img {...imgProps(sideImg, "(min-width: 768px) 50vw, 100vw")} alt="" className="aspect-[3/2] h-auto w-full rounded-2xl object-cover" />
+          <img {...imgProps(sideImg, "(min-width: 768px) 50vw, 100vw")} alt="" className="h-auto w-full rounded-2xl" />
         )}
       </div>
     </section>
@@ -224,7 +224,7 @@ function ImageText({ p }: { p: P }) {
         </div>
         {img && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img {...imgProps(img, "(min-width: 768px) 50vw, 100vw")} alt={bi(p.imageAlt as Bi)} className={`aspect-[3/2] h-auto w-full rounded-xl object-cover ${p.imagePosition === "start" ? "md:order-1" : ""}`} />
+          <img {...imgProps(img, "(min-width: 768px) 50vw, 100vw")} alt={bi(p.imageAlt as Bi)} className={`h-auto w-full rounded-xl ${p.imagePosition === "start" ? "md:order-1" : ""}`} />
         )}
       </div>
     </section>
@@ -275,7 +275,7 @@ function Columns({ p }: { p: P }) {
           c.kind === "image" ? (
             c.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={i} {...imgProps(c.imageUrl, "(min-width: 768px) 50vw, 100vw")} alt={bi(c.imageAlt)} className="aspect-[3/2] h-auto w-full rounded-xl object-cover" />
+              <img key={i} {...imgProps(c.imageUrl, "(min-width: 768px) 50vw, 100vw")} alt={bi(c.imageAlt)} className="h-auto w-full rounded-xl" />
             ) : <div key={i} />
           ) : (
             <div key={i} className="min-w-0">
@@ -459,7 +459,7 @@ function BlogPreview({ p, posts }: { p: P; posts: BlockData["posts"] }) {
           <Link key={post.slug} href={`/blog/${post.slug}`} className="osta-card flex flex-col overflow-hidden">
             {post.coverImageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={post.coverImageUrl} alt={lang === "ar" ? post.titleAr : post.titleEn} loading="lazy" width={640} height={160} className="h-40 w-full object-cover" />
+              <img src={post.coverImageUrl} alt={lang === "ar" ? post.titleAr : post.titleEn} loading="lazy" width={640} height={160} className="h-40 w-full bg-bg-elevated object-contain" />
             )}
             <div className="p-5">
               <h3 className="text-base font-semibold text-text">{lang === "ar" ? post.titleAr : post.titleEn}</h3>

@@ -51,7 +51,7 @@ function Packages({ config }: { config: SplitConfig }) {
             <article key={p.key} className={`osta-card relative flex flex-col gap-3 p-6 ${p.highlighted ? "border-accent ring-2 ring-accent/60" : ""}`}>
               {p.highlighted && <span className="absolute -top-3 start-6 rounded-full bg-accent px-3 py-0.5 text-[11px] font-bold text-white">{t("Recommended", "الأكثر اختياراً")}</span>}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {p.imageUrl && <img {...imgProps(p.imageUrl, "(min-width:1024px) 380px, 100vw")} alt={pickBi(lang, p.imageAltEn, p.imageAltAr) || pickBi(lang, p.nameEn, p.nameAr)} className="h-36 w-full rounded-xl object-cover" />}
+              {p.imageUrl && <img {...imgProps(p.imageUrl, "(min-width:1024px) 380px, 100vw")} alt={pickBi(lang, p.imageAltEn, p.imageAltAr) || pickBi(lang, p.nameEn, p.nameAr)} className="h-36 w-full rounded-xl bg-bg-elevated object-contain" />}
               <div className="flex items-start gap-3">
                 {p.icon && <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent-2"><DynamicIcon name={p.icon} size={20} /></span>}
                 <div><h3 className="text-lg font-bold text-text">{pickBi(lang, p.nameEn, p.nameAr)}</h3><p className="text-sm text-text-muted">{pickBi(lang, p.subtitleEn, p.subtitleAr)}</p></div>

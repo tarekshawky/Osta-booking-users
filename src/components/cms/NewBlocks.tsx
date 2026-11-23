@@ -316,7 +316,7 @@ export function ShowcaseBlock({ p, catalog }: { p: P; catalog: BlockData["catalo
   const picture = img ? (
     <div className="flex flex-col gap-3">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img {...imgProps(img, card ? "(min-width: 768px) 480px, 100vw" : "(min-width: 768px) 45vw, 100vw")} alt={bi(p.imageAlt as Bi) || name} className="aspect-[4/3] h-auto w-full rounded-xl bg-white object-cover" />
+      <img {...imgProps(img, card ? "(min-width: 768px) 480px, 100vw" : "(min-width: 768px) 45vw, 100vw")} alt={bi(p.imageAlt as Bi) || name} className="h-auto w-full rounded-xl bg-white" />
       {pictures.length > 1 && (
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
           {pictures.map((u, n) => (
@@ -401,7 +401,7 @@ export function CardsGridBlock({ p }: { p: P }) {
             {c.imageUrl && (
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img {...imgProps(c.imageUrl, "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw")} alt="" className="aspect-[4/3] h-auto w-full object-cover" />
+                <img {...imgProps(c.imageUrl, "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw")} alt="" className="h-auto w-full" />
                 {c.badge !== "none" && <span className="absolute start-3 top-3"><BadgePill kind={c.badge} /></span>}
               </div>
             )}
@@ -595,7 +595,7 @@ export function PromoBlock({ p }: { p: P }) {
         </div>
         {img && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img {...imgProps(img, "(min-width: 768px) 45vw, 100vw")} alt="" className="aspect-[4/3] h-auto w-full rounded-xl object-cover" />
+          <img {...imgProps(img, "(min-width: 768px) 45vw, 100vw")} alt="" className="h-auto w-full rounded-xl" />
         )}
       </div>
     </section>
@@ -710,7 +710,7 @@ export function StepsBlock({ p }: { p: P }) {
                 <h3 className="flex items-center gap-2 text-lg font-bold text-text">{it.icon && <DynamicIcon name={it.icon} size={18} className="text-accent-2" aria-hidden />}{bi(it.title)}</h3>
                 {bi(it.text) && <p className="text-sm text-text-muted">{bi(it.text)}</p>}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                {it.imageUrl && <img {...imgProps(it.imageUrl, "(min-width: 768px) 640px, 100vw")} alt="" className="mt-1 aspect-[3/2] h-auto w-full max-w-md rounded-xl object-cover" />}
+                {it.imageUrl && <img {...imgProps(it.imageUrl, "(min-width: 768px) 640px, 100vw")} alt="" className="mt-1 h-auto w-full max-w-md rounded-xl" />}
               </div>
             </li>
           ))}
@@ -724,7 +724,7 @@ export function StepsBlock({ p }: { p: P }) {
                 {it.icon && <DynamicIcon name={it.icon} size={22} className="text-accent-2" aria-hidden />}
               </div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {it.imageUrl && <img {...imgProps(it.imageUrl, "(min-width: 1024px) 25vw, 100vw")} alt="" className="aspect-[3/2] h-auto w-full rounded-lg object-cover" />}
+              {it.imageUrl && <img {...imgProps(it.imageUrl, "(min-width: 1024px) 25vw, 100vw")} alt="" className="h-auto w-full rounded-lg" />}
               <h3 className="text-base font-bold text-text">{bi(it.title)}</h3>
               {bi(it.text) && <p className="text-sm text-text-muted">{bi(it.text)}</p>}
             </li>

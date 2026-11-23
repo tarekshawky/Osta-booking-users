@@ -74,9 +74,9 @@ export function BlogDetailClient({ post, blockData, services = [] }: { post: Blo
           <img
             src={post.coverImageUrl}
             alt={title}
-            width={1024}
-            height={288}
-            className="osta-card mt-6 h-56 w-full object-cover sm:h-72"
+            width={1200}
+            height={800}
+            className="osta-card mt-6 h-auto w-full"
           />
         )}
 

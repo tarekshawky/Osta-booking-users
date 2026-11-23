@@ -22,7 +22,7 @@ export function BlogCard({ post, featured = false }: { post: BlogSummary; featur
       <Link href={`/blog/${post.slug}`} className="block" aria-label={title} tabIndex={-1}>
         {post.coverImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={post.coverImageUrl} alt="" width={640} height={320} loading="lazy" className="h-44 w-full object-cover" />
+          <img src={post.coverImageUrl} alt="" width={640} height={320} loading="lazy" className="h-44 w-full bg-bg-elevated object-contain" />
         ) : (
           <div className="h-44 w-full bg-gradient-to-br from-card to-bg-elevated" />
         )}
