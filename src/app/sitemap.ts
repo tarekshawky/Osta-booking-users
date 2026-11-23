@@ -3,6 +3,7 @@ import { api } from "@/lib/api";
 import { fetchPublishedList } from "@/lib/cms";
 import { jobPath, JOBS_PATH } from "@/lib/jobsPaths";
 import { SITE_URL } from "@/lib/siteUrl";
+import { legalIndex } from "@/lib/legal";
 
 const BASE_URL = SITE_URL;
 
@@ -15,6 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/services`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE_URL}/pricing`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE_URL}/blog`, changeFrequency: "daily", priority: 0.7 },
+    { url: `${BASE_URL}/policies`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE_URL}/about`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE_URL}/contact`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE_URL}/login`, changeFrequency: "yearly", priority: 0.3 },
@@ -23,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let serviceRoutes: MetadataRoute.Sitemap = [];
   let blogRoutes: MetadataRoute.Sitemap = [];
+  let policyRoutes: MetadataRoute.Sitemap = [];
 
   try {
     const services = await api.services();
@@ -33,6 +36,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
   } catch {
     // Sitemap must still build if the content API is briefly unavailable.
+  }
+
+  try {
+    policyRoutes = (await legalIndex()).flatMap((c) => c.documents.map((d) => ({ url: `${BASE_URL}/policies/${d.slug}`, lastModified: d.publishedAt, changeFrequency: "monthly" as const, priority: 0.5 })));
+  } catch {
+    // Same as above.
   }
 
   try {
@@ -75,5 +84,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .filter((p) => p.showInSitemap && !p.noindex)
     .map((p) => ({ url: `${BASE_URL}/${p.slug}`, lastModified: p.updatedAt, changeFrequency: "monthly" as const, priority: 0.6 }));
 
-  return [...staticRoutes, ...serviceRoutes, ...blogRoutes, ...jobRoutes, ...categoryRoutes, ...cmsRoutes];
+  return [...staticRoutes, ...serviceRoutes, ...blogRoutes, ...policyRoutes, ...jobRoutes, ...categoryRoutes, ...cmsRoutes];
 }
