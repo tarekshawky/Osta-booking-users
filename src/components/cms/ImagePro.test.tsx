@@ -101,3 +101,47 @@ describe("advanced image: rendering", () => {
     const h = render({ position: { wrap: "start" }, body: bi("Text that wraps beside the picture.") }); expect(h).toContain("Text that wraps beside the picture."); expect(h).toContain("float:inline-start");
   });
 });
+
+describe("advanced image: shapes and aspect ratio", () => {
+  it("leaves pictures without a shape exactly as they were", () => {
+    const css = imageProCss("c", base(), null);
+    expect(css).not.toContain("aspect-ratio:1 / 1;border-radius");
+    expect(css).not.toContain("clip-path");
+  });
+  it("gives each preset its aspect ratio and corners", () => {
+    const frame = (shape: string, extra: Record<string, unknown> = {}) => imageProCss("c", merge({ frame: { shape, ...extra } }), null);
+    expect(frame("square")).toContain(".c .ip-frame{height:auto;aspect-ratio:1 / 1;border-radius:0;}");
+    expect(frame("rectangle")).toContain("aspect-ratio:4 / 3;border-radius:0");
+    expect(frame("landscape")).toContain("aspect-ratio:16 / 9;border-radius:0");
+    expect(frame("portrait")).toContain("aspect-ratio:3 / 4;border-radius:0");
+    expect(frame("circle")).toContain("aspect-ratio:1 / 1;border-radius:50%");
+    expect(frame("rounded", { radius: 40 })).toContain("aspect-ratio:4 / 3;border-radius:40px");
+    expect(frame("rounded", { radius: 0 })).toContain("border-radius:24px"); // never sharp: that is what Rectangle is for
+  });
+  it("makes the picture fill the shape and use the focus point", () => {
+    const css = imageProCss("c", merge({ size: { focusX: 30, focusY: 70 }, frame: { shape: "square" } }), null);
+    expect(css).toContain(".c .ip-img{width:100%;height:100%;max-height:none;object-fit:cover;object-position:30% 70%;}");
+    expect(imageProCss("c", merge({ size: { fit: "contain" }, frame: { shape: "square" } }), null)).toContain("object-fit:contain");
+  });
+  it("builds a custom shape from its own ratio, corners and cut-out, with every value kept in range", () => {
+    const css = imageProCss("c", merge({ frame: { shape: "custom", ratioW: 21, ratioH: 9, radiusTL: 10, radiusTR: 20, radiusBR: 30, radiusBL: 40, clip: "none" } }), null);
+    expect(css).toContain("aspect-ratio:21 / 9;border-radius:10px 20px 30px 40px");
+    expect(imageProCss("c", merge({ frame: { shape: "custom", clip: "hexagon" } }), null)).toContain("clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)");
+    expect(imageProCss("c", merge({ frame: { shape: "custom", clip: "diamond" } }), null)).toContain("clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)");
+    expect(imageProCss("c", merge({ frame: { shape: "custom", clip: "arch" } }), null)).toContain("border-radius:999px 999px 0 0");
+    expect(imageProCss("c", merge({ frame: { shape: "custom", clip: "leaf" } }), null)).toContain("border-radius:0 80% 0 80%");
+    expect(imageProCss("c", merge({ frame: { shape: "custom", ratioW: 0, ratioH: 9999 } }), null)).toContain("aspect-ratio:1 / 100");
+    expect(imageProCss("c", merge({ frame: { shape: "custom", clip: "script" } }), null)).not.toContain("clip-path"); // an unknown cut-out is ignored
+  });
+  it("ignores crop while a shape is set, and still honours the tablet and phone heights", () => {
+    const css = imageProCss("c", merge({ size: { cropLeft: 10, cropTop: 10 }, frame: { shape: "circle" } }), { w: 1000, h: 500 });
+    expect(css).not.toContain(".ip-crop{");
+    const phone = imageProCss("c", merge({ frame: { shape: "square" }, mobile: { height: 220 } }), null);
+    expect(phone).toContain("@media (max-width:639px){.c .ip-frame{height:220px;aspect-ratio:auto;}");
+  });
+  it("renders a shaped picture on the page without the crop wrapper", () => {
+    const html = render({ size: { cropLeft: 10 }, frame: { shape: "circle" } });
+    expect(html).toContain("ip-frame"); expect(html).not.toContain("ip-crop"); expect(html).toContain("aspect-ratio:1 / 1;border-radius:50%");
+  });
+});
+

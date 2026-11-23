@@ -19,6 +19,16 @@ const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n));
 const SHADOW = { none: "none", sm: "0 2px 8px rgba(0,0,0,.18)", md: "0 8px 24px rgba(0,0,0,.28)", lg: "0 16px 48px rgba(0,0,0,.4)" } as const;
 const SPACE = { none: "0px", sm: "12px", md: "24px", lg: "48px" } as const;
 
+// Picture shapes. A shape gives the frame a fixed aspect ratio and corners; the picture then fills it (the focus point picks the visible part).
+const SHAPES = ["none", "square", "rectangle", "landscape", "portrait", "circle", "rounded", "custom"] as const;
+const CLIPS = ["none", "hexagon", "diamond", "arch", "leaf"] as const;
+const SHAPE_RATIO = { square: "1 / 1", rectangle: "4 / 3", landscape: "16 / 9", portrait: "3 / 4", circle: "1 / 1", rounded: "4 / 3" } as const;
+const CLIP_PATH = { hexagon: "polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)", diamond: "polygon(50% 0,100% 50%,50% 100%,0 50%)" } as const;
+const CLIP_RADIUS = { arch: "999px 999px 0 0", leaf: "0 80% 0 80%" } as const;
+
+// The shape chosen for a picture ("none" = the size settings decide).
+export const imageShape = (p: P) => pick(obj(p.frame).shape, SHAPES, "none");
+
 // The look of one advanced image as CSS, scoped to its own class so every image on a page can differ. Desktop first; tablets (up to 1023px)
 // and phones (up to 639px) only override what their own settings change. Pure, so it can be tested.
 export function imageProCss(cls: string, p: P, nat: { w: number; h: number } | null): string {
@@ -28,7 +38,9 @@ export function imageProCss(cls: string, p: P, nat: { w: number; h: number } | n
   const fit = pick(size.fit, ["cover", "contain", "fill", "none"] as const, "cover");
   const fx_ = clamp(num(size.focusX, 50), 0, 100), fy = clamp(num(size.focusY, 50), 0, 100);
   const crop = { t: clamp(num(size.cropTop), 0, 80) / 100, r: clamp(num(size.cropRight), 0, 80) / 100, b: clamp(num(size.cropBottom), 0, 80) / 100, l: clamp(num(size.cropLeft), 0, 80) / 100 };
-  const cropped = crop.t + crop.r + crop.b + crop.l > 0 && crop.l + crop.r < 1 && crop.t + crop.b < 1;
+  const shape = imageShape(p);
+  // Crop and a shape both decide the picture's box, so a shape wins and the focus point is used instead.
+  const cropped = shape === "none" && crop.t + crop.r + crop.b + crop.l > 0 && crop.l + crop.r < 1 && crop.t + crop.b < 1;
   const rotate = clamp(num(size.rotate), 0, 359);
   const flips = `${size.flipH === "yes" ? " scaleX(-1)" : ""}${size.flipV === "yes" ? " scaleY(-1)" : ""}`;
 
@@ -78,6 +90,19 @@ export function imageProCss(cls: string, p: P, nat: { w: number; h: number } | n
     const fill = !!(fixedHeight || maxHeight || fstyle === "round");
     rules.push(`.${cls} .ip-img{display:block;width:${mode === "original" ? "auto" : "100%"};max-width:100%;height:${fixedHeight && !fixedHeight.includes("aspect") ? "100%" : fill && fstyle === "round" ? "100%" : "auto"};${maxHeight ? `max-height:${num(size.maxHeight)}px;` : ""}${fill ? `object-fit:${fit};object-position:${fx_}% ${fy}%;` : fit === "fill" ? "object-fit:fill;" : ""}${common}}`);
     if (fixedHeight.includes("aspect")) rules.push(`.${cls} .ip-img{height:100%;object-fit:${fit};object-position:${fx_}% ${fy}%;}`);
+  }
+  // Shape: a fixed aspect ratio and corners on the frame, the picture filling it.
+  if (shape !== "none") {
+    const ratio = shape === "custom" ? `${clamp(num(frame.ratioW, 16), 1, 100)} / ${clamp(num(frame.ratioH, 9), 1, 100)}` : SHAPE_RATIO[shape];
+    const clip = shape === "custom" ? pick(frame.clip, CLIPS, "none") : "none";
+    const corner = (k: string) => `${clamp(num(frame[k]), 0, 500)}px`;
+    const round =
+      shape === "circle" ? "50%"
+      : shape === "rounded" ? `${num(frame.radius) > 0 ? clamp(num(frame.radius), 0, 500) : 24}px`
+      : shape === "custom" ? (clip === "arch" || clip === "leaf" ? CLIP_RADIUS[clip] : `${corner("radiusTL")} ${corner("radiusTR")} ${corner("radiusBR")} ${corner("radiusBL")}`)
+      : "0";
+    rules.push(`.${cls} .ip-frame{height:auto;aspect-ratio:${ratio};border-radius:${round};${clip === "hexagon" || clip === "diamond" ? `clip-path:${CLIP_PATH[clip]};` : ""}}`);
+    rules.push(`.${cls} .ip-img{width:100%;height:100%;max-height:none;object-fit:${fit === "contain" ? "contain" : "cover"};object-position:${fx_}% ${fy}%;}`);
   }
   // Colour layer.
   const ov = hexOk(fx.overlayColor);
@@ -146,7 +171,7 @@ export function ImageProBlock({ p }: { p: P }) {
   const hasBanner = !!(heading || text || buttonLabel);
   const wrap = pick(position.wrap, ["none", "start", "end"] as const, "none");
   const body = bi(p.body);
-  const cropped = ["cropTop", "cropRight", "cropBottom", "cropLeft"].some((k) => num(size[k]) > 0);
+  const cropped = imageShape(p) === "none" && ["cropTop", "cropRight", "cropBottom", "cropLeft"].some((k) => num(size[k]) > 0);
   const css = imageProCss(cls, p, nat);
   const imgAttrs = imgProps(url, "(min-width: 1024px) 1100px, 100vw");
   const lazy = p.lazy === "no" ? { loading: "eager" as const, fetchPriority: "high" as const } : {};
