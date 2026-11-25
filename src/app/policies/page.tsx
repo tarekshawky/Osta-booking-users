@@ -7,7 +7,7 @@ import { SITE_URL } from "@/lib/siteUrl";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingFooter } from "@/components/MarketingFooter";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 type Search = Promise<{ lang?: string }>;
 const pageLang = async (sp: Search) => { const l = (await sp).lang; return l === "ar" || l === "en" ? l : await serverLang(); };

@@ -7,6 +7,7 @@ import { isActivePath } from "@/lib/nav";
 import { ChevronDown, ChevronRight, Menu, X } from "lucide-react";
 import { SiteLogo } from "./SiteLogo";
 import { LanguageToggle } from "./LanguageToggle";
+import { MenuBadge } from "./MenuBadge";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
 import { useSite } from "@/lib/site-context";
@@ -18,14 +19,15 @@ function NavLink({ item, className, activeClass = "", onClick, label }: { item: 
   className = active ? `${className} ${activeClass}` : className;
   const current = active ? ({ "aria-current": "page" } as const) : {};
   // No URL: a label only (a dropdown heading, or an area that has no page yet).
-  if (!item.url) return <span className={className}>{label}</span>;
+  const content = <>{label}<MenuBadge item={item} /></>;
+  if (!item.url) return <span className={className}>{content}</span>;
   const external = !item.url.startsWith("/");
   if (!external && !item.newTab) {
-    return <Link href={item.url} className={className} onClick={onClick} {...current}>{label}</Link>;
+    return <Link href={item.url} className={className} onClick={onClick} {...current}>{content}</Link>;
   }
   return (
     <a href={item.url} className={className} onClick={onClick} {...current} {...(item.newTab || item.url.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
-      {label}
+      {content}
     </a>
   );
 }
@@ -36,6 +38,9 @@ const BAR_LINK = "relative whitespace-nowrap py-1 text-sm text-text-muted transi
 const anyActive = (pathname: string, m: SiteMenuItem): boolean => isActivePath(pathname, m.url) || m.children.some((c) => anyActive(pathname, c));
 
 const BAR_ACTIVE = "!text-text font-semibold after:!scale-x-100";
+// A menu item the admin made a "Button".
+const BAR_BUTTON = "osta-btn-primary whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold text-white";
+const MOBILE_BUTTON = "osta-btn-primary my-1 block rounded-full px-4 py-2.5 text-center text-sm font-semibold text-white";
 const DROP_LINK = "block whitespace-nowrap rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-card hover:text-accent-2";
 const DROP_ACTIVE = "bg-card !text-accent-2 font-medium";
 const MOBILE_LINK = "block rounded-lg px-2 py-2.5 text-sm text-text-muted transition-colors hover:bg-card hover:text-accent-2";
@@ -78,14 +83,14 @@ function MoreItems({ items, label, depth }: { items: SiteMenuItem[]; label: (m: 
 
 function BarItem({ item, label }: { item: SiteMenuItem; label: (m: SiteMenuItem) => string }) {
   const pathname = usePathname();
-  if (!item.children.length) return <NavLink item={item} label={label(item)} className={BAR_LINK} activeClass={BAR_ACTIVE} />;
+  if (!item.children.length) return item.style === "button" ? <NavLink item={item} label={label(item)} className={BAR_BUTTON} /> : <NavLink item={item} label={label(item)} className={BAR_LINK} activeClass={BAR_ACTIVE} />;
   const subs = item.children.filter((c) => c.showDesktop);
   // A long list (for example all the service categories) is shown in two columns.
   const wide = subs.length > 10;
   return (
     <div className="group relative">
       <button type="button" className={`flex items-center gap-1 ${BAR_LINK} ${item.children.some((c) => anyActive(pathname, c)) ? BAR_ACTIVE : ""}`}>
-        {label(item)} <ChevronDown size={14} />
+        {label(item)}<MenuBadge item={item} /> <ChevronDown size={14} />
       </button>
       <div
         className={`invisible absolute start-0 top-full z-40 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100 ${wide ? "grid min-w-[34rem] [&_a]:!py-1.5 [&_span]:!py-1.5" : "min-w-44"}`}
@@ -111,7 +116,7 @@ function MobileGroup({ item, subs, label, onNavigate, level = 0 }: { item: SiteM
           <div className="min-w-0 flex-1"><NavLink item={item} label={label(item)} onClick={onNavigate} className={MOBILE_LINK} activeClass={MOBILE_ACTIVE} /></div>
         ) : (
           <button type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} aria-controls={id} className={`${MOBILE_LINK} min-w-0 flex-1 text-start`}>
-            {label(item)}
+            {label(item)}<MenuBadge item={item} />
           </button>
         )}
         <button type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} aria-controls={id} aria-label={label(item)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-card hover:text-accent-2">
@@ -154,7 +159,7 @@ export function MarketingNav() {
   const [fit, setFit] = useState<number | null>(null);
   const shown = fit === null ? desktop : desktop.slice(0, fit);
   const hidden = fit === null ? [] : desktop.slice(fit);
-  const signature = desktop.map((m) => m.url + m.labelEn + m.labelAr).join("|") + lang;
+  const signature = desktop.map((m) => m.url + m.labelEn + m.labelAr + (m.style ?? "") + (m.badgeEn ?? "") + (m.badgeAr ?? "")).join("|") + lang;
   useLayoutEffect(() => {
     const nav = navRef.current;
     const measure = measureRef.current;
@@ -194,8 +199,8 @@ export function MarketingNav() {
           {/* Hidden copy used only to measure each link, so the bar can show as many as fit on ONE line each. */}
           <div ref={measureRef} aria-hidden className="pointer-events-none invisible absolute -z-10 flex h-0 items-center gap-5 overflow-hidden whitespace-nowrap xl:gap-6">
             {desktop.map((item) => (
-              <span key={item.url + item.labelEn} className={`flex items-center gap-1 ${BAR_LINK}`}>
-                {label(item)} {item.children.length > 0 && <ChevronDown size={14} />}
+              <span key={item.url + item.labelEn} className={item.style === "button" && !item.children.length ? BAR_BUTTON : `flex items-center gap-1 ${BAR_LINK}`}>
+                {label(item)}<MenuBadge item={item} /> {item.children.length > 0 && <ChevronDown size={14} />}
               </span>
             ))}
             <span className={`flex items-center gap-1 ${BAR_LINK}`}>{t("nav.more")} <ChevronDown size={14} /></span>
@@ -239,7 +244,7 @@ export function MarketingNav() {
                 {subs.length ? (
                   <MobileGroup item={item} subs={subs} label={label} onNavigate={() => setOpen(false)} />
                 ) : (
-                  <NavLink item={item} label={label(item)} onClick={() => setOpen(false)} className={MOBILE_LINK} activeClass={MOBILE_ACTIVE} />
+                  <NavLink item={item} label={label(item)} onClick={() => setOpen(false)} className={item.style === "button" ? MOBILE_BUTTON : MOBILE_LINK} activeClass={item.style === "button" ? "" : MOBILE_ACTIVE} />
                 )}
               </div>
             );

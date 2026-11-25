@@ -39,7 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   try {
-    policyRoutes = (await legalIndex()).flatMap((c) => c.documents.map((d) => ({ url: `${BASE_URL}/policies/${d.slug}`, lastModified: d.publishedAt, changeFrequency: "monthly" as const, priority: 0.5 })));
+    policyRoutes = (await legalIndex(300)).flatMap((c) => c.documents.map((d) => ({ url: `${BASE_URL}/policies/${d.slug}`, lastModified: d.publishedAt, changeFrequency: "monthly" as const, priority: 0.5 })));
   } catch {
     // Same as above.
   }

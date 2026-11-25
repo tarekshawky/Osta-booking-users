@@ -1,5 +1,6 @@
 "use client";
 
+import { MenuBadge } from "./MenuBadge";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isActivePath } from "@/lib/nav";
@@ -16,7 +17,7 @@ import { SOCIAL_ICONS } from "@/lib/socialIcons";
 const FOOT_LINK = "transition-colors hover:text-accent-2 hover:underline underline-offset-4";
 const FOOT_ACTIVE = "!text-accent-2 font-medium";
 
-type FooterLink = { url: string; labelEn: string; labelAr: string; newTab: boolean; showDesktop: boolean; showMobile: boolean };
+type FooterLink = { url: string; labelEn: string; labelAr: string; newTab: boolean; showDesktop: boolean; showMobile: boolean; badgeEn?: string; badgeAr?: string };
 
 function LinkList({ items, pathname, pick }: { items: FooterLink[]; pathname: string; pick: (en: string, ar: string) => string }) {
   return (
@@ -24,11 +25,11 @@ function LinkList({ items, pathname, pick }: { items: FooterLink[]; pathname: st
       {items.filter((m) => m.showDesktop || m.showMobile).map((m) => (
         <li key={m.url + m.labelEn}>
           {m.url.startsWith("/") && !m.newTab ? (
-            <Link href={m.url} className={`${FOOT_LINK} ${isActivePath(pathname, m.url) ? FOOT_ACTIVE : ""}`} {...(isActivePath(pathname, m.url) ? { "aria-current": "page" as const } : {})}>{pick(m.labelEn, m.labelAr)}</Link>
+            <Link href={m.url} className={`${FOOT_LINK} ${isActivePath(pathname, m.url) ? FOOT_ACTIVE : ""}`} {...(isActivePath(pathname, m.url) ? { "aria-current": "page" as const } : {})}>{pick(m.labelEn, m.labelAr)}<MenuBadge item={m} /></Link>
           ) : m.url ? (
-            <a href={m.url} className={FOOT_LINK} {...(m.newTab || m.url.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>{pick(m.labelEn, m.labelAr)}</a>
+            <a href={m.url} className={FOOT_LINK} {...(m.newTab || m.url.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>{pick(m.labelEn, m.labelAr)}<MenuBadge item={m} /></a>
           ) : (
-            <span>{pick(m.labelEn, m.labelAr)}</span>
+            <span>{pick(m.labelEn, m.labelAr)}<MenuBadge item={m} /></span>
           )}
         </li>
       ))}

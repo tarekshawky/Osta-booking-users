@@ -3,6 +3,10 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "https://osta-invoices.verc
 export type SiteMenuItem = {
   labelEn: string;
   labelAr: string;
+  // From the menu editor (older admin versions don't send these): a highlighted call to action, and a small tag such as "New".
+  style?: string;
+  badgeEn?: string;
+  badgeAr?: string;
   url: string;
   newTab: boolean;
   showDesktop: boolean;

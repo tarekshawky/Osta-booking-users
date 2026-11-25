@@ -13,9 +13,12 @@ export type LegalDoc = {
 };
 export type LegalHit = { slug: string; titleEn: string; titleAr: string; categoryKey: string; sectionId: string; number: string; headingEn: string; headingAr: string; snippet: string; score: number };
 
-async function get<T>(path: string, revalidate = 60): Promise<T | null> {
+// Never cached: when a document is archived or changed in the admin it must disappear or change on the website at once. A cached copy would keep
+// showing the last good version after the ERP starts answering "not found".
+// `revalidate` is only for lists that always answer successfully (the sitemap), where a stale copy can not outlive a change.
+async function get<T>(path: string, revalidate?: number): Promise<T | null> {
   try {
-    const res = await fetch(`${API_BASE}${path}`, { next: { revalidate, tags: ["legal"] } });
+    const res = await fetch(`${API_BASE}${path}`, revalidate ? { next: { revalidate } } : { cache: "no-store" });
     if (!res.ok) return null;
     return ((await res.json()) as { data: T }).data;
   } catch {
@@ -23,7 +26,7 @@ async function get<T>(path: string, revalidate = 60): Promise<T | null> {
   }
 }
 
-export const legalIndex = async () => (await get<{ categories: LegalCategory[] }>("/legal"))?.categories ?? [];
+export const legalIndex = async (revalidate?: number) => (await get<{ categories: LegalCategory[] }>("/legal", revalidate))?.categories ?? [];
 export const legalDoc = (slug: string, version?: number) => get<LegalDoc>(`/legal/${encodeURIComponent(slug)}${version ? `?version=${version}` : ""}`);
 
 // ---- numbering and the small writing format (same rules as the admin) ----

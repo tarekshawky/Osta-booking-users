@@ -7,7 +7,7 @@ import { SITE_URL } from "@/lib/siteUrl";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingFooter } from "@/components/MarketingFooter";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string; version?: string }> };
 
