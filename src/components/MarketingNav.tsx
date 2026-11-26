@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isActivePath } from "@/lib/nav";
@@ -47,10 +47,39 @@ const MOBILE_LINK = "block rounded-lg px-2 py-2.5 text-sm text-text-muted transi
 const MOBILE_SUB = "block rounded-lg px-2 py-2 text-sm text-text-faint transition-colors hover:bg-card hover:text-accent-2";
 const MOBILE_ACTIVE = "bg-card !text-accent-2 font-semibold";
 
+// A dropdown with more rows than this is laid out in four columns.
+const ONE_COLUMN_MAX = 10;
+const COLUMNS = 4;
+const WIDE_WIDTH = "w-[min(64rem,calc(100vw-1rem))]";
+// Long names wrap inside their column instead of pushing into the next one.
+const WIDE_ROWS = "[&_a]:!whitespace-normal [&_a]:!py-1.5 [&_span.block]:!whitespace-normal [&_span.block]:!py-1.5";
+
+// A four-column panel is much wider than the link it hangs from, so it is slid sideways to stay inside the window. It is placed
+// while still invisible too, otherwise it would make the whole page scroll sideways.
+function useKeepOnScreen(active: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  const place = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.translate = "";
+    if (!active) return;
+    const box = el.getBoundingClientRect();
+    const room = document.documentElement.clientWidth;
+    const shift = box.right > room - 8 ? room - 8 - box.right : box.left < 8 ? 8 - box.left : 0;
+    if (shift) el.style.translate = `${shift}px 0`;
+  }, [active]);
+  useLayoutEffect(() => {
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  });
+  return { ref, place };
+}
+
 // One row of a desktop dropdown. A row with sub-items of its own opens a fly-out panel beside it (up to three levels in all). A
 // fly-out whose rows have no sub-items of their own scrolls when it is long (a category can have dozens of services); rows in the
 // lower half of a tall panel open their fly-out upwards so it stays on screen.
-function DropItem({ item, label, up = false }: { item: SiteMenuItem; label: (m: SiteMenuItem) => string; up?: boolean }) {
+function DropItem({ item, label, up = false, back = false }: { item: SiteMenuItem; label: (m: SiteMenuItem) => string; up?: boolean; back?: boolean }) {
   const subs = item.children.filter((c) => c.showDesktop);
   if (!subs.length) return <NavLink item={item} label={label(item)} className={DROP_LINK} activeClass={DROP_ACTIVE} />;
   const leafPanel = subs.every((c) => !c.children.some((d) => d.showDesktop));
@@ -58,10 +87,10 @@ function DropItem({ item, label, up = false }: { item: SiteMenuItem; label: (m: 
     <div className="group/sub relative">
       <div className="flex items-center">
         <div className="min-w-0 flex-1"><NavLink item={item} label={label(item)} className={DROP_LINK} activeClass={DROP_ACTIVE} /></div>
-        <ChevronRight size={14} aria-hidden className="me-2 shrink-0 text-text-faint rtl:rotate-180" />
+        <ChevronRight size={14} aria-hidden className={`me-2 shrink-0 text-text-faint ${back ? "rotate-180 rtl:rotate-0" : "rtl:rotate-180"}`} />
       </div>
-      <div className={`invisible absolute start-full ${up ? "bottom-0" : "top-0"} z-40 min-w-44 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within/sub:visible group-focus-within/sub:opacity-100 group-hover/sub:visible group-hover/sub:opacity-100 ${leafPanel ? "max-h-[min(60vh,24rem)] overflow-y-auto" : ""}`}>
-        {subs.map((c, i) => <DropItem key={c.url + c.labelEn} item={c} label={label} up={!leafPanel && i >= subs.length / 2} />)}
+      <div className={`invisible absolute ${back ? "end-full" : "start-full"} ${up ? "bottom-0" : "top-0"} z-40 min-w-44 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within/sub:visible group-focus-within/sub:opacity-100 group-hover/sub:visible group-hover/sub:opacity-100 ${leafPanel ? "max-h-[min(60vh,24rem)] overflow-y-auto" : ""}`}>
+        {subs.map((c, i) => <DropItem key={c.url + c.labelEn} item={c} label={label} up={!leafPanel && i >= subs.length / 2} back={back} />)}
       </div>
     </div>
   );
@@ -83,22 +112,56 @@ function MoreItems({ items, label, depth }: { items: SiteMenuItem[]; label: (m: 
 
 function BarItem({ item, label }: { item: SiteMenuItem; label: (m: SiteMenuItem) => string }) {
   const pathname = usePathname();
-  if (!item.children.length) return item.style === "button" ? <NavLink item={item} label={label(item)} className={BAR_BUTTON} /> : <NavLink item={item} label={label(item)} className={BAR_LINK} activeClass={BAR_ACTIVE} />;
   const subs = item.children.filter((c) => c.showDesktop);
-  // A long list (for example all the service categories) is shown in two columns.
-  const wide = subs.length > 10;
+  const wide = subs.length > ONE_COLUMN_MAX;
+  const { ref, place } = useKeepOnScreen(wide);
+  if (!item.children.length) return item.style === "button" ? <NavLink item={item} label={label(item)} className={BAR_BUTTON} /> : <NavLink item={item} label={label(item)} className={BAR_LINK} activeClass={BAR_ACTIVE} />;
+  const rows = wide ? Math.ceil(subs.length / COLUMNS) : subs.length;
+  // A very tall panel scrolls. Not when a row has a fly-out: a scrolling box would cut the fly-out off.
+  const scrolls = wide && subs.every((c) => !c.children.some((d) => d.showDesktop));
+  // Rows low in a tall panel open their fly-out upwards so it stays on screen.
+  const opensUp = (i: number) => (wide ? rows >= 12 && i % rows >= rows / 2 : subs.length >= 6 && i >= subs.length / 2);
   return (
-    <div className="group relative">
+    <div className="group relative" onMouseEnter={place} onFocus={place}>
       <button type="button" className={`flex items-center gap-1 ${BAR_LINK} ${item.children.some((c) => anyActive(pathname, c)) ? BAR_ACTIVE : ""}`}>
         {label(item)}<MenuBadge item={item} /> <ChevronDown size={14} />
       </button>
       <div
-        className={`invisible absolute start-0 top-full z-40 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100 ${wide ? "grid min-w-[34rem] [&_a]:!py-1.5 [&_span]:!py-1.5" : "min-w-44"}`}
-        style={wide ? { gridAutoFlow: "column", gridTemplateRows: `repeat(${Math.ceil(subs.length / 2)}, auto)` } : undefined}
+        ref={ref}
+        className={`invisible absolute start-0 top-full z-40 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition-[opacity,visibility] group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100 ${wide ? `grid content-start gap-x-1 ${WIDE_WIDTH} ${WIDE_ROWS} [&>*]:min-w-0 ${scrolls ? "max-h-[calc(100vh-7rem)] overflow-y-auto" : ""}` : "min-w-44"}`}
+        style={wide ? { gridAutoFlow: "column", gridTemplateColumns: `repeat(${COLUMNS}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${rows}, auto)` } : undefined}
       >
         {subs.map((c, i) => (
-          <DropItem key={c.url + c.labelEn} item={c} label={label} up={wide ? i % Math.ceil(subs.length / 2) >= Math.ceil(subs.length / 2) / 2 : subs.length >= 6 && i >= subs.length / 2} />
+          // In the last two columns a fly-out opens back toward the middle, so it does not leave the screen.
+          <DropItem key={c.url + c.labelEn} item={c} label={label} up={opensUp(i)} back={wide && Math.floor(i / rows) >= COLUMNS / 2} />
         ))}
+      </div>
+    </div>
+  );
+}
+
+// The links that do not fit on the bar. A long list is laid out in four columns too, and scrolls if it is taller than the window.
+function MoreMenu({ items, label, text, active }: { items: SiteMenuItem[]; label: (m: SiteMenuItem) => string; text: string; active: boolean }) {
+  const listed = items.filter((m) => m.showDesktop);
+  const wide = listed.reduce((n, m) => n + 1 + m.children.filter((c) => c.showDesktop).length, 0) > ONE_COLUMN_MAX;
+  const { ref, place } = useKeepOnScreen(wide);
+  return (
+    <div className="group relative" onMouseEnter={place} onFocus={place}>
+      <button type="button" className={`flex items-center gap-1 ${BAR_LINK} ${active ? BAR_ACTIVE : ""}`}>
+        {text} <ChevronDown size={14} />
+      </button>
+      <div ref={ref} className={`invisible absolute end-0 top-full z-40 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition-[opacity,visibility] group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100 ${wide ? `max-h-[calc(100vh-7rem)] overflow-y-auto ${WIDE_WIDTH}` : "min-w-52"}`}>
+        {wide ? (
+          <div className={`gap-x-1 [column-count:4] ${WIDE_ROWS}`}>
+            {listed.map((m) => (
+              <div key={m.url + m.labelEn} className="break-inside-avoid">
+                <MoreItems items={[m]} label={label} depth={0} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <MoreItems items={listed} label={label} depth={0} />
+        )}
       </div>
     </div>
   );
@@ -208,16 +271,7 @@ export function MarketingNav() {
           {shown.map((item) => (
             <BarItem key={item.url + item.labelEn} item={item} label={label} />
           ))}
-          {hidden.length > 0 && (
-            <div className="group relative">
-              <button type="button" className={`flex items-center gap-1 ${BAR_LINK} ${hidden.some((m) => anyActive(pathname, m)) ? BAR_ACTIVE : ""}`}>
-                {t("nav.more")} <ChevronDown size={14} />
-              </button>
-              <div className="invisible absolute end-0 top-full z-40 min-w-52 rounded-xl border border-card-border bg-bg-elevated p-2 opacity-0 shadow-xl transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-                <MoreItems items={hidden} label={label} depth={0} />
-              </div>
-            </div>
-          )}
+          {hidden.length > 0 && <MoreMenu items={hidden} label={label} text={t("nav.more")} active={hidden.some((m) => anyActive(pathname, m))} />}
         </nav>
 
         <div className="hidden shrink-0 items-center gap-3 whitespace-nowrap lg:flex">
@@ -236,7 +290,7 @@ export function MarketingNav() {
       </div>
 
       {open && (
-        <div className="flex flex-col gap-1 border-t border-card-border px-5 py-4 lg:hidden">
+        <div className="flex max-h-[calc(100dvh-6rem)] flex-col gap-1 overflow-y-auto overscroll-contain border-t border-card-border px-5 py-4 [&>*]:shrink-0 lg:hidden">
           {mobile.map((item) => {
             const subs = item.children.filter((c) => c.showMobile);
             return (
