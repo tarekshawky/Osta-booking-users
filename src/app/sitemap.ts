@@ -4,6 +4,7 @@ import { fetchPublishedList } from "@/lib/cms";
 import { jobPath, JOBS_PATH } from "@/lib/jobsPaths";
 import { SITE_URL } from "@/lib/siteUrl";
 import { legalIndex } from "@/lib/legal";
+import { fetchKnowledge } from "@/lib/knowledge";
 
 const BASE_URL = SITE_URL;
 
@@ -22,6 +23,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/login`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${BASE_URL}/signup`, changeFrequency: "yearly", priority: 0.3 },
   ];
+
+  // The Knowledge Center is listed only once the owner has switched it on and allowed indexing.
+  const knowledge = await fetchKnowledge(300);
+  if (knowledge?.indexable) staticRoutes.push({ url: `${BASE_URL}/knowledge-center`, lastModified: knowledge.latestCheck ?? undefined, changeFrequency: "weekly", priority: 0.6 });
 
   let serviceRoutes: MetadataRoute.Sitemap = [];
   let blogRoutes: MetadataRoute.Sitemap = [];
